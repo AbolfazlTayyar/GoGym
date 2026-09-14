@@ -17,7 +17,12 @@ Write a one-page spec: who are the users (coaches, trainees, admins?), and what'
 
 ## 2. Sketch the architecture on paper
 
-Before writing code, decide on layers: handlers (HTTP) → services (business logic) → repositories (data access) → models. This is the classic Go "clean architecture" shape and it's the best way to actually learn idiomatic backend structure rather than picking it up ad hoc.
+Before writing code, decide on structure at two levels:
+
+- **Module boundaries first:** slice by domain, not by layer — `athlete`, `plan`, `movement`, `billing`, etc. This is a **modular monolith**: each module owns its own data and logic, and stays isolated from the others behind a small interface, even though everything ships as one deployable binary. This matters once the app has genuinely separate concerns (e.g. coach billing/accounting vs. athlete/plan management) that shouldn't get tangled into shared service/repository layers.
+- **Layers within each module second:** inside each module, still apply the classic Go "clean architecture" shape — handlers (HTTP) → services (business logic) → repositories (data access) → models. This is the best way to actually learn idiomatic backend structure rather than picking it up ad hoc.
+
+In practice: `internal/athlete/{handler,service,repository,model}.go`, `internal/billing/{handler,service,repository,model}.go`, and so on — module-first folders, clean-arch layering inside each.
 
 ## 3. Choose your stack deliberately
 
@@ -50,13 +55,26 @@ Start simple: a VPS (Hetzner or DigitalOcean, ~$5-10/mo) running Docker Compose.
 
 A basic GitHub Actions pipeline that runs `go vet`, `go test`, and `golangci-lint` on every push. Add automated Docker image builds once you're deploying. This is a low-cost, high-value habit to build early rather than bolt on later.
 
+## 9. Write a testing strategy, not just tests
+
+Decide upfront what "tested" means for this project: unit tests for service-layer logic (business rules, no DB), integration tests against a real Postgres instance (via `testcontainers-go` or a docker-compose test DB), and a small set of end-to-end HTTP tests hitting your handlers. Don't aim for 100% coverage — aim for coverage of the paths that would actually break trainee/plan/progress data if they broke. This is the step most solo projects skip, and it's core to the SDLC goal, not optional polish.
+
+## 10. Close the loop after deploy: CD, logging, and monitoring
+
+Once step 7's VPS deploy is stable, extend the CI pipeline into CD: auto-build and auto-deploy on merge to `main` (a simple SSH-and-restart script or a `docker compose pull && up -d` step is enough — no need for anything fancier at this stage). Add basic structured logging (even just JSON logs to stdout, captured by Docker) and one simple uptime/health-check mechanism (a `/healthz` endpoint plus an external ping service, or `docker` restart policies). This is the "operate and iterate" half of the SDLC that the roadmap previously stopped short of — shipping isn't the finish line, running it is.
+
+## 11. Adopt a lightweight release habit
+
+Tag releases (`v0.1.0`, etc.), keep a short `CHANGELOG.md`, and — once the app has real users, even just yourself — consider a minimal staging vs. production split (even two Docker Compose stacks on the same VPS is enough). This is a small habit that teaches a real SDLC concept: controlled, reviewable releases instead of pushing straight to prod.
+
 ---
 
-## Notes on the three goals
+## Notes on the four goals
 
 - **Goal 1 (deepen Go):** served most by step 2 — forcing yourself into a layered architecture instead of one giant `main.go` is where the real learning happens, more than any specific library choice.
 - **Goal 2 (infra):** resist the urge to jump straight to Kubernetes. A VPS + Docker Compose + Caddy teaches you 80% of the infra concepts (networking, TLS, process management, backups, monitoring) with 20% of the complexity. You can migrate the same app to k8s later as a dedicated learning exercise once it's boring and stable.
-- **Goal 3 (ship it):** the MVP-scope step is the one people skip and regret. Gym trainee management can balloon (scheduling, payments, messaging, progress photos...). Write down what's *out* of scope for v1 as explicitly as what's in.
+- **Goal 3 (end-to-end SDLC):** this is less a single step and more the throughline connecting steps 1 (requirements), 2 & 5 (design), 8 (CI/testing gate), 9 (testing strategy), and 10 (deploy → operate → monitor → iterate). Treat this project as a full loop, not a one-way ship: write the spec, design before coding, test deliberately, ship, then actually watch it run and feed what you learn back into the next feature.
+- **Goal 4 (ship it):** the MVP-scope step is the one people skip and regret. Gym trainee management can balloon (scheduling, payments, messaging, progress photos...). Write down what's *out* of scope for v1 as explicitly as what's in.
 
 ## Frontend decision to make deliberately
 
@@ -66,4 +84,4 @@ If you'd rather also build frontend skills separately, a **React SPA talking to 
 
 ## Practical first move
 
-Before any code, write the one-page spec (users, core entities, MVP feature list) and the ER diagram. Everything else — folder structure, routing, docker-compose — flows naturally once that's nailed down.
+Before any code, write the one-page spec (users, core entities, MVP feature list) and the ER diagram. Everything else — folder structure, routing, docker-compose, testing strategy — flows naturally once that's nailed down.
