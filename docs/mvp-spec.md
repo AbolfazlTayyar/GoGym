@@ -18,7 +18,7 @@ Audience: a personal trainer (coach) managing their own athletes. Not athlete-fa
 - `Day` — id, plan_id, label (A/B/C/D/E/F or day1/day2/day3/day4/day5/day6), order_index  — a plan is made of several days
 - `Block` — id, day_id, order_index, sets, rest_seconds, notes — a day is made of several blocks
 - `BlockMovement` — id, block_id, movement_id, reps, duration_seconds, order_in_block — a block can hold one or several movements (supersets/combo movements grouped under one block)
-- `Movement` — id, name, category (warmup/strength/cardio/…), coach_id, description — a coach-editable library, not per-athlete
+- `Movement` — id, name, category (warmup/strength/cardio/…), coach_id (nullable), description — a coach-editable library, not per-athlete. `coach_id = NULL` marks a universal, system-seeded movement, visible to every coach but not editable or deletable by them; a non-null `coach_id` is a coach's own custom addition.
 
 ## MVP feature list (in scope for v1)
 
@@ -27,7 +27,7 @@ Audience: a personal trainer (coach) managing their own athletes. Not athlete-fa
 3. Athlete's plan list — current plan highlighted, past plans as history
 4. Plan detail — tabbed by Day (A/B/C/D…), each day lists its blocks; movements within a block are grouped visually (supersets read as one unit, not separate rows)
 5. Plan builder — add day → add block to a day → add movement(s) to a block, with search over the movement library
-6. Movement library management — list, search, add/edit/delete
+6. Movement library management — list, search, add/edit/delete for the coach's own movements; system-seeded (universal) movements are visible but read-only
 
 This is the v1 loop: **add athlete → build plan (days → blocks → movements) → log measurements over time.**
 
