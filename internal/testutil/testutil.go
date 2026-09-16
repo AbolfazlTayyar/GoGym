@@ -5,11 +5,13 @@ package testutil
 
 import (
 	"context"
+	"errors"
 	"path/filepath"
 	"runtime"
 	"testing"
 
 	"github.com/golang-migrate/migrate/v4"
+	// Registers the postgres database driver and file source with golang-migrate.
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/stretchr/testify/require"
@@ -74,7 +76,7 @@ func applyMigrations(t *testing.T, dsn string) {
 		require.NoError(t, dbErr)
 	})
 
-	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
+	if err := m.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) {
 		require.NoError(t, err)
 	}
 }
