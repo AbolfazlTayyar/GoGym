@@ -5,6 +5,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/AbolfazlTayyar/gogym/internal/config"
 )
