@@ -1,7 +1,7 @@
 BINARY := bin/api
 MIGRATIONS_DIR := migrations
 
-.PHONY: build run test lint migrate-up migrate-down
+.PHONY: build run test test-unit lint migrate-up migrate-down
 
 build:
 	go build -o $(BINARY) ./cmd/api
@@ -9,6 +9,11 @@ build:
 run:
 	go run ./cmd/api
 
+# test-unit: short, no containers — safe for tight loops.
+test-unit:
+	go test -short ./...
+
+# test: full suite, including testcontainers-backed integration tests.
 test:
 	go test ./...
 
