@@ -11,12 +11,19 @@ import (
 	"github.com/joho/godotenv"
 )
 
+// Environment values recognized by Environment.
+const (
+	EnvProduction  = "production"
+	EnvDevelopment = "development"
+)
+
 // Config holds all required application configuration.
 type Config struct {
-	DB         DBConfig
-	ServerPort string
-	JWTSecret  string
-	JWTExpiry  time.Duration
+	DB          DBConfig
+	ServerPort  string
+	JWTSecret   string
+	JWTExpiry   time.Duration
+	Environment string
 }
 
 // DBConfig holds database connection settings.
@@ -47,12 +54,20 @@ func Load() Config {
 			Name:     mustGetEnv("DB_NAME"),
 			SSLMode:  mustGetEnv("DB_SSLMODE"),
 		},
-		ServerPort: mustGetEnv("SERVER_PORT"),
-		JWTSecret:  mustGetEnv("JWT_SECRET"),
-		JWTExpiry:  mustGetDurationEnv("JWT_EXPIRY"),
+		ServerPort:  mustGetEnv("SERVER_PORT"),
+		JWTSecret:   mustGetEnv("JWT_SECRET"),
+		JWTExpiry:   mustGetDurationEnv("JWT_EXPIRY"),
+		Environment: getEnvOrDefault("APP_ENV", EnvDevelopment),
 	}
 
 	return cfg
+}
+
+func getEnvOrDefault(key, fallback string) string {
+	if val, ok := os.LookupEnv(key); ok && val != "" {
+		return val
+	}
+	return fallback
 }
 
 func mustGetEnv(key string) string {
@@ -76,8 +91,8 @@ func mustGetDurationEnv(key string) time.Duration {
 // includes secret values (JWT secret, DB password).
 func (c Config) String() string {
 	return fmt.Sprintf(
-		"server_port=%s db_host=%s db_port=%s db_name=%s db_sslmode=%s jwt_expiry=%s",
-		c.ServerPort, c.DB.Host, c.DB.Port, c.DB.Name, c.DB.SSLMode, c.JWTExpiry,
+		"server_port=%s db_host=%s db_port=%s db_name=%s db_sslmode=%s jwt_expiry=%s environment=%s",
+		c.ServerPort, c.DB.Host, c.DB.Port, c.DB.Name, c.DB.SSLMode, c.JWTExpiry, c.Environment,
 	)
 }
 
