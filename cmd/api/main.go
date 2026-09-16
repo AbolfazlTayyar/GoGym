@@ -1,3 +1,4 @@
+// Command api runs the gogym HTTP server.
 package main
 
 import (

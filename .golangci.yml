@@ -10,6 +10,16 @@ linters:
     - revive
     - unconvert
     - unparam
+  settings:
+    revive:
+      rules:
+        # Doc-comment mandates are noisy for this early-stage codebase;
+        # keep revive's other default checks (error naming, unreachable
+        # code, etc.) which catch real bugs.
+        - name: exported
+          disabled: true
+        - name: package-comments
+          disabled: true
 
 issues:
   max-issues-per-linter: 0
