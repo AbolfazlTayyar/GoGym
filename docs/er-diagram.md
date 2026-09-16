@@ -24,6 +24,8 @@ erDiagram
         text last_name
         text phone UK
         text password_hash
+        timestamptz created_at
+        timestamptz updated_at
     }
 
     ATHLETE {
@@ -32,10 +34,12 @@ erDiagram
         text first_name
         text last_name
         text phone
-        text experience_level
+        text experience_level "nullable"
         text injuries
         text goal
         numeric height
+        timestamptz created_at
+        timestamptz updated_at
     }
 
     ATHLETE_MEASUREMENT {
@@ -48,6 +52,8 @@ erDiagram
         numeric arm
         numeric thigh
         numeric hip
+        timestamptz created_at
+        timestamptz updated_at
     }
 
     PLAN {
@@ -56,6 +62,8 @@ erDiagram
         date start_date
         text title
         text note
+        timestamptz created_at
+        timestamptz updated_at
     }
 
     DAY {
@@ -63,6 +71,7 @@ erDiagram
         uuid plan_id FK
         text label
         int order_index
+        timestamptz created_at
     }
 
     BLOCK {
@@ -72,6 +81,7 @@ erDiagram
         int sets
         int rest_seconds
         text notes
+        timestamptz created_at
     }
 
     BLOCK_MOVEMENT {
@@ -81,6 +91,7 @@ erDiagram
         int reps
         int duration_seconds
         int order_in_block
+        timestamptz created_at
     }
 
     MOVEMENT {
@@ -89,6 +100,8 @@ erDiagram
         text name
         text category
         text description
+        timestamptz created_at
+        timestamptz updated_at
     }
 ```
 
@@ -97,3 +110,5 @@ erDiagram
 - **coach_id placement:** per the multi-coach-readiness note in the spec, `coach_id` lives on `Athlete` and `Movement` directly (matching the original entity definitions). `Plan`, `Day`, `Block`, and `BlockMovement` reach the coach transitively through `Athlete`/`Plan`, so they are not denormalized with a redundant `coach_id` column — revisit if query patterns need it.
 - **Movement is coach-scoped, not athlete-scoped:** `BlockMovement` is the many-to-many join between `Block` and the shared `Movement` library, carrying the per-use fields (`reps`, `duration_seconds`, `order_in_block`).
 - **`Movement.coach_id` is nullable:** `NULL` marks a universal, system-seeded movement (visible to every coach, read-only — coaches cannot edit or delete these); a non-null value is a coach's own custom movement, which they fully own. A coach's effective library is `coach_id = :coach_id OR coach_id IS NULL`.
+- **Timestamps:** every table gets `created_at`. `updated_at` is added only to tables edited in place after creation (`Coach`, `Athlete`, `AthleteMeasurement`, `Plan`, `Movement`); `Day`, `Block`, and `BlockMovement` are typically deleted and recreated by the plan builder rather than edited, so they carry `created_at` only.
+- **`Athlete.experience_level` is nullable:** a coach may add an athlete before assessing their experience level.

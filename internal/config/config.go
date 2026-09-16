@@ -80,3 +80,12 @@ func (c Config) String() string {
 		c.ServerPort, c.DB.Host, c.DB.Port, c.DB.Name, c.DB.SSLMode, c.JWTExpiry,
 	)
 }
+
+// DSN returns the PostgreSQL connection string for this config, suitable for
+// use with the golang-migrate CLI or a database driver.
+func (d DBConfig) DSN() string {
+	return fmt.Sprintf(
+		"postgres://%s:%s@%s:%s/%s?sslmode=%s",
+		d.User, d.Password, d.Host, d.Port, d.Name, d.SSLMode,
+	)
+}

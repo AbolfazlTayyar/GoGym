@@ -1,4 +1,5 @@
 BINARY := bin/api
+MIGRATIONS_DIR := migrations
 
 .PHONY: build run test lint migrate-up migrate-down
 
@@ -15,7 +16,7 @@ lint:
 	golangci-lint run ./...
 
 migrate-up:
-	@echo "migrate-up: not implemented yet"
+	migrate -path $(MIGRATIONS_DIR) -database "$$(go run ./cmd/dsn)" up
 
 migrate-down:
-	@echo "migrate-down: not implemented yet"
+	migrate -path $(MIGRATIONS_DIR) -database "$$(go run ./cmd/dsn)" down 1
