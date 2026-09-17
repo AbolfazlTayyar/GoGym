@@ -1,0 +1,30 @@
+# syntax=docker/dockerfile:1
+# Debug variant of Dockerfile: builds cmd/api with debug symbols and runs it
+# under headless Delve so VS Code can attach from the host. Not used for
+# production images — see docker-compose.debug.yml.
+#
+# Module fetches use a BuildKit cache mount + retry loop: this host's network
+# path to proxy.golang.org drops connections intermittently, and without a
+# persistent cache each retry re-downloads everything from scratch.
+FROM golang:1.25-alpine
+
+WORKDIR /src
+
+RUN --mount=type=cache,target=/go/pkg/mod \
+    for i in 1 2 3 4 5; do \
+      go install github.com/go-delve/delve/cmd/dlv@v1.27.2 && break || sleep 5; \
+    done
+
+COPY go.mod go.sum ./
+RUN --mount=type=cache,target=/go/pkg/mod \
+    for i in 1 2 3 4 5; do \
+      go mod download && break || sleep 5; \
+    done
+
+COPY . .
+RUN --mount=type=cache,target=/go/pkg/mod \
+    CGO_ENABLED=0 go build -gcflags="all=-N -l" -o /out/api ./cmd/api
+
+EXPOSE 2345
+
+ENTRYPOINT ["dlv", "exec", "/out/api", "--headless", "--listen=:2345", "--api-version=2", "--accept-multiclient"]

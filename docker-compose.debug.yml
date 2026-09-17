@@ -1,0 +1,9 @@
+# Override for local debugging: run the api service under headless Delve
+# instead of the production build. Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.debug.yml up --build
+services:
+  api:
+    build:
+      dockerfile: Dockerfile.debug
+    ports:
+      - "2345:2345"
