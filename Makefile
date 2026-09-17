@@ -1,7 +1,8 @@
 BINARY := bin/api
 MIGRATIONS_DIR := migrations
+SWAG_VERSION := v1.16.6
 
-.PHONY: build run debug test test-unit lint migrate-up migrate-down
+.PHONY: build run debug test test-unit lint migrate-up migrate-down swagger
 
 build:
 	go build -o $(BINARY) ./cmd/api
@@ -31,3 +32,10 @@ migrate-up:
 
 migrate-down:
 	migrate -path $(MIGRATIONS_DIR) -database "$$(go run ./cmd/dsn)" down 1
+
+# swagger: (re)generates docs/swagger from swag annotations on handlers
+# (cmd/api/main.go for general API info, individual handlers for endpoints).
+# Rerun this after adding or changing annotated handlers — the generated
+# files are committed, so a stale run means stale docs shipped in the UI.
+swagger:
+	go run github.com/swaggo/swag/cmd/swag@$(SWAG_VERSION) init -g cmd/api/main.go -o docs/swagger --parseDependency

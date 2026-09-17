@@ -5,10 +5,13 @@ package server
 import (
 	"time"
 
+	_ "github.com/AbolfazlTayyar/gogym/docs/swagger"
 	"github.com/AbolfazlTayyar/gogym/internal/config"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 	"gorm.io/gorm"
 )
 
@@ -36,6 +39,10 @@ func New(cfg config.Config, gormDB *gorm.DB, log zerolog.Logger) *gin.Engine {
 	}))
 
 	router.GET("/healthz", healthzHandler(gormDB))
+
+	if cfg.Environment == config.EnvDevelopment {
+		router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	}
 
 	router.Group(APIV1Prefix)
 

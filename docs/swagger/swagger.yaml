@@ -1,0 +1,47 @@
+basePath: /
+definitions:
+  internal_server.healthzErrorResponse:
+    properties:
+      reason:
+        example: failed to connect to database
+        type: string
+      status:
+        example: unavailable
+        type: string
+    type: object
+  internal_server.healthzOKResponse:
+    properties:
+      status:
+        example: ok
+        type: string
+    type: object
+info:
+  contact: {}
+  description: API for the GoGym coaching platform.
+  title: GoGym API
+  version: "1.0"
+paths:
+  /healthz:
+    get:
+      description: Reports whether the service and its database connection are healthy.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_server.healthzOKResponse'
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/internal_server.healthzErrorResponse'
+      summary: Health check
+      tags:
+      - health
+securityDefinitions:
+  BearerAuth:
+    description: Type "Bearer" followed by a space and a JWT token.
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
