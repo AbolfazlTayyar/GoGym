@@ -26,3 +26,15 @@ Pin tool/action versions in `.github/workflows/*.yml` (e.g. `golangci-lint-actio
 ## Schema conventions
 
 `docs/er-diagram.md` is maintained by hand, not generated. Any schema change — new/dropped table, new/dropped/renamed column, new relationship — must update it in the same commit as the migration.
+
+## Swagger/API docs conventions
+
+Every task that adds an endpoint must include swagger annotations on its handlers as part of that task — not deferred to a cleanup pass. `internal/server/healthz.go` is the reference pattern.
+
+`@BasePath` in `cmd/api/main.go` is `/` (root), not `/api/v1`, even though the API is versioned under `/api/v1`. Reason: `/healthz` is intentionally mounted outside the versioned group (unversioned infra probe), and Swagger 2.0's `basePath` is global — a `/api/v1` basePath made Swagger UI's "Try it out" call the wrong URL for it. Consequence: every handler's own `@Router` annotation must spell out its full path, e.g. `@Router /api/v1/coaches [post]` for versioned endpoints, `@Router /healthz [get]` for unversioned ones.
+
+Use typed response structs in `@Success`/`@Failure` annotations, never `map[string]string` or `gin.H{...}`. Swagger/OpenAPI 2.0 can't name keys in a free-form map, so Swagger UI renders those as generic `additionalProp1/2/3` placeholders instead of real field names.
+
+Run `make swagger` (`swag init`) after adding or changing annotated handlers. The generated output in `docs/swagger/` is committed (the binary imports it for its side effect of registering the spec), so a stale run means stale docs shipped in the UI.
+
+The `/swagger/*any` route is only mounted when `internal/config` reports the dev environment — never expose interactive API docs in a prod build by default.
