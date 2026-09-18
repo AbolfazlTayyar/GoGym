@@ -1,6 +1,6 @@
 # GoGym — ER Diagram v1
 
-Derived from the entity list in [mvp-spec.md](mvp-spec.md). Two chains hanging off `Coach`:
+Derived from the entity list in [spec.md](spec.md). Two chains hanging off `Coach`:
 
 - `Coach → Athlete → AthleteMeasurement`
 - `Athlete → Plan → Day → Block → BlockMovement → Movement`
