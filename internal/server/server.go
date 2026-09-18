@@ -30,7 +30,7 @@ func New(cfg config.Config, gormDB *gorm.DB, log zerolog.Logger) *gin.Engine {
 
 	// TODO: lock down allowed origins once the frontend stack and its
 	// deployed origin are chosen (frontend stack is still undecided per
-	// docs/mvp-spec.md). AllowAllOrigins is permissive on purpose for now.
+	// docs/spec.md). AllowAllOrigins is permissive on purpose for now.
 	router.Use(cors.New(cors.Config{
 		AllowAllOrigins: true,
 		AllowMethods:    []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},

@@ -8,7 +8,7 @@ import (
 )
 
 // requestLogger emits one structured JSON log line per request to stdout,
-// per docs/prestart-roadmap.md step 10.
+// per docs/archive/prestart-roadmap.md step 10.
 func requestLogger(log zerolog.Logger) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		start := time.Now()
