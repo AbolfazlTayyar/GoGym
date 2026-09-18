@@ -1,14 +1,18 @@
 # GoGym — MVP Task List v1
 
-Stack locked in for this list: **Go + Gin + GORM + PostgreSQL**, migrations via `golang-migrate`, JWT + bcrypt auth, module-first / clean-architecture-per-module layout (`internal/<module>/{handler,service,repository,model}.go`) per [prestart-roadmap.md](prestart-roadmap.md) step 2. API docs via **swaggo (Swagger UI)** for manual endpoint testing — see the *Swagger / OpenAPI docs setup* task. Frontend stack is **not yet decided** — this list covers scaffolding and backend API only; frontend tasks get written once that's chosen (see *Frontend stack decision* below).
+Stack locked in for this list: **Go + Gin + GORM + PostgreSQL**, migrations via `golang-migrate`, JWT + bcrypt auth, module-first / clean-architecture-per-module layout (`internal/<module>/{handler,service,repository,model}.go`) per [prestart-roadmap.md](archive/prestart-roadmap.md) step 2. API docs via **swaggo (Swagger UI)** for manual endpoint testing — see the *Swagger / OpenAPI docs setup* task. Frontend stack is **not yet decided** — this list covers scaffolding and backend API only; frontend tasks get written once that's chosen (see *Frontend stack decision* below).
 
 Each task below has: what it is, a plain description, a ready-to-paste prompt for Claude Code, and a checkpoint to verify it's actually done before moving on. Work top to bottom — later tasks assume earlier ones are merged.
+
+> **Amendments folded in:** tasks marked **[A1]**–**[A4]** exist because the goal shifted from an internal tool to something other coaches pay for. They are grouped under those labels because each is close to free while there is no production data and expensive afterwards — do them in the order they appear, not last. The reasoning behind them is in [product-direction.md](product-direction.md); the task text below is self-contained and is what you work from.
 
 ---
 
 ## Phase 0 — Foundation
 
 ### Initialize Go project structure & tooling
+
+✅ **Done**
 
 **Description:** Set up the base Go module, standard folder layout, and a Makefile for the commands you'll run constantly (build, run, test, lint).
 
@@ -24,7 +28,7 @@ Initialize the GoGym Go module at the repo root. Set up:
 - .gitignore for Go (binaries, .env, vendor if not committed)
 
 Follow the module-first, clean-architecture-per-module structure described in
-docs/prestart-roadmap.md step 2 — internal/<module>/{handler,service,repository,model}.go
+docs/archive/prestart-roadmap.md step 2 — internal/<module>/{handler,service,repository,model}.go
 — but don't create any module folders yet, that starts with the coach auth module.
 
 Don't add any dependencies yet beyond what cmd/api/main.go needs to compile and run.
@@ -35,6 +39,8 @@ Don't add any dependencies yet beyond what cmd/api/main.go needs to compile and 
 ---
 
 ### Config loader & environment setup
+
+✅ **Done**
 
 **Description:** A single place that reads config (DB connection string, JWT secret, port, etc.) from environment variables / a `.env` file, so nothing is hardcoded later.
 
@@ -59,6 +65,8 @@ secret values) that config loaded successfully.
 
 ### Docker Compose for local dev
 
+✅ **Done**
+
 **Description:** One command spins up the Go app and a Postgres instance together, so local dev matches how it'll eventually be deployed.
 
 **Prompt:**
@@ -82,6 +90,8 @@ Update .env.example if the Compose setup needs additional vars.
 
 ### Database migrations: create schema
 
+✅ **Done**
+
 **Description:** Turn the ER diagram into the first real migration — every table, column, type, and foreign key from `docs/er-diagram.md`.
 
 **Prompt:**
@@ -94,7 +104,7 @@ against the DB connection from internal/config.
 Write the first migration creating all tables from docs/er-diagram.md exactly as
 specified there: coach, athlete, athlete_measurement, plan, day, block, block_movement,
 movement — with their columns, types, primary keys (uuid), foreign keys, and the
-nullable movement.coach_id noted in the ER diagram and mvp-spec.md (NULL = system-seeded,
+nullable movement.coach_id noted in the ER diagram and spec.md (NULL = system-seeded,
 universal movement). Add a not-null + a reasonable default where the spec implies one
 (e.g. created_at/updated_at timestamps are reasonable to add even though not listed
 explicitly — ask me before adding anything not in the ER diagram if you're unsure it's
@@ -110,6 +120,8 @@ should be needed; flag it to me if you find a mismatch instead of silently resol
 ---
 
 ### GORM models & DB connection layer
+
+✅ **Done**
 
 **Description:** Go structs for every entity, mapped to the migrated schema, plus the shared GORM connection setup other modules will reuse.
 
@@ -139,11 +151,13 @@ non-nullable field).
 
 ### Testing strategy setup
 
+✅ **Done**
+
 **Description:** Decide and wire up how this project actually gets tested — unit tests with no DB, integration tests against a real Postgres — before feature code starts piling up untested.
 
 **Prompt:**
 ```
-Set up the testing harness described in docs/prestart-roadmap.md step 9:
+Set up the testing harness described in docs/archive/prestart-roadmap.md step 9:
 1. Confirm the standard library testing + testify (assert/require) for unit tests —
    add testify as a dependency if not already present.
 2. Add integration test support using testcontainers-go to spin up a throwaway Postgres
@@ -165,6 +179,8 @@ added alongside each feature module starting with coach auth.
 ---
 
 ### CI pipeline
+
+✅ **Done**
 
 **Description:** GitHub Actions runs vet, tests, and lint on every push, so broken code can't silently sit on `main`.
 
@@ -188,16 +204,18 @@ container to spin up first.
 
 ### Gin router skeleton + health check
 
+✅ **Done**
+
 **Description:** The actual HTTP server boots, with middleware (logging, recovery, CORS) wired in, and a `/healthz` endpoint to prove it's alive.
 
 **Prompt:**
 ```
 Wire cmd/api/main.go to start a Gin server using internal/config for the port and
 internal/db for the DB connection. Add global middleware: gin.Recovery(), a request
-logger (structured JSON logs to stdout per docs/prestart-roadmap.md step 10 — use
+logger (structured JSON logs to stdout per docs/archive/prestart-roadmap.md step 10 — use
 Gin's logger or a structured logger like zerolog/zap, pick one and tell me which),
 and CORS configured permissively for now (frontend origin is still undecided per
-mvp-spec.md — note a TODO to lock this down once the frontend stack and its origin
+spec.md — note a TODO to lock this down once the frontend stack and its origin
 are chosen).
 
 Add GET /healthz that checks DB connectivity (a lightweight ping, e.g. sqlDB.PingContext)
@@ -211,6 +229,8 @@ routes exist yet.
 ---
 
 ### Swagger / OpenAPI docs setup
+
+✅ **Done**
 
 **Description:** A live, browsable API doc (Swagger UI) generated from code annotations, so you can manually poke every endpoint from the browser instead of hand-writing curl commands as you build.
 
@@ -241,7 +261,62 @@ that task, not deferred to a cleanup pass later.
 
 ---
 
-### Coach auth: signup, login, JWT middleware
+### Schema amendments: coaching fields & soft delete **[A2]**
+
+⬜ **Not started**
+
+**Description:** A second migration filling the gaps in the v1 schema that block real coaching use — prescription load, per-set variation, movement metadata, athlete status — plus soft delete. These are near-free now and a backfill-plus-downtime once real athlete data exists. This task exists separately because the original schema migration and the GORM models task are already merged; it amends both.
+
+**Prompt:**
+```
+Write a new golang-migrate migration (and matching down migration) amending the schema
+from migrations/000001_create_core_schema and
+update the GORM structs in internal/models/ to match in the same commit.
+
+block_movement — the prescription is incomplete:
+- Load. There is reps and duration_seconds but no weight. Coaches program load, so a
+  plan without it isn't a plan. Decide the representation deliberately and tell me which
+  you picked and why: a numeric kg column is the simple answer, but %1RM and RIR are both
+  common in real programming, and a free-text `load` field may serve v1 better than a
+  premature numeric model. This is a judgment call — make it explicitly, don't default.
+- Per-set variation. A single reps int cannot express "3 sets of 12/10/8", which is the
+  normal case, not the exception. Either a per-set child row or a structured JSON column.
+  This is the one item here worth genuinely designing rather than adding a column —
+  present both options with the tradeoff before you write the migration, and wait for
+  my call.
+- Tempo. Standard programming vocabulary, cheap to carry now, painful to retrofit into
+  the plan builder UI later.
+
+movement — the library is too thin to be fast:
+- A media/video URL column. Note this implies object storage (S3/MinIO/a local provider)
+  later; adding the column now does NOT commit us to building the upload flow in v1, and
+  this task should not build it.
+- Muscle group and equipment. category alone (warmup/strength/cardio) means the coach
+  scrolls; these two are what make movement search in the plan builder fast.
+
+athlete — status and contract dates:
+- Status (active/paused/expired) plus subscription start and end dates. This is what the
+  planned accounting module in docs/spec.md will need and what a dashboard worth
+  opening is built from.
+
+Soft delete — add deleted_at to the coach-owned tables a
+coach can delete from the UI — at minimum athlete and movement. Use GORM's
+gorm.DeletedAt so the default scope excludes them, and confirm the movement library's
+visibility query (own + universal) still behaves correctly with the soft-delete scope
+applied.
+
+Per CLAUDE.md, docs/er-diagram.md is maintained by hand and must be updated in the SAME
+commit as this migration — every new column, type and nullability, plus a note on the
+soft-delete convention.
+```
+
+**Checkpoint:** `make migrate-up` applies cleanly on top of the existing schema and `make migrate-down` reverses it without dropping the base tables; rerun both twice to confirm idempotence. `.Find()` on every amended model via `internal/db` still succeeds with no "column not found" error. Soft-deleting an athlete removes it from `GET /athletes` results but the row is still present in a raw `SELECT` with `deleted_at IS NOT NULL`. `docs/er-diagram.md` diffs in the same commit as the migration.
+
+---
+
+### Coach auth: signup, login, JWT middleware **[A1]**
+
+⬜ **Not started**
 
 **Description:** The one login this app has. A coach can be created (however you decide to bootstrap the first one — signup endpoint or seed script) and logs in to get a JWT that gates every other endpoint.
 
@@ -262,35 +337,99 @@ don't duplicate it). Implement:
   context for handlers to read.
 
 Apply the middleware to the /api/v1 group from the router skeleton task, except the
-/auth/* routes themselves. Since v1 is single-coach (per mvp-spec.md), signup doesn't
-need an admin gate yet, but every future module's queries must still filter by the
-authenticated coach's id — treat that as a hard rule from here on, not optional.
+/auth/* routes themselves. Since v1 is single-coach (per spec.md), signup doesn't
+need an admin gate yet.
+
+Tenant isolation — build the enforcement layer here, before any feature module exists to
+copy the wrong pattern:
+
+- Every feature task below repeats "scope the query by the authenticated coach's id".
+  A rule enforced by discipline across fifteen handlers is one forgotten WHERE away from
+  a cross-tenant data leak. Make it structurally hard to bypass instead: a single scoping
+  helper in the shared repository layer (a scoped *gorm.DB session or a GORM callback)
+  that every tenant-owned query goes through, so constructing an unscoped query for a
+  tenant-owned table is visibly wrong in review rather than merely against the rules.
+- Keep the 404-not-403 convention the feature tasks already use — don't leak existence.
+- Consider Postgres row-level security as defense in depth. I don't need it implemented,
+  but record the decision in a comment either way, including if the answer is "not yet".
+- Route the scope through one place so that if tenancy ever becomes org_id (a gym with
+  several coaches, per docs/product-direction.md section 7) it's one file to change
+  rather than every repository. Don't add an organization table now.
+
+Also add rate limiting on the /auth/* routes (a simple in-process limiter keyed by IP
+and phone is enough for v1 — no Redis). Unauthenticated endpoints that accept a password
+or, after the next task, send an SMS, must not be free to hammer.
 
 Write unit tests for the service layer (password hashing/verification logic, token
-generation/validation) using the testify setup from the testing strategy task, and one
+generation/validation) using the testify setup from the testing strategy task, one
 integration test covering signup → login → hitting a protected route with the
-resulting token.
+resulting token, and one test proving the scoping helper actually filters — construct a
+query through it as coach A and confirm coach B's rows are unreachable.
 
 Add swagger annotations to both handlers (summary, request body shape, success/error
 responses) per the pattern from the swagger setup task, and rerun `make swagger`.
 ```
 
-**Checkpoint:** `curl -X POST .../auth/signup` with valid data returns 201 and no `password_hash` field in the response; login with correct credentials returns a JWT; login with wrong password returns 401 with a generic message; hitting any `/api/v1/*` route without a token (or with a garbage token) returns 401; with a valid token it passes through. In Swagger UI, both endpoints appear under an auth tag, and pasting a login-issued token into "Authorize" lets subsequent "Try it out" calls on protected routes succeed.
+**Checkpoint:** `curl -X POST .../auth/signup` with valid data returns 201 and no `password_hash` field in the response; login with correct credentials returns a JWT; login with wrong password returns 401 with a generic message; hitting any `/api/v1/*` route without a token (or with a garbage token) returns 401; with a valid token it passes through. Hammering `/auth/login` trips the rate limiter rather than accepting unlimited attempts. In Swagger UI, both endpoints appear under an auth tag, and pasting a login-issued token into "Authorize" lets subsequent "Try it out" calls on protected routes succeed.
+
+---
+
+### Coach auth hardening: phone verification & password reset **[A4]**
+
+⬜ **Not started**
+
+**Description:** The two flows missing from the auth task that turn into support tickets the first day someone who isn't you uses this. Split from the task above because OTP needs an SMS provider decision and its own schema, not because it's optional — both should land before anyone else signs up.
+
+**Prompt:**
+```
+Extend internal/coach with the two auth flows missing from the signup/login task.
+
+1. Phone verification (OTP). phone is both the login identity and a unique key, so an
+   unverified typo at signup creates an account nobody can log into, nobody can recover,
+   and whose uniqueness constraint now squats on the real number. Add a one-time-code
+   flow: issue a short numeric code on signup, verify it against a stored hash with a
+   short expiry and an attempt limit, and mark the coach verified.
+   - Pick the SMS provider deliberately and tell me the options before wiring one in —
+     this is market-specific (see the market assumption in docs/product-direction.md
+     section 5) and I may already have a preference.
+   - Put it behind an interface with a log-to-stdout implementation for local dev and
+     tests, so the suite never needs a real provider or network.
+   - Decide and tell me whether an unverified coach can log in at all or is only blocked
+     from some actions. Make the call, note it in a comment, flag it as an assumption.
+
+2. Password reset. There is no flow at all today — the only recovery path is a manual
+   UPDATE against the database. Build reset-request → code/token → set-new-password on
+   the same OTP machinery, with single-use tokens, a short expiry, and no response
+   difference between a known and an unknown phone number (don't leak which numbers are
+   registered).
+
+Both flows go through the /auth/* rate limiter from the previous task — verify that's
+actually applied, since these are the endpoints that cost real money per request when an
+SMS provider is wired in.
+
+Add swagger annotations to every new handler and rerun `make swagger`. If this needs new
+columns or a table (verification codes, reset tokens), it's a migration, and per CLAUDE.md
+docs/er-diagram.md updates in the same commit.
+```
+
+**Checkpoint:** Sign up with a phone number, confirm the code is logged by the dev SMS implementation, and verify it — a wrong code and an expired code both fail without verifying, and repeated wrong codes hit the attempt limit. Request a password reset for a registered number and complete it, then confirm the old password no longer works and the reset token can't be reused. Request a reset for an unregistered number and confirm the response is indistinguishable from the registered case. The full suite still passes with no network access.
 
 ---
 
 ## Phase 1 — Core v1 features (backend API)
 
-> Every endpoint below must scope its query by the authenticated coach's id from the JWT (coach auth task) — an athlete, plan, or movement belonging to another coach should 404, not 403 (don't leak existence).
+> Every endpoint below is tenant-scoped through the scoping helper from the coach auth task **[A1]** — don't hand-write a `WHERE coach_id = ?` per handler and don't rely on remembering to. An athlete, plan, or movement belonging to another coach should 404, not 403 (don't leak existence).
 
 ### Athlete management (MVP feature 1: dashboard)
+
+⬜ **Not started**
 
 **Description:** Coach can list their athletes, search by name, and add a new athlete — the coach dashboard's backend.
 
 **Prompt:**
 ```
 Create the internal/athlete module. Implement:
-- POST /api/v1/athletes — create an athlete (fields per docs/mvp-spec.md's Athlete
+- POST /api/v1/athletes — create an athlete (fields per docs/spec.md's Athlete
   entity), coach_id set from the authenticated coach, not from the request body.
 - GET /api/v1/athletes — list the authenticated coach's athletes, with an optional
   ?q= query param that searches first_name/last_name (case-insensitive, partial match).
@@ -314,6 +453,8 @@ and the ?q= query param, and rerun `make swagger`.
 
 ### Athlete profile + measurements (MVP feature 2)
 
+⬜ **Not started**
+
 **Description:** View an athlete's base info plus their measurement history (the data the progress chart is built from), and log a new measurement.
 
 **Prompt:**
@@ -322,10 +463,10 @@ Add to internal/athlete (profile read) and create internal/measurement (measurem
 CRUD), scoped through athlete ownership (a measurement's athlete must belong to the
 authenticated coach — check this via a join/lookup, don't trust an athlete_id in the
 request blindly). Implement:
-- GET /api/v1/athletes/:id — full athlete profile (base info from mvp-spec.md's Athlete
+- GET /api/v1/athletes/:id — full athlete profile (base info from spec.md's Athlete
   entity).
 - POST /api/v1/athletes/:id/measurements — add a measurement (date, weight, chest,
-  waist, arm, thigh, hip per docs/mvp-spec.md's AthleteMeasurement entity).
+  waist, arm, thigh, hip per docs/spec.md's AthleteMeasurement entity).
 - GET /api/v1/athletes/:id/measurements — list measurements for the athlete, ordered
   by date, in a shape ready for a frontend chart to consume directly (an array of
   {date, weight, chest, ...} is fine — don't over-engineer a chart-specific format
@@ -346,6 +487,8 @@ Add swagger annotations to all three handlers and rerun `make swagger`.
 
 ### Athlete's plan list (MVP feature 3)
 
+⬜ **Not started**
+
 **Description:** List an athlete's plans, with the current one distinguishable from past ones.
 
 **Prompt:**
@@ -355,7 +498,7 @@ docs/er-diagram.md — they're one module since they're each other's children, n
 independent domains). Implement:
 - GET /api/v1/athletes/:id/plans — list plans for the athlete, ordered by start_date
   descending. Decide and document how "current plan" is determined (e.g. most recent
-  start_date, or most recent with no later plan superseding it) — docs/mvp-spec.md
+  start_date, or most recent with no later plan superseding it) — docs/spec.md
   doesn't define this precisely, so make a reasonable call, note it in a code comment,
   and flag it to me as an assumption worth confirming.
 - Each plan in the list response includes an is_current boolean computed per that rule,
@@ -375,6 +518,8 @@ Add a swagger annotation to the handler and rerun `make swagger`.
 
 ### Plan detail (MVP feature 4)
 
+⬜ **Not started**
+
 **Description:** Fetch one plan's full nested structure — days, each day's blocks, each block's movements — in one call, ready for a tabbed-by-day UI.
 
 **Prompt:**
@@ -384,7 +529,7 @@ tree: days (ordered by order_index), each day's blocks (ordered by order_index, 
 sets/rest_seconds/notes), each block's movements (ordered by order_in_block, joined
 with the movement library for name/category so the frontend doesn't need a second
 round-trip per movement). Structure the JSON so blocks with multiple movements are
-grouped together (per mvp-spec.md: "movements within a block are grouped visually...
+grouped together (per spec.md: "movements within a block are grouped visually...
 supersets read as one unit") — a block's "movements" array naturally gives you that
 grouping, confirm the response shape makes a single-movement block and a
 multi-movement (superset) block look structurally identical, just with array length
@@ -405,7 +550,9 @@ rerun `make swagger`.
 
 ---
 
-### Plan builder (MVP feature 5)
+### Plan builder (MVP feature 5) **[A3]**
+
+⬜ **Not started**
 
 **Description:** The write side of plan-building — add a day to a plan, add a block to a day, add movement(s) to a block — including searching the movement library while building.
 
@@ -414,18 +561,37 @@ rerun `make swagger`.
 Extend internal/plan with the write endpoints:
 - POST /api/v1/plans — create a plan for an athlete (start_date, title/note).
 - POST /api/v1/plans/:id/days — add a day (label, order_index — validate label against
-  the allowed set from mvp-spec.md: A/B/C/D/E/F or day1..day6, reject anything else
+  the allowed set from spec.md: A/B/C/D/E/F or day1..day6, reject anything else
   with 400).
 - POST /api/v1/days/:id/blocks — add a block (order_index, sets, rest_seconds, notes).
 - POST /api/v1/blocks/:id/movements — add one or more movements to a block in one call
   (accept an array so a superset can be added atomically, each with movement_id, reps,
-  duration_seconds, order_in_block) — validate every movement_id exists and is visible
-  to this coach (their own or a universal one, per movement.coach_id rules in
+  duration_seconds, order_in_block, plus the load/per-set/tempo fields added by the
+  schema amendments task) — validate every movement_id exists and is visible to this
+  coach (their own or a universal one, per movement.coach_id rules in
   docs/er-diagram.md) before inserting any, and do the insert in a DB transaction so a
   partial superset never gets created on a mid-batch failure.
 
 Every nested create must verify the ownership chain up to the authenticated coach
-(block → day → plan → athlete → coach), 404 on any break in that chain.
+(block → day → plan → athlete → coach), 404 on any break in that chain — through the
+scoping helper from the coach auth task, not a hand-written filter.
+
+Before implementing, record one design decision in a comment on this module. This task
+deliberately ships NO logging table — the decision is what matters now:
+
+  docs/er-diagram.md notes that Day, Block and BlockMovement carry created_at only,
+  because the plan builder deletes and recreates them rather than editing in place.
+  That's a fine v1 simplification, but the moment athlete workout logs exist, it turns
+  destructive: a log row that foreign-keys to block_movement_id is orphaned by every
+  plan edit, and training history is the hardest-to-replace data in the product. So
+  when logging is built, a log must reference movement_id plus a denormalized snapshot
+  of what was prescribed at the time (sets/reps/load as programmed), NOT the plan
+  structure. Write that down here so whoever implements logging doesn't rediscover it.
+
+Note in the same comment that plan templates and duplication (docs/product-direction.md
+section 3) also assume plans are copied and edited in place rather than rebuilt — if that
+feature is likely, delete-and-recreate is on borrowed time and updated_at on those three
+tables is cheap insurance. Flag it to me rather than changing the approach in this task.
 
 Write integration tests: full build-up of a plan (create plan → add day → add block →
 add a 2-movement superset in one call) confirming each step's response and the final
@@ -442,6 +608,8 @@ Add swagger annotations to all four handlers and rerun `make swagger`.
 
 ### Movement library management (MVP feature 6)
 
+⬜ **Not started**
+
 **Description:** The coach's own movement library — list, search, add, edit, delete — with system-seeded universal movements visible but read-only.
 
 **Prompt:**
@@ -449,21 +617,26 @@ Add swagger annotations to all four handlers and rerun `make swagger`.
 Create the internal/movement module. Implement:
 - GET /api/v1/movements?q= — list movements visible to the coach: their own
   (coach_id = authenticated coach) plus all universal ones (coach_id IS NULL), optional
-  name search.
+  name search, plus filters on the muscle group and equipment columns added by the
+  schema amendments task — those filters are what make picking a movement fast while
+  building a plan, which is the point of the whole builder.
 - POST /api/v1/movements — create a movement owned by the authenticated coach
   (coach_id set server-side, never from the request).
 - PUT /api/v1/movements/:id — edit a movement; return 403 if it's universal
   (coach_id IS NULL) or owned by a different coach — a coach can only edit their own.
 - DELETE /api/v1/movements/:id — same ownership rule as edit. Consider whether a
   movement in use by an existing BlockMovement should block deletion or cascade —
-  docs/mvp-spec.md doesn't say; make a call (I'd lean toward blocking deletion with a
+  docs/spec.md doesn't say; make a call (I'd lean toward blocking deletion with a
   409 if it's referenced, to avoid silently breaking existing plans), note it in a
   comment, and flag it to me as an assumption.
 
 Also add a seed migration (separate from the schema migration, per golang-migrate's
 convention of one concern per migration) inserting a small starter set of universal
 movements (coach_id NULL) — a handful across warmup/strength/cardio categories is
-enough for v1, this isn't meant to be exhaustive.
+enough for v1, this isn't meant to be exhaustive. Populate the muscle group and
+equipment columns on the seeded rows; a seeded library with those left null makes the
+new filters look broken on a fresh account, which is exactly the first impression a
+new coach gets. Leave the media/video column null — the upload flow isn't in v1.
 
 Write integration tests: coach can edit/delete their own movement; coach gets 403
 editing/deleting a universal one; coach gets 403 (or 404, pick consistently with the
@@ -479,7 +652,36 @@ Add swagger annotations to all four handlers and rerun `make swagger`.
 
 ## Phase 2 — Wrap-up
 
+### Backup & restore drill **[A4]**
+
+⬜ **Not started**
+
+**Description:** Not a feature — the point at which losing the database stops being an inconvenience and starts being the end of the business. An untested backup is not a backup.
+
+**Prompt:**
+```
+Set up database backups for the deployment target from docs/archive/prestart-roadmap.md step 7
+(VPS + Docker Compose): a scheduled pg_dump of the Postgres volume, retained for a
+sensible window, stored somewhere that is NOT the same VPS — a lost disk shouldn't take
+the backups with it. Keep it as simple as the rest of the stack; a cron job and an
+object-storage bucket is enough, this doesn't need a backup tool.
+
+Then actually perform a restore drill and write down what happened: take a dump, restore
+it into a throwaway Postgres (locally or a second container), and confirm the data is
+really there. Document the restore procedure as a short runbook — the steps, in order,
+that you'd follow at 2am with a dead database. Note how long the restore took.
+
+Don't claim this task is done on the strength of the backup job running. It's done when
+a restore has succeeded and the runbook has been followed once, start to finish.
+```
+
+**Checkpoint:** A backup exists off the VPS. A restore from that backup into an empty Postgres has actually been run by you — not described — and the restored database serves a working `/healthz` and returns real athlete rows. The runbook exists and someone who isn't you could follow it.
+
+---
+
 ### Frontend stack decision
+
+⬜ **Not started**
 
 **Description:** Not a build task — a checkpoint to actually make the frontend call (React SPA vs. Go templates + htmx, per prestart-roadmap.md's open question) now that the backend API shape from the feature tasks above is real and can inform the decision.
 
@@ -490,13 +692,13 @@ feature endpoints) is built and I can see the real shape of the endpoints and re
 payloads. Summarize the tradeoff between a React SPA and Go templates + htmx
 specifically in light of:
 - the mobile-first, dense, touch-heavy UI and measurement trend chart from
-  docs/mvp-spec.md's design constraints
+  docs/spec.md's design constraints
 - the actual JSON shapes now returned by /api/v1 (especially the nested plan detail
   response)
-- my stated goals in docs/prestart-roadmap.md (deepen Go vs. broaden into a standard
+- my stated goals in docs/archive/prestart-roadmap.md (deepen Go vs. broaden into a standard
   two-sided stack)
 Don't implement anything yet — just help me decide, then once I confirm, write the
 frontend task list as a follow-up to this document.
 ```
 
-**Checkpoint:** A decision is recorded (append it to this file's header note, replacing "not yet decided"), and a new `docs/mvp-tasks-frontend.md` (or an appended section here) exists before any frontend code is written.
+**Checkpoint:** A decision is recorded (append it to this file's header note, replacing "not yet decided"), and a new `docs/tasks-frontend.md` (or an appended section here) exists before any frontend code is written.
