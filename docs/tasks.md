@@ -657,6 +657,45 @@ Add swagger annotations to all four handlers and rerun `make swagger`.
 
 ## Phase 2 — Wrap-up
 
+### VPS deployment & production migrations
+
+⬜ **Not started**
+
+**Description:** Nothing runs anywhere but local dev and CI today — there is no deploy target and no defined way to apply a migration against a real production database. This task exists because the *Backup & restore drill* task below assumes a running deployment target and a migration process already exist; right now neither does.
+
+**Prompt:**
+```
+Stand up the v1 deployment target per docs/archive/prestart-roadmap.md step 7: a VPS
+(Hetzner/DigitalOcean or similar) running the existing docker-compose.yml (api + db),
+behind a reverse proxy (Caddy is the simplest TLS option) terminating HTTPS. Don't reach
+for Kubernetes.
+
+Define and document how migrations reach production — this app has no auto-migrate on
+container startup today (internal/db explicitly disables GORM AutoMigrate; migrations/
+is the only source of truth, applied via `make migrate-up` wrapping golang-migrate CLI).
+Pick one deliberately and tell me why:
+- A manual step: SSH to the VPS, run `make migrate-up` (or the raw `migrate` binary)
+  against the prod DSN before restarting the api container on each deploy.
+- An automated step: a one-shot init container/job in the compose stack that runs
+  `migrate ... up` and exits before the api service starts (compose depends_on +
+  a healthcheck-style gate, or a deploy script step) — safer against "forgot to migrate"
+  but needs care that it never runs concurrently with a second deploy.
+
+Whichever you pick, the DSN must come from the same internal/config-driven env vars used
+locally — no separate prod-only connection logic. Add a short runbook (a doc or a section
+in this file) covering: how to deploy a new image, how/when migrations run relative to
+that, and how to roll back a bad migration (down migration + previous image tag).
+
+Per docs/archive/prestart-roadmap.md step 10, this is also the natural point to wire basic
+CD (a GitHub Actions job that builds and pushes the image, then SSHs to the VPS to pull
+and restart — no need for anything fancier yet) — call out explicitly if you're deferring
+that to a separate task instead of doing it here.
+```
+
+**Checkpoint:** A real migration (start with the existing `000001`/`000002` files) has actually been applied against the VPS's Postgres, not just described — confirm via `\dt`/`\d athlete` over SSH. Deploying a trivial code change (e.g. a log line) end-to-end once, following only the written runbook, succeeds without undocumented manual steps. Rolling back one migration via the down file has been exercised at least once, not just assumed to work.
+
+---
+
 ### Backup & restore drill **[A4]**
 
 ⬜ **Not started**
