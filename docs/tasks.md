@@ -263,7 +263,7 @@ that task, not deferred to a cleanup pass later.
 
 ### Schema amendments: coaching fields & soft delete **[A2]**
 
-⬜ **Not started**
+✅ **Done**
 
 **Description:** A second migration filling the gaps in the v1 schema that block real coaching use — prescription load, per-set variation, movement metadata, athlete status — plus soft delete. These are near-free now and a backfill-plus-downtime once real athlete data exists. This task exists separately because the original schema migration and the GORM models task are already merged; it amends both.
 
@@ -275,29 +275,14 @@ update the GORM structs in internal/models/ to match in the same commit.
 
 block_movement — the prescription is incomplete:
 - Load. There is reps and duration_seconds but no weight. Coaches program load, so a
-  plan without it isn't a plan. Decide the representation deliberately and tell me which
-  you picked and why: a numeric kg column is the simple answer, but %1RM and RIR are both
-  common in real programming, and a free-text `load` field may serve v1 better than a
+  plan without it isn't a plan.a numeric kg column is good, and a free-text `load` field may
+ serve v1 better than a
   premature numeric model. This is a judgment call — make it explicitly, don't default.
-- Per-set variation. A single reps int cannot express "3 sets of 12/10/8", which is the
-  normal case, not the exception. Either a per-set child row or a structured JSON column.
-  This is the one item here worth genuinely designing rather than adding a column —
-  present both options with the tradeoff before you write the migration, and wait for
-  my call.
-- Tempo. Standard programming vocabulary, cheap to carry now, painful to retrofit into
-  the plan builder UI later.
 
 movement — the library is too thin to be fast:
 - A media/video URL column. Note this implies object storage (S3/MinIO/a local provider)
   later; adding the column now does NOT commit us to building the upload flow in v1, and
   this task should not build it.
-- Muscle group and equipment. category alone (warmup/strength/cardio) means the coach
-  scrolls; these two are what make movement search in the plan builder fast.
-
-athlete — status and contract dates:
-- Status (active/paused/expired) plus subscription start and end dates. This is what the
-  planned accounting module in docs/spec.md will need and what a dashboard worth
-  opening is built from.
 
 Soft delete — add deleted_at to the coach-owned tables a
 coach can delete from the UI — at minimum athlete and movement. Use GORM's
