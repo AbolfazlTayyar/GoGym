@@ -12,7 +12,7 @@ Audience: a personal trainer (coach) managing their own athletes. Not athlete-fa
 ## Core entities (as defined)
 
 - `Coach` — id, first_name, last_name, phone, password_hash *(added for auth; not in the original data model but needed to log in)*
-- `Athlete` — id, coach_id, first_name, last_name, phone, experience_level (beginner/intermediate/advanced), injuries, goal, height
+- `Athlete` — id, coach_id, first_name, last_name, phone, experience_level (beginner/intermediate/advanced), injuries, goal, height, athlete_type (private/public — private athletes pay more and are managed ongoing on the coach's home screen; public athletes pay less and just get a plan link, no further coach work)
 - `AthleteMeasurement` — id, athlete_id, date, weight, chest, waist, arm, thigh, hip — one row per check-in, drives the progress chart
 - `Plan` — id, athlete_id, start_date, title/note — an athlete can have several plans over time
 - `Day` — id, plan_id, label (A/B/C/D/E/F or day1/day2/day3/day4/day5/day6), order_index  — a plan is made of several days

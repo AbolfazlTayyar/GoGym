@@ -38,6 +38,7 @@ erDiagram
         text injuries
         text goal
         numeric height
+        text athlete_type "private or public, default private"
         timestamptz created_at
         timestamptz updated_at
     }
@@ -112,3 +113,4 @@ erDiagram
 - **`Movement.coach_id` is nullable:** `NULL` marks a universal, system-seeded movement (visible to every coach, read-only — coaches cannot edit or delete these); a non-null value is a coach's own custom movement, which they fully own. A coach's effective library is `coach_id = :coach_id OR coach_id IS NULL`.
 - **Timestamps:** every table gets `created_at`. `updated_at` is added only to tables edited in place after creation (`Coach`, `Athlete`, `AthleteMeasurement`, `Plan`, `Movement`); `Day`, `Block`, and `BlockMovement` are typically deleted and recreated by the plan builder rather than edited, so they carry `created_at` only.
 - **`Athlete.experience_level` is nullable:** a coach may add an athlete before assessing their experience level.
+- **`Athlete.athlete_type` (`private` | `public`, added in migration `000002`) is the coach's service tier for that athlete, not a training format:** `private` athletes pay more and are managed by the coach on an ongoing basis — their plans belong on the coach's home screen. `public` athletes pay less and get a single plan delivered as a share link (see [product-direction.md](product-direction.md)'s plan-share-link idea); once sent, the coach does no further work with them. `NOT NULL DEFAULT 'private'`, enforced by a `CHECK` constraint since dashboard/home-screen filtering depends on this value always being one of the two.

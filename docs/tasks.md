@@ -435,6 +435,11 @@ Create the internal/athlete module. Implement:
   ?q= query param that searches first_name/last_name (case-insensitive, partial match).
   Paginate if you judge the list could realistically grow large; otherwise a flat list
   is fine for v1 — use your judgment and note which you chose.
+- The home screen/dashboard view of this list should default to `athlete_type = 'private'`
+  athletes only (see docs/er-diagram.md) — `public` athletes are one-off plan-link
+  deliveries the coach doesn't manage ongoing, so they don't belong in the main working
+  list. Support an explicit filter/param to see `public` athletes too rather than hiding
+  them entirely.
 
 Validate required fields server-side (don't trust the frontend to enforce them) and
 return 400 with a clear field-level error on invalid input, not a raw DB error.

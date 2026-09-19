@@ -17,6 +17,7 @@ type Athlete struct {
 	Injuries        *string   `gorm:"column:injuries;type:text"`
 	Goal            *string   `gorm:"column:goal;type:text"`
 	Height          *float64  `gorm:"column:height;type:numeric"`
+	AthleteType     string    `gorm:"column:athlete_type;type:text;not null;default:private"`
 	CreatedAt       time.Time `gorm:"column:created_at;type:timestamptz;not null"`
 	UpdatedAt       time.Time `gorm:"column:updated_at;type:timestamptz;not null"`
 }
