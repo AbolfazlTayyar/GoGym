@@ -15,6 +15,17 @@ No AI-attribution trailers — ever. Never append `Co-Authored-By: Claude ...`, 
 
 Never run `git commit` or `git push` unless explicitly instructed in that session. Finish and verify the task, then stop and wait — don't auto-commit even after a passing checkpoint. Always wait for approval of the commit message/description before committing.
 
+## Capturing new conventions
+
+At the end of a task, if something came up that future work should follow — a
+convention, a gotcha, a decision and its reasoning — check whether it's already
+covered here or in `docs/`. If not, suggest a concrete addition (the text, and
+where it should live: inline in this file for a short, universally-applicable
+rule, or a new/existing `docs/*.md` file for anything longer or narrower, with
+a one-line reference added here pointing to it). Wait for approval before
+writing it. Don't suggest something obvious from reading the code, and don't
+suggest anything for small/routine tasks with nothing new to capture.
+
 ## Code conventions
 
 When a literal (string key, magic number, etc.) is used in more than one place, extract it to a named constant instead of repeating it. A literal used exactly once can stay inline — constants earn their keep on the second use, not the first.
