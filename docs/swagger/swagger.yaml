@@ -1,5 +1,65 @@
 basePath: /
 definitions:
+  internal_coach.coachResponse:
+    properties:
+      first_name:
+        example: Ada
+        type: string
+      id:
+        example: b8f1c9de-8f0a-4c1e-9a2b-2f6b6b8e2b3a
+        type: string
+      last_name:
+        example: Lovelace
+        type: string
+      phone:
+        example: "09372144430"
+        type: string
+    type: object
+  internal_coach.errorResponse:
+    properties:
+      error:
+        example: invalid credentials
+        type: string
+    type: object
+  internal_coach.loginRequest:
+    properties:
+      password:
+        example: correct-horse-battery-staple
+        type: string
+      phone:
+        example: "09372144430"
+        type: string
+    required:
+    - password
+    - phone
+    type: object
+  internal_coach.loginResponse:
+    properties:
+      token:
+        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        type: string
+    type: object
+  internal_coach.signupRequest:
+    properties:
+      first_name:
+        example: Ada
+        type: string
+      last_name:
+        example: Lovelace
+        type: string
+      password:
+        example: correct-horse-battery-staple
+        minLength: 8
+        type: string
+      phone:
+        example: "09372144430"
+        type: string
+    required:
+    - first_name
+    - last_name
+    - password
+    - phone
+    type: object
   internal_server.healthzErrorResponse:
     properties:
       reason:
@@ -21,6 +81,99 @@ info:
   title: GoGym API
   version: "1.0"
 paths:
+  /api/v1/auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Verifies phone + password and returns a signed JWT. The error is
+        the same whether the phone or the password was wrong.
+      parameters:
+      - description: Login credentials
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_coach.loginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_coach.loginResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_coach.errorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_coach.errorResponse'
+        "429":
+          description: Too Many Requests
+          schema:
+            $ref: '#/definitions/internal_coach.errorResponse'
+      summary: Log in a coach
+      tags:
+      - auth
+  /api/v1/auth/signup:
+    post:
+      consumes:
+      - application/json
+      description: Creates a coach account. v1 is single-coach, so this is open with
+        no admin gate.
+      parameters:
+      - description: Signup details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_coach.signupRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/internal_coach.coachResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_coach.errorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/internal_coach.errorResponse'
+        "429":
+          description: Too Many Requests
+          schema:
+            $ref: '#/definitions/internal_coach.errorResponse'
+      summary: Sign up a coach
+      tags:
+      - auth
+  /api/v1/coaches/me:
+    get:
+      description: Returns the profile of the coach identified by the bearer token.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_coach.coachResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/internal_coach.errorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/internal_coach.errorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get the authenticated coach
+      tags:
+      - auth
   /healthz:
     get:
       description: Reports whether the service and its database connection are healthy.

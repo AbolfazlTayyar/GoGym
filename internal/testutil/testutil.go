@@ -58,7 +58,7 @@ func NewDB(t *testing.T) *gorm.DB {
 
 	applyMigrations(t, dsn)
 
-	gormDB, err := gorm.Open(pgdriver.Open(dsn), &gorm.Config{})
+	gormDB, err := gorm.Open(pgdriver.Open(dsn), &gorm.Config{TranslateError: true})
 	require.NoError(t, err)
 
 	return gormDB

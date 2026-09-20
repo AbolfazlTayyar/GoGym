@@ -1,4 +1,6 @@
-package models
+// Package coach is the one login this app has: signup, login, the JWT that
+// gates every other endpoint, and the tenant auth middleware.
+package coach
 
 import (
 	"time"
@@ -6,7 +8,7 @@ import (
 	"github.com/google/uuid"
 )
 
-// Coach will move to internal/coach/model.go once that module exists.
+// Coach is a coach account — the only login in v1 (docs/spec.md).
 type Coach struct {
 	ID           uuid.UUID `gorm:"column:id;type:uuid;primaryKey"`
 	FirstName    string    `gorm:"column:first_name;type:text;not null"`

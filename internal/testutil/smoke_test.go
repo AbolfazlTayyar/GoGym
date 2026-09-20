@@ -3,7 +3,7 @@ package testutil_test
 import (
 	"testing"
 
-	"github.com/AbolfazlTayyar/gogym/internal/models"
+	coachpkg "github.com/AbolfazlTayyar/gogym/internal/coach"
 	"github.com/AbolfazlTayyar/gogym/internal/testutil"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
@@ -15,16 +15,16 @@ import (
 func TestNewDB_MigratedSchema(t *testing.T) {
 	db := testutil.NewDB(t)
 
-	coach := models.Coach{
+	c := coachpkg.Coach{
 		ID:           uuid.New(),
 		FirstName:    "Ada",
 		LastName:     "Lovelace",
-		Phone:        "+15550000000",
+		Phone:        "09121234567",
 		PasswordHash: "hashed",
 	}
-	require.NoError(t, db.Create(&coach).Error)
+	require.NoError(t, db.Create(&c).Error)
 
-	var got models.Coach
-	require.NoError(t, db.First(&got, "id = ?", coach.ID).Error)
-	require.Equal(t, coach.Phone, got.Phone)
+	var got coachpkg.Coach
+	require.NoError(t, db.First(&got, "id = ?", c.ID).Error)
+	require.Equal(t, c.Phone, got.Phone)
 }

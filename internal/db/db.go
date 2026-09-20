@@ -25,6 +25,9 @@ const (
 func New(cfg config.Config) (*gorm.DB, error) {
 	gormDB, err := gorm.Open(postgres.Open(cfg.DB.DSN()), &gorm.Config{
 		Logger: logger.Default.LogMode(logLevel(cfg.Environment)),
+		// TranslateError lets repositories check for portable errors like
+		// gorm.ErrDuplicatedKey instead of driver-specific Postgres codes.
+		TranslateError: true,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("db: failed to open connection: %w", err)
