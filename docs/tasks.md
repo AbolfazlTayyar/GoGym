@@ -301,7 +301,7 @@ soft-delete convention.
 
 ### Coach auth: signup, login, JWT middleware **[A1]**
 
-⬜ **Not started**
+✅ **Done**
 
 **Description:** The one login this app has. A coach can be created (however you decide to bootstrap the first one — signup endpoint or seed script) and logs in to get a JWT that gates every other endpoint.
 
