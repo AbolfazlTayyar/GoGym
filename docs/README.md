@@ -10,6 +10,7 @@ higher wins.
 | [tasks.md](tasks.md) | The build checklist — one task per feature, each with a paste-ready prompt and a checkpoint. Tracks progress with ✅ / ⬜. | Constantly. This is the doc you work from. |
 | [spec.md](spec.md) | What v1 is and, just as importantly, what it is not. Users, entities, the six MVP features, out-of-scope list. | When scope changes. Rare on purpose. |
 | [er-diagram.md](er-diagram.md) | The schema. Hand-maintained, **not** generated. | In the **same commit** as any migration — see [CLAUDE.md](../CLAUDE.md). |
+| [architecture.md](architecture.md) | The module layout new feature modules should follow, how they're wired into `internal/server`, and the tenant-isolation pattern (`internal/tenant`). | When a new module's shape or wiring deviates from `internal/coach`'s precedent, or the tenant-scoping decision changes. |
 
 ## Product thinking
 
