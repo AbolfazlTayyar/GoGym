@@ -37,9 +37,10 @@ everything else on `protected`.
 
 ## Tenant isolation
 
-v1 is single-coach (`docs/spec.md`), but every coach-owned table carries `coach_id` from day
-one, and `docs/product-direction.md` §7 flags that a gym account will eventually need an org
-layer above coach. `internal/tenant` is the single place that scoping decision is made:
+Every coach-owned table carries `coach_id`, and `internal/tenant` is the single place that
+scoping decision is made. The reason is leak-prevention, not future-proofing: a rule enforced
+by discipline across a dozen handlers is one forgotten `WHERE` away from serving one coach's
+athletes to another.
 
 - `tenant.Scope(db, coachID)` returns `db.Where("coach_id = ?", coachID)`. Every repository
   query against a tenant-owned table must be built from this, never a hand-written
@@ -55,8 +56,10 @@ layer above coach. `internal/tenant` is the single place that scoping decision i
   this package — so a second, DB-level copy of the same rule is redundant until something else
   (a background job, an admin console) can construct a query against tenant-owned tables
   outside this path.
-- If tenancy ever becomes `org_id` instead of `coach_id`, `internal/tenant` is the one file
-  that changes — repositories calling `tenant.Scope` don't need to.
+- An organization layer above coach is **not planned** — the app stays per-manager (decided
+  2026-09-20, superseding the hedge in `docs/product-direction.md` §7). The single choke point
+  earns its keep on leak-prevention alone; that it would also make an `org_id` switch a
+  one-file change is a side benefit, not a roadmap item. Don't design around it.
 
 ## Auth
 

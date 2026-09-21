@@ -1,18 +1,19 @@
 // Package tenant is the single place every tenant-owned query is scoped
-// through. v1 is single-coach (per docs/spec.md), so "tenant" is a coach id
-// today, but docs/product-direction.md section 7 flags that a gym account
-// will eventually need an org layer above coach. Routing every scoping
-// decision through this package means that day is one file to change
-// (Scope's signature and body) instead of a rewrite of every repository's
-// WHERE clause.
+// through. The point is that one forgotten WHERE clause, in any repository,
+// is a cross-tenant data leak: concentrating the rule here means a query
+// that skips it is visibly wrong in review rather than merely against the
+// rules. "Tenant" is a coach id — v1 is single-coach per docs/spec.md, and
+// an organization layer above coach is not planned. If that ever changes,
+// this is the one file to edit (Scope's signature and body) instead of every
+// repository's WHERE clause, but nothing here is waiting on it.
 //
 // Row-level security: not implemented. Postgres RLS would be reasonable
 // defense in depth (a query that forgets to call Scope would still be
 // blocked at the DB), but v1 has exactly one enforcement path — this
 // package — and every tenant-owned repository is required to go through it,
 // so a second, DB-level copy of the same rule is redundant for now. Revisit
-// once org_id lands and more than one code path can construct a query
-// against tenant-owned tables (e.g. a background job, an admin console).
+// if more than one code path can construct a query against tenant-owned
+// tables (e.g. a background job, an admin console).
 package tenant
 
 import (
