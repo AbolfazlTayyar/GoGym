@@ -40,6 +40,23 @@ Tenant-owned queries (any table with a `coach_id` column) must go through `inter
 
 GORM is opened with `TranslateError: true` (`internal/db`, `internal/testutil`) so repositories can check portable errors like `errors.Is(err, gorm.ErrDuplicatedKey)` instead of parsing Postgres-specific error codes. Keep using the portable sentinels — without this config the driver-specific check would silently never match.
 
+## API response conventions
+
+Every `/api/v1` response body — success or failure — is the envelope defined in `internal/httpx`:
+
+```
+{"success": true,  "data": {...}|[...]|null, "error": null, "meta": {...}}
+{"success": false, "data": null, "error": {"code": "...", "message": "...", "fields": {...}}}
+```
+
+`success` is a real field, not inferred from the status code; `data` and `error` are both always present with one of them null; `meta` (list metadata, e.g. pagination) and `error.fields` are omitted when empty.
+
+Handlers write it through the `httpx` helpers (`OK`, `OKWithMeta`, `Created`, `NoContent`, `Error`, `ErrorFields`) and never call `c.JSON` / `c.AbortWithStatusJSON` directly — a response-rewriting middleware was considered and rejected, see the package comment. `error.code` values are the `httpx.Code*` constants; add a new one there rather than inlining a string. For a rejected request body, pass `httpx.ValidationFields(err)` to `ErrorFields` so the client gets per-field messages keyed by json name.
+
+`/healthz` is the one deliberate exemption — it's an unversioned infra probe read by container healthchecks and uptime pingers that match on its exact bare `{"status":"ok"}` body, and the only place outside `internal/httpx` allowed to call `c.JSON`.
+
+Swagger annotations must show the real nested body, using the documentation-only types in `internal/httpx/swagger.go`: `@Success 200 {object} httpx.SuccessEnvelope{data=coachResponse}` for a payload, `@Failure 400 {object} httpx.ErrorEnvelope` for errors. Annotating the runtime `httpx.Envelope` directly instead renders every success example with a filled-in `error` object and every failure example with `"success": true` — a schema can't say "populated on failure, null on success". `TestEnvelopeDocsMatchRuntime` fails if the doc types drift from what `Envelope` marshals.
+
 ## Schema conventions
 
 `docs/er-diagram.md` is maintained by hand, not generated. Any schema change — new/dropped table, new/dropped/renamed column, new relationship — must update it in the same commit as the migration.

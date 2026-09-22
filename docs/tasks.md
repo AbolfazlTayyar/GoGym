@@ -359,6 +359,101 @@ responses) per the pattern from the swagger setup task, and rerun `make swagger`
 
 ---
 
+### API response envelope
+
+⬜ **Not started**
+
+**Description:** One response shape for every `/api/v1` endpoint — `success`, `data`, `error`, `meta` — plus the helpers that produce it. Today each handler returns its own bare struct (`coachResponse`, `loginResponse`, `errorResponse`), so the shape is whatever each handler decided. This lands here, right after the only module that currently returns JSON, because retrofitting two handlers and a middleware is minutes of work while retrofitting fifteen endpoints across six feature modules — and the frontend already written against them — is not.
+
+**Prompt:**
+```
+Introduce a single response envelope for the API and retrofit the existing handlers to it.
+
+Shape — every /api/v1 response body, success or failure:
+
+  {
+    "success": true,
+    "data":    { ... } | [ ... ] | null,
+    "error":   null,
+    "meta":    { ... }   // omitted entirely when empty
+  }
+
+  {
+    "success": false,
+    "data":    null,
+    "error": {
+      "code":    "validation_failed",
+      "message": "invalid request",
+      "fields":  { "phone": "must be an Iranian mobile number" }  // omitted when empty
+    }
+  }
+
+- success is a real boolean field, not inferred from the status code. data and error are
+  both always present on success/failure responses (one of them null).
+- meta is reserved for pagination and similar list metadata. Nothing populates it in this
+  task — define it, omitempty it, and leave it out of every current response. The athlete
+  list task decides whether it paginates; this is the field it fills in when it does.
+- error.code is a stable machine-readable string the frontend can branch on; error.message
+  is human-readable. error.fields is an optional map of field name -> message, for
+  request-validation failures only (the athlete task's "400 with a clear field-level error,
+  not a raw DB error" requirement is what it exists for).
+- Define the codes as named constants in one place, not as inline string literals per
+  handler (per CLAUDE.md's rule on repeated literals). Start with only the codes the
+  current handlers actually need — validation_failed, invalid_credentials, unauthorized,
+  not_found, conflict, rate_limited, internal_error — and let later tasks add their own.
+  Don't invent a code taxonomy for endpoints that don't exist yet.
+
+Enforcement — explicit helpers, not response-rewriting middleware:
+
+- Add a shared package (internal/httpx, or a name you prefer — tell me which and why) with
+  the envelope types and helpers: OK / Created / NoContent-equivalent for success, and an
+  error helper taking status + code + message, with a variant that carries the fields map.
+- Handlers call the helpers and never call c.JSON / c.AbortWithStatusJSON directly.
+  A response-rewriting middleware was considered and rejected: it buffers every response
+  and desynchronizes the swagger annotations from the real body. Record that decision in a
+  comment in the package.
+- Gin generates a few responses that never reach a handler: no-route 404, no-method 405,
+  and gin.Recovery()'s 500. Wire explicit NoRoute/NoMethod handlers through the helpers so
+  those aren't the only unenveloped bodies on the API. For the recovery 500, decide whether
+  a custom recovery handler is worth it in v1 — make the call, note it in a comment, flag
+  it to me either way.
+
+Retrofit — internal/coach is the only module returning JSON today:
+- Signup, Login and Me responses (the coach/login payloads become the data value, unchanged
+  in their own shape).
+- The 400/401/409/429/500 error paths in the handlers, and the 401s in AuthMiddleware.
+- The 429s from the /auth/* rate limiter.
+- Fold the existing package-local errorResponse struct and its errMsg* constants into the
+  shared package rather than leaving a second error shape behind.
+
+Do NOT envelope /healthz. It's mounted outside /api/v1 on purpose as an unversioned infra
+probe, and its {"status":"ok"} body is asserted by the Docker Compose healthcheck and by
+earlier tasks' checkpoints in this file. Note the exemption in a comment on the handler so
+it reads as deliberate rather than missed.
+
+Swagger, per CLAUDE.md's typed-response rule — the annotations must show the real nested
+body, not the bare payload struct:
+- swaggo can compose a wrapper with a payload (@Success 200 {object} httpx.Envelope{data=coachResponse}).
+  Verify it actually generates the nested schema with the installed swag version before
+  committing to it; if it doesn't, fall back to explicit per-payload envelope structs rather
+  than shipping annotations that lie about the response.
+- Rerun `make swagger` and confirm in Swagger UI that the example bodies show the envelope.
+
+Tests: unit tests for the helpers (each helper produces the documented shape and status,
+fields omitted when empty, meta omitted when empty), and update the existing coach unit and
+integration tests to assert against the enveloped bodies — a test still passing on a bare
+body means something wasn't retrofitted.
+
+Finally, write the convention down so the feature tasks below inherit it: add a short
+"API response conventions" section to CLAUDE.md (the shape, the helpers-not-c.JSON rule, the
+/healthz exemption) and a one-line note under this file's Phase 1 header alongside the
+existing tenant-scoping note.
+```
+
+**Checkpoint:** `grep -rn "c.JSON\|AbortWithStatusJSON" internal/` returns hits only inside the envelope package and `internal/server/healthz.go`. `curl -X POST .../auth/signup` with valid data returns `{"success":true,"data":{...},"error":null}` with no `meta` key and still no `password_hash`; with a missing/short password it returns `success:false` and a populated `error.fields`; login with a wrong password returns the `invalid_credentials` code; hitting a protected route with no token returns the enveloped 401; hammering `/auth/login` returns the enveloped 429. `curl .../api/v1/does-not-exist` returns an enveloped 404, not Gin's default `404 page not found` text. `curl .../healthz` still returns bare `{"status":"ok"}` and `docker compose ps` still reports the api container healthy. In Swagger UI the signup/login/me example responses show the envelope with the real payload nested under `data`, not a free-form object.
+
+---
+
 ### Coach auth hardening: phone verification & password reset **[A4]**
 
 ⬜ **Not started**
@@ -402,6 +497,8 @@ docs/er-diagram.md updates in the same commit.
 ---
 
 ## Phase 1 — Core v1 features (backend API)
+
+> Every endpoint below returns the `internal/httpx` response envelope — `{success, data, error, meta}` — written through that package's helpers, never `c.JSON` directly. See the *API response envelope* task and CLAUDE.md's *API response conventions*.
 
 > Every endpoint below is tenant-scoped through the scoping helper from the coach auth task **[A1]** — don't hand-write a `WHERE coach_id = ?` per handler and don't rely on remembering to. An athlete, plan, or movement belonging to another coach should 404, not 403 (don't leak existence).
 
