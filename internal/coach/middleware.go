@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/AbolfazlTayyar/gogym/internal/httpx"
 	"github.com/AbolfazlTayyar/gogym/internal/tenant"
 	"github.com/gin-gonic/gin"
 )
@@ -18,7 +19,7 @@ func AuthMiddleware(svc *Service) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		header := c.GetHeader("Authorization")
 		if !strings.HasPrefix(header, bearerPrefix) {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, errorResponse{Error: errMsgUnauthorized})
+			httpx.Error(c, http.StatusUnauthorized, httpx.CodeUnauthorized, httpx.MsgUnauthorized)
 			return
 		}
 
@@ -26,7 +27,7 @@ func AuthMiddleware(svc *Service) gin.HandlerFunc {
 
 		coachID, err := svc.ValidateToken(tokenString)
 		if err != nil {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, errorResponse{Error: errMsgUnauthorized})
+			httpx.Error(c, http.StatusUnauthorized, httpx.CodeUnauthorized, httpx.MsgUnauthorized)
 			return
 		}
 

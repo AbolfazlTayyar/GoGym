@@ -4,23 +4,15 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/AbolfazlTayyar/gogym/internal/httpx"
 	"github.com/AbolfazlTayyar/gogym/internal/tenant"
 	"github.com/AbolfazlTayyar/gogym/internal/validate"
 	"github.com/gin-gonic/gin"
 )
 
-// errorResponse is the JSON body returned for every error in this package.
-type errorResponse struct {
-	Error string `json:"error" example:"invalid credentials"`
-}
-
-// Error message strings shared by more than one handler/middleware response.
-const (
-	errMsgUnauthorized    = "unauthorized"
-	errMsgInvalidRequest  = "invalid request"
-	errMsgTooManyRequests = "too many requests"
-	errMsgInternalError   = "internal error"
-)
+// errMsgPhoneNotIranian is the field-level message for a phone that isn't an
+// Iranian mobile number, keyed under "phone" in the error envelope's fields.
+const errMsgPhoneNotIranian = "must be an Iranian mobile number, e.g. 09372144430"
 
 // coachResponse is a coach account as returned to clients — never includes
 // PasswordHash.
@@ -54,7 +46,8 @@ type loginRequest struct {
 	Password string `json:"password" binding:"required" example:"correct-horse-battery-staple"`
 }
 
-// loginResponse is the POST /api/v1/auth/login success body.
+// loginResponse is the payload nested under the envelope's data on a
+// successful POST /api/v1/auth/login.
 type loginResponse struct {
 	Token string `json:"token" example:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."`
 }
@@ -83,11 +76,11 @@ func NewHandler(svc *Service, repo *Repository) *Handler {
 // is exceeded.
 func (h *Handler) rateLimited(c *gin.Context, phone string) bool {
 	if !h.ipLimiter.Allow(c.ClientIP()) {
-		c.AbortWithStatusJSON(http.StatusTooManyRequests, errorResponse{Error: errMsgTooManyRequests})
+		httpx.Error(c, http.StatusTooManyRequests, httpx.CodeRateLimited, httpx.MsgTooManyRequests)
 		return true
 	}
 	if phone != "" && !h.phoneLimiter.Allow(phone) {
-		c.AbortWithStatusJSON(http.StatusTooManyRequests, errorResponse{Error: errMsgTooManyRequests})
+		httpx.Error(c, http.StatusTooManyRequests, httpx.CodeRateLimited, httpx.MsgTooManyRequests)
 		return true
 	}
 	return false
@@ -101,22 +94,24 @@ func (h *Handler) rateLimited(c *gin.Context, phone string) bool {
 // @Accept			json
 // @Produce		json
 // @Param			request	body		signupRequest	true	"Signup details"
-// @Success		201		{object}	coachResponse
-// @Failure		400		{object}	errorResponse
-// @Failure		409		{object}	errorResponse
-// @Failure		429		{object}	errorResponse
+// @Success		201		{object}	httpx.SuccessEnvelope{data=coachResponse}
+// @Failure		400		{object}	httpx.ErrorEnvelope
+// @Failure		409		{object}	httpx.ErrorEnvelope
+// @Failure		429		{object}	httpx.ErrorEnvelope
+// @Failure		500		{object}	httpx.ErrorEnvelope
 // @Router			/api/v1/auth/signup [post]
 func (h *Handler) Signup(c *gin.Context) {
 	var req signupRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, errorResponse{Error: errMsgInvalidRequest})
+		httpx.ErrorFields(c, http.StatusBadRequest, httpx.CodeValidationFailed, httpx.MsgInvalidRequest, httpx.ValidationFields(err))
 		return
 	}
 
 	// Checked before the rate limiter so its per-phone bucket is only ever
 	// keyed by well-formed numbers.
 	if !validate.IsIranMobile(req.Phone) {
-		c.JSON(http.StatusBadRequest, errorResponse{Error: "phone must be an Iranian mobile number, e.g. 09372144430"})
+		httpx.ErrorFields(c, http.StatusBadRequest, httpx.CodeValidationFailed, httpx.MsgInvalidRequest,
+			map[string]string{"phone": errMsgPhoneNotIranian})
 		return
 	}
 
@@ -132,14 +127,14 @@ func (h *Handler) Signup(c *gin.Context) {
 	})
 	if err != nil {
 		if errors.Is(err, ErrPhoneTaken) {
-			c.JSON(http.StatusConflict, errorResponse{Error: "phone already registered"})
+			httpx.Error(c, http.StatusConflict, httpx.CodeConflict, "phone already registered")
 			return
 		}
-		c.JSON(http.StatusInternalServerError, errorResponse{Error: errMsgInternalError})
+		httpx.Error(c, http.StatusInternalServerError, httpx.CodeInternalError, httpx.MsgInternalError)
 		return
 	}
 
-	c.JSON(http.StatusCreated, newCoachResponse(created))
+	httpx.Created(c, newCoachResponse(created))
 }
 
 // Login handles coach authentication.
@@ -150,15 +145,15 @@ func (h *Handler) Signup(c *gin.Context) {
 // @Accept			json
 // @Produce		json
 // @Param			request	body		loginRequest	true	"Login credentials"
-// @Success		200		{object}	loginResponse
-// @Failure		400		{object}	errorResponse
-// @Failure		401		{object}	errorResponse
-// @Failure		429		{object}	errorResponse
+// @Success		200		{object}	httpx.SuccessEnvelope{data=loginResponse}
+// @Failure		400		{object}	httpx.ErrorEnvelope
+// @Failure		401		{object}	httpx.ErrorEnvelope
+// @Failure		429		{object}	httpx.ErrorEnvelope
 // @Router			/api/v1/auth/login [post]
 func (h *Handler) Login(c *gin.Context) {
 	var req loginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, errorResponse{Error: errMsgInvalidRequest})
+		httpx.ErrorFields(c, http.StatusBadRequest, httpx.CodeValidationFailed, httpx.MsgInvalidRequest, httpx.ValidationFields(err))
 		return
 	}
 
@@ -168,11 +163,11 @@ func (h *Handler) Login(c *gin.Context) {
 
 	token, err := h.svc.Login(c.Request.Context(), req.Phone, req.Password)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, errorResponse{Error: "invalid credentials"})
+		httpx.Error(c, http.StatusUnauthorized, httpx.CodeInvalidCredentials, "invalid credentials")
 		return
 	}
 
-	c.JSON(http.StatusOK, loginResponse{Token: token})
+	httpx.OK(c, loginResponse{Token: token})
 }
 
 // Me returns the authenticated coach's own profile.
@@ -182,26 +177,27 @@ func (h *Handler) Login(c *gin.Context) {
 // @Tags			auth
 // @Produce		json
 // @Security		BearerAuth
-// @Success		200	{object}	coachResponse
-// @Failure		401	{object}	errorResponse
-// @Failure		404	{object}	errorResponse
+// @Success		200	{object}	httpx.SuccessEnvelope{data=coachResponse}
+// @Failure		401	{object}	httpx.ErrorEnvelope
+// @Failure		404	{object}	httpx.ErrorEnvelope
+// @Failure		500	{object}	httpx.ErrorEnvelope
 // @Router			/api/v1/coaches/me [get]
 func (h *Handler) Me(c *gin.Context) {
 	coachID, ok := tenant.CoachIDFromContext(c)
 	if !ok {
-		c.JSON(http.StatusUnauthorized, errorResponse{Error: errMsgUnauthorized})
+		httpx.Error(c, http.StatusUnauthorized, httpx.CodeUnauthorized, httpx.MsgUnauthorized)
 		return
 	}
 
 	found, err := h.repo.FindByID(c.Request.Context(), coachID)
 	if err != nil {
 		if errors.Is(err, ErrNotFound) {
-			c.JSON(http.StatusNotFound, errorResponse{Error: "not found"})
+			httpx.Error(c, http.StatusNotFound, httpx.CodeNotFound, httpx.MsgNotFound)
 			return
 		}
-		c.JSON(http.StatusInternalServerError, errorResponse{Error: errMsgInternalError})
+		httpx.Error(c, http.StatusInternalServerError, httpx.CodeInternalError, httpx.MsgInternalError)
 		return
 	}
 
-	c.JSON(http.StatusOK, newCoachResponse(found))
+	httpx.OK(c, newCoachResponse(found))
 }

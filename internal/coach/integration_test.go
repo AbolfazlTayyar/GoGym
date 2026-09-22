@@ -9,8 +9,10 @@ import (
 	"time"
 
 	"github.com/AbolfazlTayyar/gogym/internal/coach"
+	"github.com/AbolfazlTayyar/gogym/internal/httpx"
 	"github.com/AbolfazlTayyar/gogym/internal/testutil"
 	"github.com/gin-gonic/gin"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -35,108 +37,182 @@ func newTestRouter(t *testing.T) *gin.Engine {
 	return router
 }
 
+// envelope mirrors httpx.Envelope for decoding, with data left raw so each
+// test can unmarshal its own payload shape out of it.
+type envelope struct {
+	Success bool             `json:"success"`
+	Data    json.RawMessage  `json:"data"`
+	Error   *httpx.ErrorBody `json:"error"`
+	Meta    json.RawMessage  `json:"meta"`
+}
+
+// decodeSuccess asserts rec carries a success envelope with the expected
+// status, and unmarshals its data into out.
+func decodeSuccess(t *testing.T, rec *httptest.ResponseRecorder, wantStatus int, out any) {
+	t.Helper()
+
+	require.Equal(t, wantStatus, rec.Code, "body: %s", rec.Body.String())
+
+	var env envelope
+	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &env))
+	assert.True(t, env.Success)
+	assert.Nil(t, env.Error, "error is null on a success envelope")
+	assert.Nil(t, env.Meta, "nothing populates meta yet, so the key is absent")
+	assert.NotContains(t, rec.Body.String(), `"meta"`)
+
+	require.NoError(t, json.Unmarshal(env.Data, out))
+}
+
+// decodeError asserts rec carries a failure envelope with the expected status
+// and error code, and returns its error body for further assertions.
+func decodeError(t *testing.T, rec *httptest.ResponseRecorder, wantStatus int, wantCode string) *httpx.ErrorBody {
+	t.Helper()
+
+	require.Equal(t, wantStatus, rec.Code, "body: %s", rec.Body.String())
+
+	var env envelope
+	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &env))
+	assert.False(t, env.Success)
+	assert.Equal(t, "null", string(env.Data), "data is null on a failure envelope")
+	require.NotNil(t, env.Error)
+	assert.Equal(t, wantCode, env.Error.Code)
+	assert.NotEmpty(t, env.Error.Message)
+
+	return env.Error
+}
+
+// postJSON sends body to path as JSON and returns the recorded response.
+func postJSON(t *testing.T, router *gin.Engine, path string, body map[string]string) *httptest.ResponseRecorder {
+	t.Helper()
+
+	encoded, err := json.Marshal(body)
+	require.NoError(t, err)
+
+	req := httptest.NewRequest(http.MethodPost, path, bytes.NewReader(encoded))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, req)
+
+	return rec
+}
+
 func TestSignupLoginProtectedRoute(t *testing.T) {
 	router := newTestRouter(t)
 
-	signupBody, err := json.Marshal(map[string]string{
+	signupRec := postJSON(t, router, "/api/v1/auth/signup", map[string]string{
 		"first_name": "Ada",
 		"last_name":  "Lovelace",
 		"phone":      "09372144430",
 		"password":   "correct-horse-battery-staple",
 	})
-	require.NoError(t, err)
-
-	signupReq := httptest.NewRequest(http.MethodPost, "/api/v1/auth/signup", bytes.NewReader(signupBody))
-	signupReq.Header.Set("Content-Type", "application/json")
-	signupRec := httptest.NewRecorder()
-	router.ServeHTTP(signupRec, signupReq)
-	require.Equal(t, http.StatusCreated, signupRec.Code)
 
 	var signupResp struct {
 		ID    string `json:"id"`
 		Phone string `json:"phone"`
 	}
-	require.NoError(t, json.Unmarshal(signupRec.Body.Bytes(), &signupResp))
+	decodeSuccess(t, signupRec, http.StatusCreated, &signupResp)
 	require.Equal(t, "09372144430", signupResp.Phone)
 	require.NotContains(t, signupRec.Body.String(), "password_hash")
 
-	loginBody, err := json.Marshal(map[string]string{
+	loginRec := postJSON(t, router, "/api/v1/auth/login", map[string]string{
 		"phone":    "09372144430",
 		"password": "correct-horse-battery-staple",
 	})
-	require.NoError(t, err)
-
-	loginReq := httptest.NewRequest(http.MethodPost, "/api/v1/auth/login", bytes.NewReader(loginBody))
-	loginReq.Header.Set("Content-Type", "application/json")
-	loginRec := httptest.NewRecorder()
-	router.ServeHTTP(loginRec, loginReq)
-	require.Equal(t, http.StatusOK, loginRec.Code)
 
 	var loginResp struct {
 		Token string `json:"token"`
 	}
-	require.NoError(t, json.Unmarshal(loginRec.Body.Bytes(), &loginResp))
+	decodeSuccess(t, loginRec, http.StatusOK, &loginResp)
 	require.NotEmpty(t, loginResp.Token)
 
 	// Without a token, a protected route is rejected.
 	unauthReq := httptest.NewRequest(http.MethodGet, "/api/v1/coaches/me", nil)
 	unauthRec := httptest.NewRecorder()
 	router.ServeHTTP(unauthRec, unauthReq)
-	require.Equal(t, http.StatusUnauthorized, unauthRec.Code)
+	decodeError(t, unauthRec, http.StatusUnauthorized, httpx.CodeUnauthorized)
 
 	// With the token, the protected route succeeds.
 	meReq := httptest.NewRequest(http.MethodGet, "/api/v1/coaches/me", nil)
 	meReq.Header.Set("Authorization", "Bearer "+loginResp.Token)
 	meRec := httptest.NewRecorder()
 	router.ServeHTTP(meRec, meReq)
-	require.Equal(t, http.StatusOK, meRec.Code)
 
 	var meResp struct {
 		ID    string `json:"id"`
 		Phone string `json:"phone"`
 	}
-	require.NoError(t, json.Unmarshal(meRec.Body.Bytes(), &meResp))
+	decodeSuccess(t, meRec, http.StatusOK, &meResp)
 	require.Equal(t, signupResp.ID, meResp.ID)
 }
 
 func TestLogin_WrongPassword(t *testing.T) {
 	router := newTestRouter(t)
 
-	signupBody, _ := json.Marshal(map[string]string{
+	postJSON(t, router, "/api/v1/auth/signup", map[string]string{
 		"first_name": "Ada",
 		"last_name":  "Lovelace",
 		"phone":      "09163503284",
 		"password":   "correct-horse-battery-staple",
 	})
-	signupReq := httptest.NewRequest(http.MethodPost, "/api/v1/auth/signup", bytes.NewReader(signupBody))
-	signupReq.Header.Set("Content-Type", "application/json")
-	router.ServeHTTP(httptest.NewRecorder(), signupReq)
 
-	loginBody, _ := json.Marshal(map[string]string{
+	loginRec := postJSON(t, router, "/api/v1/auth/login", map[string]string{
 		"phone":    "09163503284",
 		"password": "wrong-password",
 	})
-	loginReq := httptest.NewRequest(http.MethodPost, "/api/v1/auth/login", bytes.NewReader(loginBody))
-	loginReq.Header.Set("Content-Type", "application/json")
-	loginRec := httptest.NewRecorder()
-	router.ServeHTTP(loginRec, loginReq)
-	require.Equal(t, http.StatusUnauthorized, loginRec.Code)
+
+	decodeError(t, loginRec, http.StatusUnauthorized, httpx.CodeInvalidCredentials)
 }
 
 func TestSignup_RejectsNonIranianPhone(t *testing.T) {
 	router := newTestRouter(t)
 
-	body, _ := json.Marshal(map[string]string{
+	rec := postJSON(t, router, "/api/v1/auth/signup", map[string]string{
 		"first_name": "Ada",
 		"last_name":  "Lovelace",
 		"phone":      "+15550001111",
 		"password":   "correct-horse-battery-staple",
 	})
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/signup", bytes.NewReader(body))
-	req.Header.Set("Content-Type", "application/json")
-	rec := httptest.NewRecorder()
-	router.ServeHTTP(rec, req)
 
-	require.Equal(t, http.StatusBadRequest, rec.Code)
-	require.Contains(t, rec.Body.String(), "Iranian mobile number")
+	errBody := decodeError(t, rec, http.StatusBadRequest, httpx.CodeValidationFailed)
+	require.Contains(t, errBody.Fields["phone"], "Iranian mobile number")
+}
+
+func TestSignup_DuplicatePhoneConflicts(t *testing.T) {
+	router := newTestRouter(t)
+
+	body := map[string]string{
+		"first_name": "Ada",
+		"last_name":  "Lovelace",
+		"phone":      "09121234567",
+		"password":   "correct-horse-battery-staple",
+	}
+
+	first := postJSON(t, router, "/api/v1/auth/signup", body)
+	require.Equal(t, http.StatusCreated, first.Code)
+
+	second := postJSON(t, router, "/api/v1/auth/signup", body)
+	decodeError(t, second, http.StatusConflict, httpx.CodeConflict)
+}
+
+// rateLimitProbeAttempts is comfortably past the /auth/* limiter's per-key
+// budget (authRateLimitMax), which this external test package can't name.
+const rateLimitProbeAttempts = 20
+
+// TestAuthRateLimit_Envelope hammers /auth/login past the limiter and checks
+// the 429 it produces is enveloped like every other failure. The requests
+// before it are ordinary failed logins, so this needs a real database.
+func TestAuthRateLimit_Envelope(t *testing.T) {
+	router := newTestRouter(t)
+
+	body := map[string]string{"phone": "09121112233", "password": "wrong-password"}
+
+	var rec *httptest.ResponseRecorder
+	for range rateLimitProbeAttempts {
+		rec = postJSON(t, router, "/api/v1/auth/login", body)
+		if rec.Code == http.StatusTooManyRequests {
+			break
+		}
+	}
+
+	decodeError(t, rec, http.StatusTooManyRequests, httpx.CodeRateLimited)
 }

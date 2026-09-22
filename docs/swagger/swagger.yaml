@@ -1,5 +1,55 @@
 basePath: /
 definitions:
+  github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorBody:
+    properties:
+      code:
+        description: |-
+          Code is a stable machine-readable identifier the frontend branches
+          on. It is one of the Code* constants and does not change wording
+          with the message.
+        example: validation_failed
+        type: string
+      fields:
+        additionalProperties:
+          type: string
+        description: |-
+          Fields maps a request field name to why it was rejected. It is set
+          for request-validation failures only, and omitted otherwise.
+        type: object
+      message:
+        description: Message is human-readable and may change freely.
+        example: invalid request
+        type: string
+    type: object
+  github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope:
+    properties:
+      data:
+        description: Data is always null on a failure response.
+      error:
+        allOf:
+        - $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorBody'
+        description: Error is the failure detail.
+      success:
+        description: Success is always false on these responses.
+        example: false
+        type: boolean
+    type: object
+  github_com_AbolfazlTayyar_gogym_internal_httpx.SuccessEnvelope:
+    properties:
+      data:
+        description: Data is the payload, replaced by the annotation's {data=...}
+          override.
+      error:
+        description: Error is always null on a success response.
+      meta:
+        description: |-
+          Meta carries list metadata such as pagination, and is omitted from
+          the body entirely when empty — which is every endpoint today.
+      success:
+        description: Success is always true on these responses.
+        example: true
+        type: boolean
+    type: object
   internal_coach.coachResponse:
     properties:
       first_name:
@@ -13,12 +63,6 @@ definitions:
         type: string
       phone:
         example: "09372144430"
-        type: string
-    type: object
-  internal_coach.errorResponse:
-    properties:
-      error:
-        example: invalid credentials
         type: string
     type: object
   internal_coach.loginRequest:
@@ -100,19 +144,24 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal_coach.loginResponse'
+            allOf:
+            - $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.SuccessEnvelope'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_coach.loginResponse'
+              type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/internal_coach.errorResponse'
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/internal_coach.errorResponse'
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope'
         "429":
           description: Too Many Requests
           schema:
-            $ref: '#/definitions/internal_coach.errorResponse'
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope'
       summary: Log in a coach
       tags:
       - auth
@@ -135,19 +184,28 @@ paths:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/internal_coach.coachResponse'
+            allOf:
+            - $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.SuccessEnvelope'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_coach.coachResponse'
+              type: object
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/internal_coach.errorResponse'
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope'
         "409":
           description: Conflict
           schema:
-            $ref: '#/definitions/internal_coach.errorResponse'
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope'
         "429":
           description: Too Many Requests
           schema:
-            $ref: '#/definitions/internal_coach.errorResponse'
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope'
       summary: Sign up a coach
       tags:
       - auth
@@ -160,15 +218,24 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal_coach.coachResponse'
+            allOf:
+            - $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.SuccessEnvelope'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_coach.coachResponse'
+              type: object
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/internal_coach.errorResponse'
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/internal_coach.errorResponse'
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope'
       security:
       - BearerAuth: []
       summary: Get the authenticated coach

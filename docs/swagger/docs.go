@@ -43,25 +43,37 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/internal_coach.loginResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.SuccessEnvelope"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/internal_coach.loginResponse"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/internal_coach.errorResponse"
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/internal_coach.errorResponse"
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope"
                         }
                     },
                     "429": {
                         "description": "Too Many Requests",
                         "schema": {
-                            "$ref": "#/definitions/internal_coach.errorResponse"
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope"
                         }
                     }
                 }
@@ -95,25 +107,43 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/internal_coach.coachResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.SuccessEnvelope"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/internal_coach.coachResponse"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/internal_coach.errorResponse"
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope"
                         }
                     },
                     "409": {
                         "description": "Conflict",
                         "schema": {
-                            "$ref": "#/definitions/internal_coach.errorResponse"
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope"
                         }
                     },
                     "429": {
                         "description": "Too Many Requests",
                         "schema": {
-                            "$ref": "#/definitions/internal_coach.errorResponse"
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope"
                         }
                     }
                 }
@@ -138,19 +168,37 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/internal_coach.coachResponse"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.SuccessEnvelope"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/internal_coach.coachResponse"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/internal_coach.errorResponse"
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/internal_coach.errorResponse"
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope"
                         }
                     }
                 }
@@ -184,6 +232,68 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorBody": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "Code is a stable machine-readable identifier the frontend branches\non. It is one of the Code* constants and does not change wording\nwith the message.",
+                    "type": "string",
+                    "example": "validation_failed"
+                },
+                "fields": {
+                    "description": "Fields maps a request field name to why it was rejected. It is set\nfor request-validation failures only, and omitted otherwise.",
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "message": {
+                    "description": "Message is human-readable and may change freely.",
+                    "type": "string",
+                    "example": "invalid request"
+                }
+            }
+        },
+        "github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "description": "Data is always null on a failure response."
+                },
+                "error": {
+                    "description": "Error is the failure detail.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorBody"
+                        }
+                    ]
+                },
+                "success": {
+                    "description": "Success is always false on these responses.",
+                    "type": "boolean",
+                    "example": false
+                }
+            }
+        },
+        "github_com_AbolfazlTayyar_gogym_internal_httpx.SuccessEnvelope": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "description": "Data is the payload, replaced by the annotation's {data=...} override."
+                },
+                "error": {
+                    "description": "Error is always null on a success response."
+                },
+                "meta": {
+                    "description": "Meta carries list metadata such as pagination, and is omitted from\nthe body entirely when empty — which is every endpoint today."
+                },
+                "success": {
+                    "description": "Success is always true on these responses.",
+                    "type": "boolean",
+                    "example": true
+                }
+            }
+        },
         "internal_coach.coachResponse": {
             "type": "object",
             "properties": {
@@ -202,15 +312,6 @@ const docTemplate = `{
                 "phone": {
                     "type": "string",
                     "example": "09372144430"
-                }
-            }
-        },
-        "internal_coach.errorResponse": {
-            "type": "object",
-            "properties": {
-                "error": {
-                    "type": "string",
-                    "example": "invalid credentials"
                 }
             }
         },

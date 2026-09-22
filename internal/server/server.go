@@ -27,7 +27,14 @@ func New(cfg config.Config, gormDB *gorm.DB, log zerolog.Logger) *gin.Engine {
 	}
 
 	router := gin.New()
-	router.Use(gin.Recovery(), requestLogger(log))
+
+	// The three responses Gin produces without reaching a handler — a
+	// panic, an unmatched path, and a wrong method — go through the
+	// envelope helpers like everything else. See fallback.go.
+	router.Use(gin.CustomRecovery(recoveryHandler), requestLogger(log))
+	router.HandleMethodNotAllowed = true
+	router.NoRoute(notFoundHandler)
+	router.NoMethod(methodNotAllowedHandler)
 
 	// TODO: lock down allowed origins once the frontend stack and its
 	// deployed origin are chosen (frontend stack is still undecided per

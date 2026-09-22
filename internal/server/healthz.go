@@ -28,6 +28,14 @@ type healthzErrorResponse struct {
 // healthzHandler reports 200 with {"status":"ok"} when the DB is reachable,
 // or 503 with the failure reason otherwise.
 //
+// This is the one endpoint deliberately exempt from the internal/httpx
+// response envelope, and the only place outside that package allowed to call
+// c.JSON directly. It is mounted outside /api/v1 on purpose as an unversioned
+// infrastructure probe: what reads it is a container healthcheck or an uptime
+// pinger matching on this exact bare body (the checkpoints in docs/tasks.md
+// assert on it too), not the frontend. Enveloping it would break those for no
+// gain, since no client consumes it as an API response.
+//
 // @Summary		Health check
 // @Description	Reports whether the service and its database connection are healthy.
 // @Tags			health
