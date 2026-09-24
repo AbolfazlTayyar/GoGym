@@ -361,7 +361,7 @@ responses) per the pattern from the swagger setup task, and rerun `make swagger`
 
 ### API response envelope
 
-⬜ **Not started**
+✅ **Done**
 
 **Description:** One response shape for every `/api/v1` endpoint — `success`, `data`, `error`, `meta` — plus the helpers that produce it. Today each handler returns its own bare struct (`coachResponse`, `loginResponse`, `errorResponse`), so the shape is whatever each handler decided. This lands here, right after the only module that currently returns JSON, because retrofitting two handlers and a middleware is minutes of work while retrofitting fifteen endpoints across six feature modules — and the frontend already written against them — is not.
 
