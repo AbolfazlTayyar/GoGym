@@ -30,6 +30,8 @@ suggest anything for small/routine tasks with nothing new to capture.
 
 When a literal (string key, magic number, etc.) is used in more than one place, extract it to a named constant instead of repeating it. A literal used exactly once can stay inline — constants earn their keep on the second use, not the first.
 
+Comments explain why or warn about a non-obvious constraint, in one line where possible; don't restate the code or reference docs/specs/migrations. Package comments are one sentence. Exported identifiers get a doc comment only when the name isn't self-explanatory.
+
 ## CI conventions
 
 Pin tool/action versions in `.github/workflows/*.yml` (e.g. `golangci-lint-action`'s `version: v2.13.2`, not `latest`). A floating `latest` can silently change behavior between runs — we hit this once when it resolved to a stale golangci-lint v1 binary incompatible with our v2-schema `.golangci.yml`, and it also defeats the point of a fail-fast lint/unit gate if the tool itself becomes the surprise failure. Bump pinned versions deliberately, in their own commit.
@@ -51,7 +53,7 @@ Every `/api/v1` response body — success or failure — is the envelope defined
 
 `success` is a real field, not inferred from the status code; `data` and `error` are both always present with one of them null; `meta` (list metadata, e.g. pagination) and `error.fields` are omitted when empty.
 
-Handlers write it through the `httpx` helpers (`OK`, `OKWithMeta`, `Created`, `NoContent`, `Error`, `ErrorFields`) and never call `c.JSON` / `c.AbortWithStatusJSON` directly — a response-rewriting middleware was considered and rejected, see the package comment. `error.code` values are the `httpx.Code*` constants; add a new one there rather than inlining a string. For a rejected request body, pass `httpx.ValidationFields(err)` to `ErrorFields` so the client gets per-field messages keyed by json name.
+Handlers write it through the `httpx` helpers (`OK`, `OKWithMeta`, `Created`, `NoContent`, `Error`, `ErrorFields`) and never call `c.JSON` / `c.AbortWithStatusJSON` directly — a response-rewriting middleware was considered and rejected, see [docs/architecture.md](docs/architecture.md#response-envelope). `error.code` values are the `httpx.Code*` constants; add a new one there rather than inlining a string. For a rejected request body, pass `httpx.ValidationFields(err)` to `ErrorFields` so the client gets per-field messages keyed by json name.
 
 `/healthz` is the one deliberate exemption — it's an unversioned infra probe read by container healthchecks and uptime pingers that match on its exact bare `{"status":"ok"}` body, and the only place outside `internal/httpx` allowed to call `c.JSON`.
 
@@ -64,6 +66,8 @@ Swagger annotations must show the real nested body, using the documentation-only
 ## Swagger/API docs conventions
 
 Every task that adds an endpoint must include swagger annotations on its handlers as part of that task — not deferred to a cleanup pass. `internal/server/healthz.go` is the reference pattern.
+
+Keep a one-line prose summary above a handler's `@` annotation block. Without it, the block is the whole doc comment and gofmt reformats the tab-indented `//	@Summary` lines.
 
 `@BasePath` in `cmd/api/main.go` is `/` (root), not `/api/v1`, even though the API is versioned under `/api/v1`. Reason: `/healthz` is intentionally mounted outside the versioned group (unversioned infra probe), and Swagger 2.0's `basePath` is global — a `/api/v1` basePath made Swagger UI's "Try it out" call the wrong URL for it. Consequence: every handler's own `@Router` annotation must spell out its full path, e.g. `@Router /api/v1/coaches [post]` for versioned endpoints, `@Router /healthz [get]` for unversioned ones.
 

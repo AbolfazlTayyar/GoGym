@@ -51,8 +51,8 @@ athletes to another.
   read it from there.
 - A lookup that's out of scope for the authenticated coach (another coach's row) must 404, not
   403 — don't leak that the row exists at all.
-- Postgres row-level security was considered as defense in depth and deliberately deferred
-  (see the doc comment on `internal/tenant/scope.go`): v1 has exactly one enforcement path —
+- Postgres row-level security was considered as defense in depth and deliberately deferred:
+  v1 has exactly one enforcement path —
   this package — so a second, DB-level copy of the same rule is redundant until something else
   (a background job, an admin console) can construct a query against tenant-owned tables
   outside this path.
@@ -60,6 +60,21 @@ athletes to another.
   2026-09-20, superseding the hedge in `docs/product-direction.md` §7). The single choke point
   earns its keep on leak-prevention alone; that it would also make an `org_id` switch a
   one-file change is a side benefit, not a roadmap item. Don't design around it.
+
+## Response envelope
+
+Every `/api/v1` body goes through the explicit helpers in `internal/httpx` (shape and usage in
+[CLAUDE.md](../CLAUDE.md#api-response-conventions)). A response-rewriting middleware that
+wrapped whatever a handler wrote was considered and rejected:
+
+- It has to buffer every response body in order to re-marshal it.
+- It moves the real shape of the response out of the handler, so the handler's swagger
+  annotation silently stops describing what the endpoint returns. With explicit helpers, the
+  annotation and the code that writes the body stay in the same place.
+
+Gin's own responses that never reach a handler (unmatched path, wrong method, recovered panic)
+are routed through the same helpers in `internal/server/fallback.go`, so those aren't the only
+bodies a client can't parse.
 
 ## Auth
 
