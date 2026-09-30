@@ -12,8 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// newFallbackTestRouter wires the three responses Gin produces without a
-// handler the same way New does, minus the database-backed routes.
+// newFallbackTestRouter must mirror New's fallback wiring.
 func newFallbackTestRouter() *gin.Engine {
 	gin.SetMode(gin.TestMode)
 

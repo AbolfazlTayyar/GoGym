@@ -6,12 +6,7 @@ import (
 	"github.com/google/uuid"
 )
 
-// BlockMovement will move to internal/plan/model.go once that module
-// exists. It is the join between a Block and the shared Movement library.
-//
-// Load is free text, not numeric kg: coaches prescribe load as "%1RM", RPE,
-// or "bodyweight" as often as a kg figure, and a numeric-only column would
-// force lossy conversion at entry time.
+// BlockMovement.Load is free text, not kg: coaches prescribe %1RM, RPE, or bodyweight just as often.
 type BlockMovement struct {
 	ID              uuid.UUID `gorm:"column:id;type:uuid;primaryKey"`
 	BlockID         uuid.UUID `gorm:"column:block_id;type:uuid;not null"`

@@ -6,17 +6,11 @@ import (
 )
 
 const (
-	// authRateLimitMax is the number of requests a single key (an IP or a
-	// phone number) may make within authRateLimitWindow before /auth/*
-	// starts rejecting it with 429.
 	authRateLimitMax    = 10
 	authRateLimitWindow = time.Minute
 )
 
-// rateLimiter is a simple in-process, per-key sliding-window limiter. It's
-// enough for v1's single-instance deployment; a multi-instance deployment
-// would need a shared store (e.g. Redis) instead, since each process would
-// otherwise track its own independent counts.
+// rateLimiter is in-process only; a multi-instance deployment would need a shared store such as Redis.
 type rateLimiter struct {
 	mu        sync.Mutex
 	attempts  map[string][]time.Time
@@ -34,8 +28,6 @@ func newRateLimiter(max int, window time.Duration) *rateLimiter {
 	}
 }
 
-// Allow reports whether key is still under the limit, and records this call
-// as an attempt against it.
 func (r *rateLimiter) Allow(key string) bool {
 	now := time.Now()
 
@@ -55,11 +47,7 @@ func (r *rateLimiter) Allow(key string) bool {
 	return true
 }
 
-// sweep drops keys whose attempts have all aged out. Pruning on its own only
-// happens when a key is hit again, so without this a key seen exactly once —
-// every distinct client IP that ever reaches /auth/* — would sit in the map
-// for the life of the process. Runs at most once per window; the caller holds
-// the mutex.
+// sweep evicts keys never hit again (e.g. one-off IPs), which Allow's pruning can't reach; caller holds mu.
 func (r *rateLimiter) sweep(now time.Time) {
 	if now.Sub(r.lastSweep) < r.window {
 		return
@@ -77,8 +65,7 @@ func (r *rateLimiter) sweep(now time.Time) {
 	}
 }
 
-// prune returns attempts with everything at or before cutoff dropped,
-// filtering in place so the backing array is reused.
+// prune filters in place, reusing attempts' backing array.
 func prune(attempts []time.Time, cutoff time.Time) []time.Time {
 	kept := attempts[:0]
 	for _, t := range attempts {

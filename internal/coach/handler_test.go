@@ -14,13 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// These cover the handler paths that reject a request before it reaches the
-// repository, so they need no database and run under `make test-unit`. The
-// paths that do touch the repository are in integration_test.go.
-
-// newHandlerTestRouter builds the real routes against a repository with a nil
-// *gorm.DB. Any test here that reached the database would panic, which is the
-// point: it would mean the request got further than the test assumes.
+// newHandlerTestRouter uses a nil *gorm.DB on purpose: a test that reaches the database panics.
 func newHandlerTestRouter() *gin.Engine {
 	repo := NewRepository(nil)
 	svc := NewService(repo, "test-secret", time.Hour)
@@ -46,8 +40,6 @@ func postJSONBody(router *gin.Engine, path, body string) *httptest.ResponseRecor
 	return rec
 }
 
-// requireErrorEnvelope asserts rec is a failure envelope with the expected
-// status and code, and returns its error body.
 func requireErrorEnvelope(t *testing.T, rec *httptest.ResponseRecorder, wantStatus int, wantCode string) *httpx.ErrorBody {
 	t.Helper()
 
@@ -70,9 +62,6 @@ func requireErrorEnvelope(t *testing.T, rec *httptest.ResponseRecorder, wantStat
 	return env.Error
 }
 
-// TestSignup_ReportsFieldLevelBindingErrors covers the envelope's reason for
-// carrying a fields map: the client is told which field it got wrong, keyed
-// by the json name it sent, not just that the request was bad.
 func TestSignup_ReportsFieldLevelBindingErrors(t *testing.T) {
 	rec := postJSONBody(newHandlerTestRouter(), "/api/v1/auth/signup",
 		`{"first_name":"Ada","phone":"09372144430","password":"short"}`)
@@ -84,8 +73,6 @@ func TestSignup_ReportsFieldLevelBindingErrors(t *testing.T) {
 	}, errBody.Fields)
 }
 
-// TestLogin_MalformedBodyHasNoFields is the other binding failure: the body
-// never parsed, so there is nothing to report per field and the key is absent.
 func TestLogin_MalformedBodyHasNoFields(t *testing.T) {
 	rec := postJSONBody(newHandlerTestRouter(), "/api/v1/auth/login", `{"phone":`)
 

@@ -1,6 +1,4 @@
-// Package testutil provides a throwaway Postgres instance, migrated with
-// the same migrations/*.sql files used in production, for integration
-// tests in other modules to run against.
+// Package testutil provides a migrated throwaway Postgres for integration tests.
 package testutil
 
 import (
@@ -27,12 +25,7 @@ const (
 	testDBPass    = "gogym"
 )
 
-// NewDB starts a throwaway Postgres container, applies every migration in
-// migrations/ against it, and returns a *gorm.DB connected to it. The
-// container is terminated automatically via t.Cleanup.
-//
-// It skips the test when run with `go test -short` (see `make test-unit`),
-// so integration tests only run as part of `make test`.
+// NewDB skips the test under go test -short, which is how unit-only runs exclude integration tests.
 func NewDB(t *testing.T) *gorm.DB {
 	t.Helper()
 
@@ -64,7 +57,6 @@ func NewDB(t *testing.T) *gorm.DB {
 	return gormDB
 }
 
-// applyMigrations runs every up migration in migrations/ against dsn.
 func applyMigrations(t *testing.T, dsn string) {
 	t.Helper()
 
@@ -81,12 +73,7 @@ func applyMigrations(t *testing.T, dsn string) {
 	}
 }
 
-// migrationsSourceURL resolves the migrations/ directory to a file:// URL
-// golang-migrate can use, regardless of which package's test invokes NewDB
-// or which OS it runs on. filepath.ToSlash is enough on both: on Unix the
-// path already starts with "/", giving "file:///home/..."; on Windows it
-// starts with a drive letter, giving "file://C:/...", which golang-migrate's
-// file source parses as host "C:" + path "/..." — a valid Windows path.
+// ToSlash suffices on Windows too: golang-migrate parses "file://C:/..." as host "C:" plus a valid path.
 func migrationsSourceURL() string {
 	_, file, _, _ := runtime.Caller(0)
 	dir := filepath.Join(filepath.Dir(file), "..", "..", "migrations")

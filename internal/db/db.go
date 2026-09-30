@@ -17,16 +17,11 @@ const (
 	connMaxLifetime = 5 * time.Minute
 )
 
-// New opens a *gorm.DB using the given config's DSN, with connection pool
-// settings and a logger level appropriate for the config's environment.
-//
-// Migrations (migrations/*.sql, run via golang-migrate) are the single
-// source of truth for the schema — GORM's AutoMigrate is never called.
+// New never calls AutoMigrate: the SQL migrations are the only source of truth for the schema.
 func New(cfg config.Config) (*gorm.DB, error) {
 	gormDB, err := gorm.Open(postgres.Open(cfg.DB.DSN()), &gorm.Config{
 		Logger: logger.Default.LogMode(logLevel(cfg.Environment)),
-		// TranslateError lets repositories check for portable errors like
-		// gorm.ErrDuplicatedKey instead of driver-specific Postgres codes.
+		// Lets repositories match portable errors like gorm.ErrDuplicatedKey.
 		TranslateError: true,
 	})
 	if err != nil {

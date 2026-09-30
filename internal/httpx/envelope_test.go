@@ -12,8 +12,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// newTestContext returns a gin context writing into a fresh recorder, the
-// way a handler would receive one.
 func newTestContext() (*gin.Context, *httptest.ResponseRecorder) {
 	gin.SetMode(gin.TestMode)
 	rec := httptest.NewRecorder()
@@ -22,9 +20,7 @@ func newTestContext() (*gin.Context, *httptest.ResponseRecorder) {
 	return c, rec
 }
 
-// decode unmarshals a response body into a generic map, so the assertions
-// below see the literal JSON keys — including the ones that are supposed to
-// be absent — rather than what a typed struct would paper over.
+// decode uses a generic map so assertions can check for keys that must be absent.
 func decode(t *testing.T, rec *httptest.ResponseRecorder) map[string]any {
 	t.Helper()
 
@@ -71,7 +67,6 @@ func TestNoContent(t *testing.T) {
 
 	httpx.NoContent(c)
 
-	// 200 with a null data, not a bodiless 204 — see the helper's comment.
 	assert.Equal(t, http.StatusOK, rec.Code)
 
 	body := decode(t, rec)
@@ -135,9 +130,6 @@ func TestErrorFields(t *testing.T) {
 	assert.Equal(t, map[string]any{"phone": "must be an Iranian mobile number"}, errBody["fields"])
 }
 
-// TestErrorFields_EmptyMapOmitted covers calling ErrorFields with whatever
-// ValidationFields returned, including nothing — the body should then be
-// indistinguishable from an Error one.
 func TestErrorFields_EmptyMapOmitted(t *testing.T) {
 	for name, fields := range map[string]map[string]string{
 		"nil":   nil,

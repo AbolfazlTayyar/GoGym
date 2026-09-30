@@ -6,7 +6,6 @@ import (
 	"github.com/google/uuid"
 )
 
-// Day will move to internal/plan/model.go once that module exists.
 type Day struct {
 	ID         uuid.UUID `gorm:"column:id;type:uuid;primaryKey"`
 	PlanID     uuid.UUID `gorm:"column:plan_id;type:uuid;not null"`

@@ -37,8 +37,6 @@ func newTestRouter(t *testing.T) *gin.Engine {
 	return router
 }
 
-// envelope mirrors httpx.Envelope for decoding, with data left raw so each
-// test can unmarshal its own payload shape out of it.
 type envelope struct {
 	Success bool             `json:"success"`
 	Data    json.RawMessage  `json:"data"`
@@ -46,8 +44,6 @@ type envelope struct {
 	Meta    json.RawMessage  `json:"meta"`
 }
 
-// decodeSuccess asserts rec carries a success envelope with the expected
-// status, and unmarshals its data into out.
 func decodeSuccess(t *testing.T, rec *httptest.ResponseRecorder, wantStatus int, out any) {
 	t.Helper()
 
@@ -63,8 +59,6 @@ func decodeSuccess(t *testing.T, rec *httptest.ResponseRecorder, wantStatus int,
 	require.NoError(t, json.Unmarshal(env.Data, out))
 }
 
-// decodeError asserts rec carries a failure envelope with the expected status
-// and error code, and returns its error body for further assertions.
 func decodeError(t *testing.T, rec *httptest.ResponseRecorder, wantStatus int, wantCode string) *httpx.ErrorBody {
 	t.Helper()
 
@@ -81,7 +75,6 @@ func decodeError(t *testing.T, rec *httptest.ResponseRecorder, wantStatus int, w
 	return env.Error
 }
 
-// postJSON sends body to path as JSON and returns the recorded response.
 func postJSON(t *testing.T, router *gin.Engine, path string, body map[string]string) *httptest.ResponseRecorder {
 	t.Helper()
 
@@ -125,13 +118,11 @@ func TestSignupLoginProtectedRoute(t *testing.T) {
 	decodeSuccess(t, loginRec, http.StatusOK, &loginResp)
 	require.NotEmpty(t, loginResp.Token)
 
-	// Without a token, a protected route is rejected.
 	unauthReq := httptest.NewRequest(http.MethodGet, "/api/v1/coaches/me", nil)
 	unauthRec := httptest.NewRecorder()
 	router.ServeHTTP(unauthRec, unauthReq)
 	decodeError(t, unauthRec, http.StatusUnauthorized, httpx.CodeUnauthorized)
 
-	// With the token, the protected route succeeds.
 	meReq := httptest.NewRequest(http.MethodGet, "/api/v1/coaches/me", nil)
 	meReq.Header.Set("Authorization", "Bearer "+loginResp.Token)
 	meRec := httptest.NewRecorder()
@@ -194,13 +185,10 @@ func TestSignup_DuplicatePhoneConflicts(t *testing.T) {
 	decodeError(t, second, http.StatusConflict, httpx.CodeConflict)
 }
 
-// rateLimitProbeAttempts is comfortably past the /auth/* limiter's per-key
-// budget (authRateLimitMax), which this external test package can't name.
+// rateLimitProbeAttempts exceeds authRateLimitMax, which this external test package can't reference.
 const rateLimitProbeAttempts = 20
 
-// TestAuthRateLimit_Envelope hammers /auth/login past the limiter and checks
-// the 429 it produces is enveloped like every other failure. The requests
-// before it are ordinary failed logins, so this needs a real database.
+// TestAuthRateLimit_Envelope needs a real database: the requests before the 429 are real failed logins.
 func TestAuthRateLimit_Envelope(t *testing.T) {
 	router := newTestRouter(t)
 

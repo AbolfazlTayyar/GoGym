@@ -11,7 +11,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// keys returns the top-level JSON keys v marshals to, sorted.
 func keys(t *testing.T, v any) []string {
 	t.Helper()
 
@@ -30,10 +29,7 @@ func keys(t *testing.T, v any) []string {
 	return out
 }
 
-// TestEnvelopeDocsMatchRuntime is the guard the swagger.go comment points at:
-// SuccessEnvelope and ErrorEnvelope are written by hand for the annotations,
-// so nothing but this test stops them documenting a body that Envelope no
-// longer produces.
+// TestEnvelopeDocsMatchRuntime is the only guard against the hand-written doc envelopes drifting.
 func TestEnvelopeDocsMatchRuntime(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		assert.Equal(t,
@@ -56,8 +52,7 @@ func TestEnvelopeDocsMatchRuntime(t *testing.T) {
 	})
 
 	t.Run("error body", func(t *testing.T) {
-		// The documented error detail is the same type the helpers write,
-		// so this only has to hold for the helper's own output.
+		// ErrorEnvelope reuses ErrorBody, so only the helper's output needs checking.
 		c, rec := newTestContext()
 		httpx.Error(c, http.StatusNotFound, httpx.CodeNotFound, httpx.MsgNotFound)
 

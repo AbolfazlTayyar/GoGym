@@ -4,12 +4,7 @@
 // @version			1.0
 // @description		API for the GoGym coaching platform.
 //
-// BasePath is root, not /api/v1: /healthz is intentionally mounted outside
-// the versioned API group (unversioned infra probe), so a global /api/v1
-// basePath would make Swagger UI's "Try it out" call the wrong URL for it.
-// Every handler's own @Router annotation must therefore spell out its full
-// path, e.g. "@Router /api/v1/coaches [post]" for versioned endpoints and
-// "@Router /healthz [get]" for unversioned ones.
+// BasePath is / so the unversioned /healthz resolves; every @Router must spell out its full path.
 // @BasePath		/
 //
 // @securityDefinitions.apikey	BearerAuth

@@ -9,19 +9,13 @@ import (
 	"github.com/google/uuid"
 )
 
-// ErrInvalidToken is returned by parseToken for any token that fails
-// signature, expiry, or claim validation. Callers must not distinguish the
-// underlying reason in a response — that would leak information useful to
-// an attacker probing for valid coach ids or token formats.
+// ErrInvalidToken deliberately hides why a token failed; never surface the reason to clients.
 var ErrInvalidToken = errors.New("coach: invalid token")
 
-// claims are the JWT claims issued at login. Subject carries the coach id;
-// expiry comes from config.Config.JWTExpiry at issuance time.
 type claims struct {
 	jwt.RegisteredClaims
 }
 
-// issueToken signs a JWT for coachID, valid for expiry, using secret.
 func issueToken(coachID uuid.UUID, secret string, expiry time.Duration) (string, error) {
 	now := time.Now()
 	c := claims{
@@ -41,8 +35,6 @@ func issueToken(coachID uuid.UUID, secret string, expiry time.Duration) (string,
 	return signed, nil
 }
 
-// parseToken validates tokenString's signature and expiry against secret
-// and returns the coach id from its subject claim, or ErrInvalidToken.
 func parseToken(tokenString, secret string) (uuid.UUID, error) {
 	var c claims
 

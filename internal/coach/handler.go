@@ -14,8 +14,7 @@ import (
 // Iranian mobile number, keyed under "phone" in the error envelope's fields.
 const errMsgPhoneNotIranian = "must be an Iranian mobile number, e.g. 09372144430"
 
-// coachResponse is a coach account as returned to clients — never includes
-// PasswordHash.
+// coachResponse must never include PasswordHash.
 type coachResponse struct {
 	ID        string `json:"id" example:"b8f1c9de-8f0a-4c1e-9a2b-2f6b6b8e2b3a"`
 	FirstName string `json:"first_name" example:"Ada"`
@@ -32,7 +31,6 @@ func newCoachResponse(c *Coach) coachResponse {
 	}
 }
 
-// signupRequest is the POST /api/v1/auth/signup request body.
 type signupRequest struct {
 	FirstName string `json:"first_name" binding:"required" example:"Ada"`
 	LastName  string `json:"last_name" binding:"required" example:"Lovelace"`
@@ -40,19 +38,15 @@ type signupRequest struct {
 	Password  string `json:"password" binding:"required,min=8" example:"correct-horse-battery-staple"`
 }
 
-// loginRequest is the POST /api/v1/auth/login request body.
 type loginRequest struct {
 	Phone    string `json:"phone" binding:"required" example:"09372144430"`
 	Password string `json:"password" binding:"required" example:"correct-horse-battery-staple"`
 }
 
-// loginResponse is the payload nested under the envelope's data on a
-// successful POST /api/v1/auth/login.
 type loginResponse struct {
 	Token string `json:"token" example:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."`
 }
 
-// Handler holds the coach module's HTTP handlers.
 type Handler struct {
 	svc          *Service
 	repo         *Repository
@@ -60,8 +54,6 @@ type Handler struct {
 	phoneLimiter *rateLimiter
 }
 
-// NewHandler builds a Handler backed by svc and repo, with its own
-// in-process rate limiters for /auth/*.
 func NewHandler(svc *Service, repo *Repository) *Handler {
 	return &Handler{
 		svc:          svc,
@@ -71,9 +63,7 @@ func NewHandler(svc *Service, repo *Repository) *Handler {
 	}
 }
 
-// rateLimited checks both the per-IP and, once known, per-phone limits for
-// an /auth/* request. It writes the 429 response itself when either limit
-// is exceeded.
+// rateLimited writes the 429 itself; callers just return when it reports true.
 func (h *Handler) rateLimited(c *gin.Context, phone string) bool {
 	if !h.ipLimiter.Allow(c.ClientIP()) {
 		httpx.Error(c, http.StatusTooManyRequests, httpx.CodeRateLimited, httpx.MsgTooManyRequests)
@@ -107,8 +97,7 @@ func (h *Handler) Signup(c *gin.Context) {
 		return
 	}
 
-	// Checked before the rate limiter so its per-phone bucket is only ever
-	// keyed by well-formed numbers.
+	// Checked before rate limiting so per-phone buckets are only keyed by well-formed numbers.
 	if !validate.IsIranMobile(req.Phone) {
 		httpx.ErrorFields(c, http.StatusBadRequest, httpx.CodeValidationFailed, httpx.MsgInvalidRequest,
 			map[string]string{"phone": errMsgPhoneNotIranian})

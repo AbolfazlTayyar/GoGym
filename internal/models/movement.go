@@ -7,16 +7,8 @@ import (
 	"gorm.io/gorm"
 )
 
-// Movement will move to internal/movement/model.go once that module exists.
-//
-// CoachID is nullable: NULL marks a universal, system-seeded movement
-// visible to every coach; a non-null value is a coach's own custom movement.
-//
-// DeletedAt is GORM soft delete: coaches can delete their own movements from
-// the UI, and this keeps them out of query results (via GORM's default
-// scope) without breaking existing block_movement references. The coach's
-// effective library query (coach_id = :coach_id OR coach_id IS NULL) is
-// unaffected — the soft-delete scope simply ANDs deleted_at IS NULL onto it.
+// Movement.CoachID is NULL for system-seeded movements shared by every coach.
+// Deletes are soft so existing block_movement references stay valid.
 type Movement struct {
 	ID          uuid.UUID      `gorm:"column:id;type:uuid;primaryKey"`
 	CoachID     *uuid.UUID     `gorm:"column:coach_id;type:uuid"`

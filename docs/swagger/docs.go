@@ -236,12 +236,12 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "code": {
-                    "description": "Code is a stable machine-readable identifier the frontend branches\non. It is one of the Code* constants and does not change wording\nwith the message.",
+                    "description": "Code is one of the Code* constants; clients branch on it, unlike Message.",
                     "type": "string",
                     "example": "validation_failed"
                 },
                 "fields": {
-                    "description": "Fields maps a request field name to why it was rejected. It is set\nfor request-validation failures only, and omitted otherwise.",
+                    "description": "Fields is set for request-validation failures only.",
                     "type": "object",
                     "additionalProperties": {
                         "type": "string"
@@ -257,19 +257,11 @@ const docTemplate = `{
         "github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope": {
             "type": "object",
             "properties": {
-                "data": {
-                    "description": "Data is always null on a failure response."
-                },
+                "data": {},
                 "error": {
-                    "description": "Error is the failure detail.",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorBody"
-                        }
-                    ]
+                    "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorBody"
                 },
                 "success": {
-                    "description": "Success is always false on these responses.",
                     "type": "boolean",
                     "example": false
                 }
@@ -278,17 +270,10 @@ const docTemplate = `{
         "github_com_AbolfazlTayyar_gogym_internal_httpx.SuccessEnvelope": {
             "type": "object",
             "properties": {
-                "data": {
-                    "description": "Data is the payload, replaced by the annotation's {data=...} override."
-                },
-                "error": {
-                    "description": "Error is always null on a success response."
-                },
-                "meta": {
-                    "description": "Meta carries list metadata such as pagination, and is omitted from\nthe body entirely when empty — which is every endpoint today."
-                },
+                "data": {},
+                "error": {},
+                "meta": {},
                 "success": {
-                    "description": "Success is always true on these responses.",
                     "type": "boolean",
                     "example": true
                 }

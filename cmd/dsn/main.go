@@ -1,6 +1,4 @@
-// Command dsn prints the PostgreSQL connection string built from the app's
-// config, for use by the Makefile's migrate-up / migrate-down targets so the
-// connection details stay defined in one place (internal/config).
+// Command dsn prints the database DSN for the Makefile's migrate targets.
 package main
 
 import (

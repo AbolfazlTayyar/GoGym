@@ -9,9 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestNewDB_MigratedSchema proves the harness itself works: a container
-// comes up, migrations apply, and a *gorm.DB against it can round-trip a
-// row through the migrated schema. It is not feature coverage.
+// TestNewDB_MigratedSchema checks the harness itself, not feature behavior.
 func TestNewDB_MigratedSchema(t *testing.T) {
 	db := testutil.NewDB(t)
 

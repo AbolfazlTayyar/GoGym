@@ -3,18 +3,14 @@ definitions:
   github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorBody:
     properties:
       code:
-        description: |-
-          Code is a stable machine-readable identifier the frontend branches
-          on. It is one of the Code* constants and does not change wording
-          with the message.
+        description: Code is one of the Code* constants; clients branch on it, unlike
+          Message.
         example: validation_failed
         type: string
       fields:
         additionalProperties:
           type: string
-        description: |-
-          Fields maps a request field name to why it was rejected. It is set
-          for request-validation failures only, and omitted otherwise.
+        description: Fields is set for request-validation failures only.
         type: object
       message:
         description: Message is human-readable and may change freely.
@@ -23,30 +19,19 @@ definitions:
     type: object
   github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope:
     properties:
-      data:
-        description: Data is always null on a failure response.
+      data: {}
       error:
-        allOf:
-        - $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorBody'
-        description: Error is the failure detail.
+        $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorBody'
       success:
-        description: Success is always false on these responses.
         example: false
         type: boolean
     type: object
   github_com_AbolfazlTayyar_gogym_internal_httpx.SuccessEnvelope:
     properties:
-      data:
-        description: Data is the payload, replaced by the annotation's {data=...}
-          override.
-      error:
-        description: Error is always null on a success response.
-      meta:
-        description: |-
-          Meta carries list metadata such as pagination, and is omitted from
-          the body entirely when empty — which is every endpoint today.
+      data: {}
+      error: {}
+      meta: {}
       success:
-        description: Success is always true on these responses.
         example: true
         type: boolean
     type: object

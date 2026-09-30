@@ -10,15 +10,7 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
-// init teaches gin's shared validator to report a field by its json tag name
-// ("first_name") instead of its Go struct field name ("FirstName"), so the
-// keys in ErrorBody.Fields match the keys the client actually sent.
-//
-// It runs here, in an init, rather than from an exported setup function
-// called at startup, because every package that writes an envelope imports
-// httpx — which makes the registration impossible to forget in a test that
-// builds its own router, and a test asserting on "FirstName" instead of
-// "first_name" is exactly the kind of drift this avoids.
+// init (not a setup func) so every importer, including tests with their own router, gets json field names.
 func init() {
 	v, ok := binding.Validator.Engine().(*validator.Validate)
 	if !ok {
@@ -34,10 +26,7 @@ func init() {
 	})
 }
 
-// ValidationFields translates a binding error from c.ShouldBindJSON into the
-// envelope's error.fields map. It returns nil for an error that isn't
-// per-field — a syntactically invalid JSON body, say — in which case the
-// caller still reports a validation_failed, just without field detail.
+// ValidationFields returns nil for errors that aren't per-field, such as malformed JSON.
 func ValidationFields(err error) map[string]string {
 	var verrs validator.ValidationErrors
 	if !errors.As(err, &verrs) {
@@ -51,10 +40,6 @@ func ValidationFields(err error) map[string]string {
 	return fields
 }
 
-// validationMessage renders one field error as a sentence fragment. Only the
-// binding tags the request structs actually use get a tailored message; the
-// rest fall back to naming the rule, which is still more useful to a client
-// than "invalid request".
 func validationMessage(fe validator.FieldError) string {
 	switch fe.Tag() {
 	case "required":

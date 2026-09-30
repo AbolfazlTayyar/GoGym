@@ -18,9 +18,6 @@ func TestRateLimiter_AllowsUpToMax(t *testing.T) {
 	assert.True(t, limiter.Allow("other-caller"), "a different key has its own budget")
 }
 
-// TestRateLimiter_EvictsExpiredKeys covers the map growth path: a key seen
-// once is never pruned by a later hit on itself, so the periodic sweep has to
-// be what removes it.
 func TestRateLimiter_EvictsExpiredKeys(t *testing.T) {
 	window := 20 * time.Millisecond
 	limiter := newRateLimiter(authRateLimitMax, window)
@@ -37,8 +34,6 @@ func TestRateLimiter_EvictsExpiredKeys(t *testing.T) {
 	assert.Len(t, limiter.attempts, 1)
 }
 
-// TestRateLimiter_SweepKeepsLiveKeys guards against the sweep being too
-// eager — a key still inside its window must survive, budget intact.
 func TestRateLimiter_SweepKeepsLiveKeys(t *testing.T) {
 	window := 50 * time.Millisecond
 	limiter := newRateLimiter(2, window)

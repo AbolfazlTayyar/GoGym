@@ -6,8 +6,6 @@ import (
 	"github.com/google/uuid"
 )
 
-// AthleteMeasurement will move to internal/athlete/model.go once that
-// module exists.
 type AthleteMeasurement struct {
 	ID        uuid.UUID `gorm:"column:id;type:uuid;primaryKey"`
 	AthleteID uuid.UUID `gorm:"column:athlete_id;type:uuid;not null"`

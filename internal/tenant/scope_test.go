@@ -11,9 +11,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestScope_FiltersByCoach proves the scoping helper actually filters:
-// querying athlete through tenant.Scope as coach A never returns coach B's
-// rows, and vice versa.
 func TestScope_FiltersByCoach(t *testing.T) {
 	db := testutil.NewDB(t)
 
@@ -37,7 +34,6 @@ func TestScope_FiltersByCoach(t *testing.T) {
 	require.Len(t, asCoachB, 1)
 	require.Equal(t, athleteB.ID, asCoachB[0].ID)
 
-	// coach A's scoped query must not be able to reach athlete B's row by id.
 	var lookup models.Athlete
 	err := tenant.Scope(db, coachA.ID).First(&lookup, "id = ?", athleteB.ID).Error
 	require.Error(t, err)

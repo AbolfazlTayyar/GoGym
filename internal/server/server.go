@@ -1,5 +1,4 @@
-// Package server wires the Gin HTTP server: global middleware, health check,
-// and the /api/v1 route group that feature modules attach handlers to.
+// Package server wires the Gin engine, global middleware, and routes.
 package server
 
 import (
@@ -16,11 +15,8 @@ import (
 	"gorm.io/gorm"
 )
 
-// APIV1Prefix is the route group under which every feature endpoint is registered.
 const APIV1Prefix = "/api/v1"
 
-// New builds a Gin engine with global middleware (recovery, structured request
-// logging, CORS) and the /healthz and /api/v1 routes wired in.
 func New(cfg config.Config, gormDB *gorm.DB, log zerolog.Logger) *gin.Engine {
 	if cfg.Environment == config.EnvProduction {
 		gin.SetMode(gin.ReleaseMode)
@@ -28,17 +24,12 @@ func New(cfg config.Config, gormDB *gorm.DB, log zerolog.Logger) *gin.Engine {
 
 	router := gin.New()
 
-	// The three responses Gin produces without reaching a handler — a
-	// panic, an unmatched path, and a wrong method — go through the
-	// envelope helpers like everything else. See fallback.go.
 	router.Use(gin.CustomRecovery(recoveryHandler), requestLogger(log))
 	router.HandleMethodNotAllowed = true
 	router.NoRoute(notFoundHandler)
 	router.NoMethod(methodNotAllowedHandler)
 
-	// TODO: lock down allowed origins once the frontend stack and its
-	// deployed origin are chosen (frontend stack is still undecided per
-	// docs/spec.md). AllowAllOrigins is permissive on purpose for now.
+	// TODO: restrict AllowAllOrigins once the frontend's deployed origin is known.
 	router.Use(cors.New(cors.Config{
 		AllowAllOrigins: true,
 		AllowMethods:    []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},

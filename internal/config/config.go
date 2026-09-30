@@ -1,5 +1,4 @@
-// Package config loads application configuration from environment variables,
-// with optional .env file support for local development via godotenv.
+// Package config loads configuration from environment variables and an optional .env file.
 package config
 
 import (
@@ -11,13 +10,11 @@ import (
 	"github.com/joho/godotenv"
 )
 
-// Environment values recognized by Environment.
 const (
 	EnvProduction  = "production"
 	EnvDevelopment = "development"
 )
 
-// Config holds all required application configuration.
 type Config struct {
 	DB          DBConfig
 	ServerPort  string
@@ -26,7 +23,6 @@ type Config struct {
 	Environment string
 }
 
-// DBConfig holds database connection settings.
 type DBConfig struct {
 	Host     string
 	Port     string
@@ -36,10 +32,7 @@ type DBConfig struct {
 	SSLMode  string
 }
 
-// Load reads configuration from environment variables, loading a .env file
-// first if one is present (missing .env is not an error — e.g. in prod where
-// vars are set directly). It exits the process with a clear message if any
-// required variable is missing.
+// Load exits the process if a required variable is missing; a missing .env file is fine.
 func Load() Config {
 	if err := godotenv.Load(); err != nil && !os.IsNotExist(err) {
 		log.Fatalf("config: failed to load .env file: %v", err)
@@ -87,8 +80,7 @@ func mustGetDurationEnv(key string) time.Duration {
 	return d
 }
 
-// String returns a summary of the loaded config safe for logging — it never
-// includes secret values (JWT secret, DB password).
+// String is logged at startup, so it must never include secrets.
 func (c Config) String() string {
 	return fmt.Sprintf(
 		"server_port=%s db_host=%s db_port=%s db_name=%s db_sslmode=%s jwt_expiry=%s environment=%s",
@@ -96,8 +88,6 @@ func (c Config) String() string {
 	)
 }
 
-// DSN returns the PostgreSQL connection string for this config, suitable for
-// use with the golang-migrate CLI or a database driver.
 func (d DBConfig) DSN() string {
 	return fmt.Sprintf(
 		"postgres://%s:%s@%s:%s/%s?sslmode=%s",

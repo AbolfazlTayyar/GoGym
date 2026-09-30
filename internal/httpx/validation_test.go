@@ -18,8 +18,6 @@ type bindRequest struct {
 	Password  string `json:"password" binding:"required,min=8"`
 }
 
-// bindErr runs body through gin's binder the way a handler does, and returns
-// the error it produced.
 func bindErr(t *testing.T, body string) error {
 	t.Helper()
 
@@ -34,9 +32,6 @@ func bindErr(t *testing.T, body string) error {
 	return err
 }
 
-// TestValidationFields_UsesJSONNames is the reason httpx registers a tag-name
-// func on gin's validator: without it these keys would be "FirstName" and
-// "Password", which is not what the client sent.
 func TestValidationFields_UsesJSONNames(t *testing.T) {
 	fields := httpx.ValidationFields(bindErr(t, `{"password":"short"}`))
 
@@ -47,13 +42,9 @@ func TestValidationFields_UsesJSONNames(t *testing.T) {
 }
 
 func TestValidationFields_NonFieldErrorReturnsNil(t *testing.T) {
-	// Malformed JSON fails before per-field validation runs, so there is
-	// no field detail to report.
 	assert.Nil(t, httpx.ValidationFields(bindErr(t, `{"first_name":`)))
 }
 
-// TestValidationFields_IntoErrorFields is the end-to-end shape a handler
-// produces from a binding failure.
 func TestValidationFields_IntoErrorFields(t *testing.T) {
 	err := bindErr(t, `{"first_name":"Ada"}`)
 
