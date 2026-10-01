@@ -504,7 +504,7 @@ docs/er-diagram.md updates in the same commit.
 
 ### Athlete management (MVP feature 1: dashboard)
 
-⬜ **Not started**
+✅ **Done**
 
 **Description:** Coach can list their athletes, search by name, and add a new athlete — the coach dashboard's backend.
 
