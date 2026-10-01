@@ -10,10 +10,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// errMsgPhoneNotIranian is the field-level message for a phone that isn't an
-// Iranian mobile number, keyed under "phone" in the error envelope's fields.
-const errMsgPhoneNotIranian = "must be an Iranian mobile number, e.g. 09372144430"
-
 // coachResponse must never include PasswordHash.
 type coachResponse struct {
 	ID        string `json:"id" example:"b8f1c9de-8f0a-4c1e-9a2b-2f6b6b8e2b3a"`
@@ -100,7 +96,7 @@ func (h *Handler) Signup(c *gin.Context) {
 	// Checked before rate limiting so per-phone buckets are only keyed by well-formed numbers.
 	if !validate.IsIranMobile(req.Phone) {
 		httpx.ErrorFields(c, http.StatusBadRequest, httpx.CodeValidationFailed, httpx.MsgInvalidRequest,
-			map[string]string{"phone": errMsgPhoneNotIranian})
+			map[string]string{"phone": validate.MsgIranMobile})
 		return
 	}
 

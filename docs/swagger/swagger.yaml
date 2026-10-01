@@ -35,6 +35,81 @@ definitions:
         example: true
         type: boolean
     type: object
+  internal_athlete.athleteResponse:
+    properties:
+      athlete_type:
+        example: private
+        type: string
+      created_at:
+        example: "2026-09-24T09:30:00Z"
+        type: string
+      experience_level:
+        example: beginner
+        type: string
+      first_name:
+        example: Sara
+        type: string
+      goal:
+        example: lose 5kg
+        type: string
+      height:
+        example: 172
+        type: number
+      id:
+        example: 3f0b1c6e-2a1d-4f7b-9c3e-6d5a4b3c2d1e
+        type: string
+      injuries:
+        example: left shoulder impingement
+        type: string
+      last_name:
+        example: Ahmadi
+        type: string
+      phone:
+        example: "09372144430"
+        type: string
+      updated_at:
+        example: "2026-09-24T09:30:00Z"
+        type: string
+    type: object
+  internal_athlete.createRequest:
+    properties:
+      athlete_type:
+        example: private
+        type: string
+      experience_level:
+        example: beginner
+        type: string
+      first_name:
+        example: Sara
+        type: string
+      goal:
+        example: lose 5kg
+        type: string
+      height:
+        example: 172
+        type: number
+      injuries:
+        example: left shoulder impingement
+        type: string
+      last_name:
+        example: Ahmadi
+        type: string
+      phone:
+        example: "09372144430"
+        type: string
+    type: object
+  internal_athlete.listMeta:
+    properties:
+      limit:
+        example: 20
+        type: integer
+      offset:
+        example: 0
+        type: integer
+      total:
+        example: 42
+        type: integer
+    type: object
   internal_coach.coachResponse:
     properties:
       first_name:
@@ -110,6 +185,110 @@ info:
   title: GoGym API
   version: "1.0"
 paths:
+  /api/v1/athletes:
+    get:
+      description: 'Lists the authenticated coach''s athletes, newest first. Defaults
+        to private athletes only — the coach''s ongoing working list — since public
+        athletes are one-off plan-link deliveries; pass athlete_type to widen that.
+        Paginated: meta carries the total, limit and offset.'
+      parameters:
+      - description: Case-insensitive partial match on first or last name
+        in: query
+        name: q
+        type: string
+      - description: Which athletes to include; defaults to private
+        enum:
+        - private
+        - public
+        - all
+        in: query
+        name: athlete_type
+        type: string
+      - default: 20
+        description: Page size, 1-100
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Rows to skip
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.SuccessEnvelope'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/internal_athlete.athleteResponse'
+                  type: array
+                meta:
+                  $ref: '#/definitions/internal_athlete.listMeta'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope'
+      security:
+      - BearerAuth: []
+      summary: List athletes
+      tags:
+      - athletes
+    post:
+      consumes:
+      - application/json
+      description: Adds an athlete to the authenticated coach's roster. The owning
+        coach comes from the bearer token — a coach_id in the body is ignored. Omitting
+        athlete_type creates a private athlete.
+      parameters:
+      - description: Athlete details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_athlete.createRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.SuccessEnvelope'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_athlete.athleteResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope'
+      security:
+      - BearerAuth: []
+      summary: Create an athlete
+      tags:
+      - athletes
   /api/v1/auth/login:
     post:
       consumes:

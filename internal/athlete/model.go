@@ -1,4 +1,5 @@
-package models
+// Package athlete manages a coach's athlete roster.
+package athlete
 
 import (
 	"time"
@@ -7,11 +8,21 @@ import (
 	"gorm.io/gorm"
 )
 
-// Athlete will move to internal/athlete/model.go once that module exists.
-//
-// DeletedAt is GORM soft delete: coaches can delete an athlete from the UI,
-// and this keeps them (and, via cascading queries, their plans) out of
-// results via GORM's default scope while preserving history.
+// Athlete types are the coach's service tier for an athlete, not a training format.
+const (
+	// TypePrivate is managed on an ongoing basis; it is the column default and the dashboard's list.
+	TypePrivate = "private"
+	// TypePublic is a one-off plan-link delivery, kept off the dashboard unless asked for.
+	TypePublic = "public"
+)
+
+// Experience levels have no DB constraint; the service is the only thing enforcing this set.
+const (
+	ExperienceBeginner     = "beginner"
+	ExperienceIntermediate = "intermediate"
+	ExperienceAdvanced     = "advanced"
+)
+
 type Athlete struct {
 	ID              uuid.UUID      `gorm:"column:id;type:uuid;primaryKey"`
 	CoachID         uuid.UUID      `gorm:"column:coach_id;type:uuid;not null"`

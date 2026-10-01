@@ -5,6 +5,7 @@ import (
 	"time"
 
 	_ "github.com/AbolfazlTayyar/gogym/docs/swagger"
+	"github.com/AbolfazlTayyar/gogym/internal/athlete"
 	"github.com/AbolfazlTayyar/gogym/internal/coach"
 	"github.com/AbolfazlTayyar/gogym/internal/config"
 	"github.com/gin-contrib/cors"
@@ -52,6 +53,10 @@ func New(cfg config.Config, gormDB *gorm.DB, log zerolog.Logger) *gin.Engine {
 	protected.Use(coach.AuthMiddleware(coachSvc))
 
 	coach.RegisterRoutes(v1, protected, coachHandler)
+
+	athleteRepo := athlete.NewRepository(gormDB)
+	athleteSvc := athlete.NewService(athleteRepo)
+	athlete.RegisterRoutes(protected, athlete.NewHandler(athleteSvc))
 
 	return router
 }
