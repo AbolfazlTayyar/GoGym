@@ -26,6 +26,10 @@ a one-line reference added here pointing to it). Wait for approval before
 writing it. Don't suggest something obvious from reading the code, and don't
 suggest anything for small/routine tasks with nothing new to capture.
 
+## Architecture decision records
+
+`docs/adr/` holds one short MADR file per decision. Process rules are in [0001](docs/adr/0001-record-architecture-decisions.md). When a task makes a decision with real alternatives (a new library, a schema shape, a cross-module pattern, a rejected approach worth remembering), add the next-numbered ADR and its row in `docs/adr/README.md` in the same commit as the change. Routine tasks that follow existing ADRs don't need one. Never rewrite an accepted ADR. Supersede it with a new one. This file keeps the one-line rule; the ADR keeps the why and the rejected options.
+
 ## Code conventions
 
 When a literal (string key, magic number, etc.) is used in more than one place, extract it to a named constant instead of repeating it. A literal used exactly once can stay inline — constants earn their keep on the second use, not the first.
