@@ -11,6 +11,9 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// paramID is also the wildcard nested routes like /athletes/:id/measurements must reuse; gin panics on a mismatch.
+const paramID = "id"
+
 const (
 	paramQuery       = "q"
 	paramAthleteType = "athlete_type"
@@ -177,6 +180,40 @@ func (h *Handler) List(c *gin.Context) {
 	httpx.OKWithMeta(c, items, listMeta{Total: result.Total, Limit: result.Limit, Offset: result.Offset})
 }
 
+// Get returns one of the authenticated coach's athletes.
+//
+//	@Summary		Get an athlete
+//	@Description	Returns the athlete's full profile. An athlete that belongs to another coach is reported as not found, the same as one that doesn't exist.
+//	@Tags			athletes
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			id	path		string	true	"Athlete ID"	format(uuid)
+//	@Success		200	{object}	httpx.SuccessEnvelope{data=athleteResponse}
+//	@Failure		401	{object}	httpx.ErrorEnvelope
+//	@Failure		404	{object}	httpx.ErrorEnvelope
+//	@Failure		500	{object}	httpx.ErrorEnvelope
+//	@Router			/api/v1/athletes/{id} [get]
+func (h *Handler) Get(c *gin.Context) {
+	coachID, ok := tenant.CoachIDFromContext(c)
+	if !ok {
+		httpx.Error(c, http.StatusUnauthorized, httpx.CodeUnauthorized, httpx.MsgUnauthorized)
+		return
+	}
+
+	id, ok := httpx.PathUUID(c, paramID)
+	if !ok {
+		return
+	}
+
+	found, err := h.svc.Get(c.Request.Context(), coachID, id)
+	if err != nil {
+		writeServiceError(c, err)
+		return
+	}
+
+	httpx.OK(c, newAthleteResponse(found))
+}
+
 // intParam returns 0 for a missing param, which the service treats as unset.
 func intParam(c *gin.Context, name string, fields map[string]string) int {
 	raw := c.Query(name)
@@ -193,11 +230,16 @@ func intParam(c *gin.Context, name string, fields map[string]string) int {
 	return value
 }
 
-// writeServiceError hides non-validation errors behind a generic 500; the detail belongs in logs.
+// writeServiceError hides unexpected errors behind a generic 500; the detail belongs in logs.
 func writeServiceError(c *gin.Context, err error) {
 	var verr *ValidationError
 	if errors.As(err, &verr) {
 		httpx.ErrorFields(c, http.StatusBadRequest, httpx.CodeValidationFailed, httpx.MsgInvalidRequest, verr.Fields)
+		return
+	}
+
+	if errors.Is(err, ErrNotFound) {
+		httpx.Error(c, http.StatusNotFound, httpx.CodeNotFound, httpx.MsgNotFound)
 		return
 	}
 

@@ -164,6 +164,66 @@ definitions:
     - password
     - phone
     type: object
+  internal_measurement.createRequest:
+    properties:
+      arm:
+        example: 34
+        type: number
+      chest:
+        example: 98
+        type: number
+      date:
+        example: "2026-09-24"
+        type: string
+      hip:
+        example: 99
+        type: number
+      thigh:
+        example: 56
+        type: number
+      waist:
+        example: 81.5
+        type: number
+      weight:
+        example: 72.5
+        type: number
+    type: object
+  internal_measurement.measurementResponse:
+    properties:
+      arm:
+        example: 34
+        type: number
+      athlete_id:
+        example: 3f0b1c6e-2a1d-4f7b-9c3e-6d5a4b3c2d1e
+        type: string
+      chest:
+        example: 98
+        type: number
+      created_at:
+        example: "2026-09-24T09:30:00Z"
+        type: string
+      date:
+        example: "2026-09-24"
+        type: string
+      hip:
+        example: 99
+        type: number
+      id:
+        example: 7c9e6679-7425-40de-944b-e07fc1f90ae7
+        type: string
+      thigh:
+        example: 56
+        type: number
+      updated_at:
+        example: "2026-09-24T09:30:00Z"
+        type: string
+      waist:
+        example: 81.5
+        type: number
+      weight:
+        example: 72.5
+        type: number
+    type: object
   internal_server.healthzErrorResponse:
     properties:
       reason:
@@ -289,6 +349,143 @@ paths:
       summary: Create an athlete
       tags:
       - athletes
+  /api/v1/athletes/{id}:
+    get:
+      description: Returns the athlete's full profile. An athlete that belongs to
+        another coach is reported as not found, the same as one that doesn't exist.
+      parameters:
+      - description: Athlete ID
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.SuccessEnvelope'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_athlete.athleteResponse'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope'
+      security:
+      - BearerAuth: []
+      summary: Get an athlete
+      tags:
+      - athletes
+  /api/v1/athletes/{id}/measurements:
+    get:
+      description: 'Returns every measurement for the athlete, oldest first, ready
+        to plot as a trend chart. Not paginated: one check-in per visit stays small.
+        An athlete with no measurements yields an empty array; an athlete that belongs
+        to another coach is reported as not found.'
+      parameters:
+      - description: Athlete ID
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.SuccessEnvelope'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/internal_measurement.measurementResponse'
+                  type: array
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope'
+      security:
+      - BearerAuth: []
+      summary: List measurements
+      tags:
+      - measurements
+    post:
+      consumes:
+      - application/json
+      description: Records one check-in for the athlete. date is required (YYYY-MM-DD);
+        every metric is optional, but at least one must be given. Weight is in kilograms,
+        circumferences in centimetres. An athlete that belongs to another coach is
+        reported as not found.
+      parameters:
+      - description: Athlete ID
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Measurement values
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_measurement.createRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.SuccessEnvelope'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_measurement.measurementResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope'
+      security:
+      - BearerAuth: []
+      summary: Add a measurement
+      tags:
+      - measurements
   /api/v1/auth/login:
     post:
       consumes:

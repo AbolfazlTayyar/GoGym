@@ -8,6 +8,7 @@ import (
 	"github.com/AbolfazlTayyar/gogym/internal/athlete"
 	"github.com/AbolfazlTayyar/gogym/internal/coach"
 	"github.com/AbolfazlTayyar/gogym/internal/config"
+	"github.com/AbolfazlTayyar/gogym/internal/measurement"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog"
@@ -57,6 +58,10 @@ func New(cfg config.Config, gormDB *gorm.DB, log zerolog.Logger) *gin.Engine {
 	athleteRepo := athlete.NewRepository(gormDB)
 	athleteSvc := athlete.NewService(athleteRepo)
 	athlete.RegisterRoutes(protected, athlete.NewHandler(athleteSvc))
+
+	measurementRepo := measurement.NewRepository(gormDB)
+	measurementSvc := measurement.NewService(measurementRepo, athleteSvc)
+	measurement.RegisterRoutes(protected, measurement.NewHandler(measurementSvc))
 
 	return router
 }

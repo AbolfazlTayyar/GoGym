@@ -6,4 +6,5 @@ func RegisterRoutes(protected *gin.RouterGroup, h *Handler) {
 	athletes := protected.Group("/athletes")
 	athletes.POST("", h.Create)
 	athletes.GET("", h.List)
+	athletes.GET("/:"+paramID, h.Get)
 }

@@ -169,6 +169,220 @@
                 }
             }
         },
+        "/api/v1/athletes/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns the athlete's full profile. An athlete that belongs to another coach is reported as not found, the same as one that doesn't exist.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "athletes"
+                ],
+                "summary": "Get an athlete",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Athlete ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.SuccessEnvelope"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/internal_athlete.athleteResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/athletes/{id}/measurements": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns every measurement for the athlete, oldest first, ready to plot as a trend chart. Not paginated: one check-in per visit stays small. An athlete with no measurements yields an empty array; an athlete that belongs to another coach is reported as not found.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "measurements"
+                ],
+                "summary": "List measurements",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Athlete ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.SuccessEnvelope"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/internal_measurement.measurementResponse"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Records one check-in for the athlete. date is required (YYYY-MM-DD); every metric is optional, but at least one must be given. Weight is in kilograms, circumferences in centimetres. An athlete that belongs to another coach is reported as not found.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "measurements"
+                ],
+                "summary": "Add a measurement",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Athlete ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Measurement values",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_measurement.createRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.SuccessEnvelope"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/internal_measurement.measurementResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/auth/login": {
             "post": {
                 "description": "Verifies phone + password and returns a signed JWT. The error is the same whether the phone or the password was wrong.",
@@ -608,6 +822,88 @@
                 "phone": {
                     "type": "string",
                     "example": "09372144430"
+                }
+            }
+        },
+        "internal_measurement.createRequest": {
+            "type": "object",
+            "properties": {
+                "arm": {
+                    "type": "number",
+                    "example": 34
+                },
+                "chest": {
+                    "type": "number",
+                    "example": 98
+                },
+                "date": {
+                    "type": "string",
+                    "example": "2026-09-24"
+                },
+                "hip": {
+                    "type": "number",
+                    "example": 99
+                },
+                "thigh": {
+                    "type": "number",
+                    "example": 56
+                },
+                "waist": {
+                    "type": "number",
+                    "example": 81.5
+                },
+                "weight": {
+                    "type": "number",
+                    "example": 72.5
+                }
+            }
+        },
+        "internal_measurement.measurementResponse": {
+            "type": "object",
+            "properties": {
+                "arm": {
+                    "type": "number",
+                    "example": 34
+                },
+                "athlete_id": {
+                    "type": "string",
+                    "example": "3f0b1c6e-2a1d-4f7b-9c3e-6d5a4b3c2d1e"
+                },
+                "chest": {
+                    "type": "number",
+                    "example": 98
+                },
+                "created_at": {
+                    "type": "string",
+                    "example": "2026-09-24T09:30:00Z"
+                },
+                "date": {
+                    "type": "string",
+                    "example": "2026-09-24"
+                },
+                "hip": {
+                    "type": "number",
+                    "example": 99
+                },
+                "id": {
+                    "type": "string",
+                    "example": "7c9e6679-7425-40de-944b-e07fc1f90ae7"
+                },
+                "thigh": {
+                    "type": "number",
+                    "example": 56
+                },
+                "updated_at": {
+                    "type": "string",
+                    "example": "2026-09-24T09:30:00Z"
+                },
+                "waist": {
+                    "type": "number",
+                    "example": 81.5
+                },
+                "weight": {
+                    "type": "number",
+                    "example": 72.5
                 }
             }
         },

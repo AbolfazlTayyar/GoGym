@@ -1,4 +1,5 @@
-package models
+// Package measurement records an athlete's body measurements over time, the data behind the progress chart.
+package measurement
 
 import (
 	"time"
@@ -6,7 +7,8 @@ import (
 	"github.com/google/uuid"
 )
 
-type AthleteMeasurement struct {
+// Measurement has no coach_id: ownership is reached through its athlete, so it can't use tenant.Scope directly.
+type Measurement struct {
 	ID        uuid.UUID `gorm:"column:id;type:uuid;primaryKey"`
 	AthleteID uuid.UUID `gorm:"column:athlete_id;type:uuid;not null"`
 	Date      time.Time `gorm:"column:date;type:date;not null"`
@@ -20,6 +22,6 @@ type AthleteMeasurement struct {
 	UpdatedAt time.Time `gorm:"column:updated_at;type:timestamptz;not null"`
 }
 
-func (AthleteMeasurement) TableName() string {
+func (Measurement) TableName() string {
 	return "athlete_measurement"
 }

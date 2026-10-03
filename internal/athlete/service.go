@@ -83,6 +83,11 @@ func (s *Service) Create(ctx context.Context, coachID uuid.UUID, input CreateInp
 	return a, nil
 }
 
+// Get returns ErrNotFound for another coach's athlete, exactly as for one that doesn't exist.
+func (s *Service) Get(ctx context.Context, coachID, id uuid.UUID) (*Athlete, error) {
+	return s.repo.FindByID(ctx, coachID, id)
+}
+
 // ListResult's Limit and Offset are the window actually applied, after defaults and clamping.
 type ListResult struct {
 	Athletes []Athlete

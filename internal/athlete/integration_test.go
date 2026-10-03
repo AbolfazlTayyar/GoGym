@@ -332,6 +332,57 @@ func TestCreate_IgnoresCoachIDInBody(t *testing.T) {
 	assert.Equal(t, []string{"Sara"}, names(athletes), "the planted row landed under the attacker, not the victim")
 }
 
+func TestGet(t *testing.T) {
+	router, db := newTestRouterWithDB(t)
+
+	owner := signupCoach(t, router, "09121110009")
+	intruder := signupCoach(t, router, "09121110010")
+
+	created := createAthlete(t, router, owner, `{
+		"first_name": "Sara", "last_name": "Ahmadi", "phone": "09121230051",
+		"experience_level": "advanced", "injuries": "left knee", "goal": "compete", "height": 165,
+		"athlete_type": "public"
+	}`)
+
+	t.Run("the owner gets the full profile", func(t *testing.T) {
+		env := decodeEnvelope(t, do(t, router, http.MethodGet, athletesPath+"/"+created.ID, owner, ""), http.StatusOK)
+		assert.True(t, env.Success)
+
+		var got map[string]any
+		require.NoError(t, json.Unmarshal(env.Data, &got))
+
+		assert.Equal(t, created.ID, got["id"])
+		assert.Equal(t, "Sara", got["first_name"])
+		assert.Equal(t, "Ahmadi", got["last_name"])
+		assert.Equal(t, "09121230051", got["phone"])
+		assert.Equal(t, athlete.ExperienceAdvanced, got["experience_level"])
+		assert.Equal(t, "left knee", got["injuries"])
+		assert.Equal(t, "compete", got["goal"])
+		assert.InDelta(t, 165, got["height"], 0)
+		assert.Equal(t, athlete.TypePublic, got["athlete_type"])
+		assert.Contains(t, got, "created_at")
+		assert.Contains(t, got, "updated_at")
+	})
+
+	t.Run("another coach gets 404, not 403", func(t *testing.T) {
+		env := decodeEnvelope(t, do(t, router, http.MethodGet, athletesPath+"/"+created.ID, intruder, ""), http.StatusNotFound)
+		assert.Equal(t, "null", string(env.Data))
+		require.NotNil(t, env.Error)
+		assert.Equal(t, httpx.CodeNotFound, env.Error.Code)
+	})
+
+	t.Run("a malformed id is 404", func(t *testing.T) {
+		decodeEnvelope(t, do(t, router, http.MethodGet, athletesPath+"/not-a-uuid", owner, ""), http.StatusNotFound)
+	})
+
+	t.Run("a soft-deleted athlete is 404", func(t *testing.T) {
+		removed := createAthlete(t, router, owner, `{"first_name":"Gone","last_name":"Athlete","phone":"09121230052"}`)
+		require.NoError(t, db.Delete(&athlete.Athlete{}, "id = ?", removed.ID).Error)
+
+		decodeEnvelope(t, do(t, router, http.MethodGet, athletesPath+"/"+removed.ID, owner, ""), http.StatusNotFound)
+	})
+}
+
 // GORM's soft-delete scope comes from the model, so a Count without one would include deleted rows.
 func TestList_ExcludesSoftDeletedAthletes(t *testing.T) {
 	router, db := newTestRouterWithDB(t)

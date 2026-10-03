@@ -101,6 +101,15 @@ func TestList_RejectsBadQueryParams(t *testing.T) {
 	}
 }
 
+func TestGet_MalformedIDIsNotFound(t *testing.T) {
+	c, rec := newTestContext(t, http.MethodGet, "/api/v1/athletes/not-a-uuid", "", uuid.New())
+	c.Params = gin.Params{{Key: paramID, Value: "not-a-uuid"}}
+
+	newTestHandler().Get(c)
+
+	requireErrorEnvelope(t, rec, http.StatusNotFound, httpx.CodeNotFound)
+}
+
 // TestUnauthenticated covers the handlers' own guard, independent of the auth middleware.
 func TestUnauthenticated(t *testing.T) {
 	h := newTestHandler()
@@ -114,6 +123,12 @@ func TestUnauthenticated(t *testing.T) {
 	t.Run("list", func(t *testing.T) {
 		c, rec := newTestContext(t, http.MethodGet, "/api/v1/athletes", "", uuid.Nil)
 		h.List(c)
+		requireErrorEnvelope(t, rec, http.StatusUnauthorized, httpx.CodeUnauthorized)
+	})
+
+	t.Run("get", func(t *testing.T) {
+		c, rec := newTestContext(t, http.MethodGet, "/api/v1/athletes/"+uuid.NewString(), "", uuid.Nil)
+		h.Get(c)
 		requireErrorEnvelope(t, rec, http.StatusUnauthorized, httpx.CodeUnauthorized)
 	})
 }

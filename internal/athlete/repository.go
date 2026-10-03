@@ -2,6 +2,7 @@ package athlete
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/AbolfazlTayyar/gogym/internal/tenant"
@@ -11,6 +12,9 @@ import (
 
 // ESCAPE '\' is Postgres's default, stated explicitly because searchPattern escapes with it.
 const nameSearchClause = `(first_name ILIKE @pattern ESCAPE '\' OR last_name ILIKE @pattern ESCAPE '\')`
+
+// ErrNotFound also covers another coach's athlete, so callers can 404 without revealing it exists.
+var ErrNotFound = errors.New("athlete: not found")
 
 // Repository queries athlete, a tenant-owned table, so every query must start from tenant.Scope.
 type Repository struct {
@@ -26,6 +30,17 @@ func (r *Repository) Create(ctx context.Context, a *Athlete) error {
 		return fmt.Errorf("athlete: failed to create: %w", err)
 	}
 	return nil
+}
+
+func (r *Repository) FindByID(ctx context.Context, coachID, id uuid.UUID) (*Athlete, error) {
+	var a Athlete
+	if err := tenant.Scope(r.db.WithContext(ctx), coachID).First(&a, "id = ?", id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrNotFound
+		}
+		return nil, fmt.Errorf("athlete: failed to find by id: %w", err)
+	}
+	return &a, nil
 }
 
 // List expects opts already normalized by normalizeListOptions.
