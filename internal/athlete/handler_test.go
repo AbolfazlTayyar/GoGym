@@ -67,7 +67,7 @@ func TestCreate_ReportsFieldLevelErrors(t *testing.T) {
 	newTestHandler().Create(c)
 
 	errBody := requireErrorEnvelope(t, rec, http.StatusBadRequest, httpx.CodeValidationFailed)
-	assert.Equal(t, msgRequired, errBody.Fields["last_name"])
+	assert.Equal(t, httpx.MsgFieldRequired, errBody.Fields["last_name"])
 	assert.Contains(t, errBody.Fields["phone"], "Iranian mobile number")
 }
 

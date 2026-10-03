@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/AbolfazlTayyar/gogym/internal/httpx"
 	"github.com/AbolfazlTayyar/gogym/internal/validate"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -64,8 +65,8 @@ func TestBuildAthlete_ReportsEveryBadFieldAtOnce(t *testing.T) {
 	})
 
 	fields := requireValidationFields(t, err)
-	assert.Equal(t, msgRequired, fields["first_name"], "whitespace-only is not a name")
-	assert.Equal(t, msgRequired, fields["last_name"])
+	assert.Equal(t, httpx.MsgFieldRequired, fields["first_name"], "whitespace-only is not a name")
+	assert.Equal(t, httpx.MsgFieldRequired, fields["last_name"])
 	assert.Equal(t, validate.MsgIranMobile, fields["phone"])
 	assert.Contains(t, fields["experience_level"], ExperienceBeginner)
 	assert.Contains(t, fields["height"], "centimetres", "metres instead of centimetres is caught")
@@ -80,7 +81,7 @@ func TestBuildAthlete_MissingPhoneIsRequiredNotMalformed(t *testing.T) {
 	_, err := buildAthlete(uuid.New(), input)
 
 	fields := requireValidationFields(t, err)
-	assert.Equal(t, msgRequired, fields["phone"])
+	assert.Equal(t, httpx.MsgFieldRequired, fields["phone"])
 }
 
 func TestBuildAthlete_DefaultsToPrivate(t *testing.T) {

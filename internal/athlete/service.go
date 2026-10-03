@@ -6,6 +6,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	"github.com/AbolfazlTayyar/gogym/internal/httpx"
 	"github.com/AbolfazlTayyar/gogym/internal/validate"
 	"github.com/google/uuid"
 )
@@ -119,7 +120,7 @@ func buildAthlete(coachID uuid.UUID, input CreateInput) (*Athlete, error) {
 	phone := strings.TrimSpace(input.Phone)
 	switch {
 	case phone == "":
-		fields["phone"] = msgRequired
+		fields["phone"] = httpx.MsgFieldRequired
 	case !validate.IsIranMobile(phone):
 		fields["phone"] = validate.MsgIranMobile
 	}
@@ -170,14 +171,11 @@ func buildAthlete(coachID uuid.UUID, input CreateInput) (*Athlete, error) {
 	}, nil
 }
 
-// msgRequired must match httpx's message for the "required" binding tag.
-const msgRequired = "is required"
-
 func requiredName(fields map[string]string, name, value string) string {
 	trimmed := strings.TrimSpace(value)
 	switch {
 	case trimmed == "":
-		fields[name] = msgRequired
+		fields[name] = httpx.MsgFieldRequired
 	case utf8.RuneCountInString(trimmed) > maxNameLength:
 		fields[name] = fmt.Sprintf("must be at most %d characters", maxNameLength)
 	}

@@ -23,3 +23,6 @@ const (
 	MsgNotFound         = "not found"
 	MsgMethodNotAllowed = "method not allowed"
 )
+
+// MsgFieldRequired is shared by binding-tag and service-level validation so a missing field reads the same either way.
+const MsgFieldRequired = "is required"

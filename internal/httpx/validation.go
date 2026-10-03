@@ -43,7 +43,7 @@ func ValidationFields(err error) map[string]string {
 func validationMessage(fe validator.FieldError) string {
 	switch fe.Tag() {
 	case "required":
-		return "is required"
+		return MsgFieldRequired
 	case "min":
 		return fmt.Sprintf("must be at least %s characters", fe.Param())
 	case "max":
