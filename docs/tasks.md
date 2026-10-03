@@ -557,7 +557,7 @@ and the ?q= query param, and rerun `make swagger`.
 
 ### Athlete profile + measurements (MVP feature 2)
 
-⬜ **Not started**
+✅ **Done**
 
 **Description:** View an athlete's base info plus their measurement history (the data the progress chart is built from), and log a new measurement.
 
