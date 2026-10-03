@@ -494,6 +494,23 @@ docs/er-diagram.md updates in the same commit.
 
 **Checkpoint:** Sign up with a phone number, confirm the code is logged by the dev SMS implementation, and verify it — a wrong code and an expired code both fail without verifying, and repeated wrong codes hit the attempt limit. Request a password reset for a registered number and complete it, then confirm the old password no longer works and the reset token can't be reused. Request a reset for an unregistered number and confirm the response is indistinguishable from the registered case. The full suite still passes with no network access.
 
+**Expected output:**
+```
+$ docker compose logs api | grep otp
+{"level":"info","msg":"dev sms: otp sent","phone":"09372144430","code":"483920"}
+
+$ curl -s -X POST localhost:8080/api/v1/auth/verify -d '{"phone":"09372144430","code":"000000"}'
+{"success":false,"data":null,"error":{"code":"invalid_code","message":"invalid or expired code"}}
+
+$ curl -s -X POST localhost:8080/api/v1/auth/verify -d '{"phone":"09372144430","code":"483920"}'
+{"success":true,"data":{"verified":true},"error":null}
+
+$ curl -s -X POST localhost:8080/api/v1/auth/password-reset/request -d '{"phone":"09120000000"}'
+{"success":true,"data":null,"error":null}     # identical for a registered number
+```
+
+**In short:** a typo'd phone can no longer lock an account forever, and a coach who forgets their password can get back in without you touching the database.
+
 ---
 
 ## Phase 1 — Core v1 features (backend API)
@@ -570,6 +587,20 @@ Add swagger annotations to all three handlers and rerun `make swagger`.
 
 **Checkpoint:** Add measurements out of chronological order (e.g. POST a later date first, then an earlier one) and confirm `GET .../measurements` still returns them sorted by date, not insertion order. Confirm cross-coach 404 behavior manually with curl. Confirm all three endpoints are listed and usable from Swagger UI.
 
+**Expected output:**
+```
+$ curl -s -H "Authorization: Bearer $TOKEN" localhost:8080/api/v1/athletes/$ID/measurements
+{"success":true,"data":[
+  {"id":"...","date":"2026-08-01","weight":82.5,"chest":104,"waist":90,"arm":36,"thigh":58,"hip":100},
+  {"id":"...","date":"2026-09-01","weight":80.1,"chest":103,"waist":87,"arm":36,"thigh":57,"hip":98}
+],"error":null}
+
+$ curl -s -X POST -H "Authorization: Bearer $TOKEN_B" localhost:8080/api/v1/athletes/$ID/measurements -d '{...}'
+{"success":false,"data":null,"error":{"code":"not_found","message":"athlete not found"}}
+```
+
+**In short:** you can open one athlete, see their details, and log body measurements over time — the data the progress chart will draw from.
+
 ---
 
 ### Athlete's plan list (MVP feature 3)
@@ -600,6 +631,18 @@ Add a swagger annotation to the handler and rerun `make swagger`.
 ```
 
 **Checkpoint:** Create 3 plans for one athlete with different `start_date`s (including one with a future date, if your rule needs to handle that) and confirm the list response marks the right one `is_current` and the rest `false`. Confirm the endpoint is listed and usable from Swagger UI.
+
+**Expected output:**
+```
+$ curl -s -H "Authorization: Bearer $TOKEN" localhost:8080/api/v1/athletes/$ID/plans
+{"success":true,"data":[
+  {"id":"...","title":"Cut phase 2","start_date":"2026-11-01","is_current":false},
+  {"id":"...","title":"Cut phase 1","start_date":"2026-09-15","is_current":true},
+  {"id":"...","title":"Base","start_date":"2026-07-01","is_current":false}
+],"error":null}
+```
+
+**In short:** you can see every plan an athlete has had, newest first, with the one they're on right now clearly marked.
 
 ---
 
@@ -634,6 +677,29 @@ rerun `make swagger`.
 ```
 
 **Checkpoint:** Enable GORM's SQL logging (dev log level) and hit this endpoint for a plan with several days/blocks/movements — count the queries. It should be a small constant number (Preload-driven), not one query per row. Confirm the JSON's day → block → movement nesting and ordering matches what you created. Confirm the endpoint is listed and usable from Swagger UI.
+
+**Expected output:**
+```
+$ curl -s -H "Authorization: Bearer $TOKEN" localhost:8080/api/v1/plans/$PLAN_ID
+{"success":true,"data":{
+  "id":"...","title":"Cut phase 1","start_date":"2026-09-15",
+  "days":[
+    {"label":"A","order_index":0,"blocks":[
+      {"order_index":0,"sets":4,"rest_seconds":90,"notes":null,"movements":[
+        {"movement_id":"...","name":"Back squat","category":"strength","reps":8,"order_in_block":0}
+      ]},
+      {"order_index":1,"sets":3,"rest_seconds":60,"notes":"superset","movements":[
+        {"movement_id":"...","name":"Pull-up","category":"strength","reps":10,"order_in_block":0},
+        {"movement_id":"...","name":"Push-up","category":"strength","reps":15,"order_in_block":1}
+      ]}
+    ]}
+  ]
+},"error":null}
+
+# GORM SQL log for that request: a handful of SELECTs, not one per day/block/movement
+```
+
+**In short:** one request returns a whole plan — days, blocks, supersets, movement names — ready for the screen to show day by day.
 
 ---
 
@@ -691,6 +757,22 @@ Add swagger annotations to all four handlers and rerun `make swagger`.
 
 **Checkpoint:** Build a full plan via curl/Postman end to end (plan → day → block → superset of 2 movements), then GET it via the plan detail endpoint and confirm it matches. Then deliberately POST a movement batch where the 2nd movement_id is invalid — confirm the response is an error and neither movement was inserted (check via a direct query, not just the error response). Repeat the same full build-up flow once from Swagger UI alone (Authorize, then "Try it out" on each endpoint in order) to confirm it's usable without curl.
 
+**Expected output:**
+```
+$ curl -s -X POST -H "Authorization: Bearer $TOKEN" localhost:8080/api/v1/blocks/$BLOCK_ID/movements \
+    -d '[{"movement_id":"<squat>","reps":8,"order_in_block":0},{"movement_id":"<lunge>","reps":10,"order_in_block":1}]'
+{"success":true,"data":[{...},{...}],"error":null}
+
+$ curl -s -X POST -H "Authorization: Bearer $TOKEN" localhost:8080/api/v1/plans/$PLAN_ID/days -d '{"label":"Z","order_index":0}'
+{"success":false,"data":null,"error":{"code":"validation_failed","message":"invalid request","fields":{"label":"must be one of A-F or day1-day6"}}}
+
+$ curl -s -X POST ... /blocks/$BLOCK_ID/movements -d '[{"movement_id":"<valid>",...},{"movement_id":"<other coach>",...}]'
+{"success":false,"data":null,"error":{"code":"not_found","message":"movement not found"}}
+# and SELECT count(*) FROM block_movement WHERE block_id = '<BLOCK_ID>' is unchanged
+```
+
+**In short:** you can build a full training plan from scratch through the API — days, blocks, supersets — and a bad request never leaves half a plan behind.
+
 ---
 
 ### Movement library management (MVP feature 6)
@@ -735,6 +817,23 @@ Add swagger annotations to all four handlers and rerun `make swagger`.
 
 **Checkpoint:** As a fresh coach with no movements of their own, `GET /movements` still returns the seeded universal set. Create a custom movement, confirm it appears too. Attempt to `PUT`/`DELETE` a universal movement's id — confirm 403. Attempt the same against another coach's custom movement — confirm the same guard applies. Confirm all four endpoints are listed and usable from Swagger UI — this is also a convenient spot to eyeball the whole API surface in one place and confirm every earlier task's endpoints are still present in the generated docs.
 
+**Expected output:**
+```
+$ curl -s -H "Authorization: Bearer $NEW_COACH_TOKEN" "localhost:8080/api/v1/movements?muscle_group=legs"
+{"success":true,"data":[
+  {"id":"...","name":"Back squat","category":"strength","muscle_group":"legs","equipment":"barbell","coach_id":null},
+  {"id":"...","name":"Walking lunge","category":"strength","muscle_group":"legs","equipment":"dumbbell","coach_id":null}
+],"error":null}
+
+$ curl -s -X PUT -H "Authorization: Bearer $TOKEN" localhost:8080/api/v1/movements/$UNIVERSAL_ID -d '{"name":"Squat"}'
+{"success":false,"data":null,"error":{"code":"forbidden","message":"universal movements can't be edited"}}
+
+$ curl -s -X DELETE -H "Authorization: Bearer $TOKEN" localhost:8080/api/v1/movements/$IN_USE_ID
+{"success":false,"data":null,"error":{"code":"conflict","message":"movement is used in a plan"}}
+```
+
+**In short:** every coach starts with a ready-made exercise library they can search and filter, and can add, edit and remove their own exercises without touching the shared ones.
+
 ---
 
 ## Phase 2 — Wrap-up
@@ -776,6 +875,25 @@ that to a separate task instead of doing it here.
 
 **Checkpoint:** A real migration (start with the existing `000001`/`000002` files) has actually been applied against the VPS's Postgres, not just described — confirm via `\dt`/`\d athlete` over SSH. Deploying a trivial code change (e.g. a log line) end-to-end once, following only the written runbook, succeeds without undocumented manual steps. Rolling back one migration via the down file has been exercised at least once, not just assumed to work.
 
+**Expected output:**
+```
+$ curl -s https://<your-domain>/healthz
+{"status":"ok"}
+
+$ ssh vps 'docker compose exec db psql -U gogym -c "\dt"'
+ public | athlete              | table | gogym
+ public | block                | table | gogym
+ ...
+ public | schema_migrations    | table | gogym
+
+$ ssh vps 'docker compose exec db psql -U gogym -c "SELECT version, dirty FROM schema_migrations"'
+ version | dirty
+---------+-------
+       2 | f
+```
+
+**In short:** the app runs on a real server over HTTPS, and there's a written, tested way to ship a new version and its migrations — and to undo one.
+
 ---
 
 ### Backup & restore drill **[A4]**
@@ -803,6 +921,24 @@ a restore has succeeded and the runbook has been followed once, start to finish.
 
 **Checkpoint:** A backup exists off the VPS. A restore from that backup into an empty Postgres has actually been run by you — not described — and the restored database serves a working `/healthz` and returns real athlete rows. The runbook exists and someone who isn't you could follow it.
 
+**Expected output:**
+```
+$ <list the off-VPS bucket>
+gogym-2026-10-02T03-00.sql.gz
+gogym-2026-10-03T03-00.sql.gz
+
+$ gunzip -c gogym-2026-10-03T03-00.sql.gz | docker compose -f restore.yml exec -T db psql -U gogym
+...
+$ curl -s localhost:8081/healthz
+{"status":"ok"}
+$ docker compose -f restore.yml exec db psql -U gogym -c "SELECT count(*) FROM athlete"
+ count
+-------
+    37
+```
+
+**In short:** the database is copied off the server every day, and you've actually brought it back from a copy once, so you know it works.
+
 ---
 
 ### Frontend stack decision
@@ -828,3 +964,11 @@ frontend task list as a follow-up to this document.
 ```
 
 **Checkpoint:** A decision is recorded (append it to this file's header note, replacing "not yet decided"), and a new `docs/tasks-frontend.md` (or an appended section here) exists before any frontend code is written.
+
+**Expected output:**
+```
+docs/tasks.md header:  "Frontend stack is **<React SPA | Go templates + htmx>** — chosen because ..."
+docs/tasks-frontend.md exists, in this file's task format, with no frontend code written yet
+```
+
+**In short:** the frontend choice is made and written down, and there's a task list for building the screens.
