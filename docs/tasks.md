@@ -605,7 +605,7 @@ $ curl -s -X POST -H "Authorization: Bearer $TOKEN_B" localhost:8080/api/v1/athl
 
 ### Athlete's plan list (MVP feature 3)
 
-⬜ **Not started**
+✅ **Done**
 
 **Description:** List an athlete's plans, with the current one distinguishable from past ones.
 
