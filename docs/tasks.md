@@ -714,8 +714,11 @@ $ curl -s -H "Authorization: Bearer $TOKEN" localhost:8080/api/v1/plans/$PLAN_ID
 Extend internal/plan with the write endpoints:
 - POST /api/v1/plans — create a plan for an athlete (start_date, title/note).
 - POST /api/v1/plans/:id/days — add a day (label, order_index — validate label against
-  the allowed set from spec.md: A/B/C/D/E/F or day1..day6, reject anything else
-  with 400).
+  the allowed set from spec.md: A/B/C/D/E/F/G or day1..day7, reject anything else
+  with 400). A plan holds at most plan.MaxDaysPerPlan (7) days, enforced by the day
+  table's constraints (docs/adr/0017): map gorm.ErrCheckConstraintViolated (order_index
+  outside 0-6) and gorm.ErrDuplicatedKey (slot already taken) to 400 validation errors
+  on order_index, not 500s.
 - POST /api/v1/days/:id/blocks — add a block (order_index, sets, rest_seconds, notes).
 - POST /api/v1/blocks/:id/movements — add one or more movements to a block in one call
   (accept an array so a superset can be added atomically, each with movement_id, reps,
@@ -764,7 +767,7 @@ $ curl -s -X POST -H "Authorization: Bearer $TOKEN" localhost:8080/api/v1/blocks
 {"success":true,"data":[{...},{...}],"error":null}
 
 $ curl -s -X POST -H "Authorization: Bearer $TOKEN" localhost:8080/api/v1/plans/$PLAN_ID/days -d '{"label":"Z","order_index":0}'
-{"success":false,"data":null,"error":{"code":"validation_failed","message":"invalid request","fields":{"label":"must be one of A-F or day1-day6"}}}
+{"success":false,"data":null,"error":{"code":"validation_failed","message":"invalid request","fields":{"label":"must be one of A-G or day1-day7"}}}
 
 $ curl -s -X POST ... /blocks/$BLOCK_ID/movements -d '[{"movement_id":"<valid>",...},{"movement_id":"<other coach>",...}]'
 {"success":false,"data":null,"error":{"code":"not_found","message":"movement not found"}}

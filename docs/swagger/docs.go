@@ -654,7 +654,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Returns the plan with its full nested tree in one response: days ordered by order_index, each day's blocks ordered by order_index, and each block's movements ordered by order_in_block with the movement library's name and category inlined. A block is the superset unit: a single movement and a superset have the same shape, differing only in the length of movements. Empty levels are empty arrays, never null. A plan whose athlete belongs to another coach is reported as not found.",
+                "description": "Returns the plan with its full nested tree in one response: days ordered by order_index (at most 7), each day's blocks ordered by order_index, and each block's movements ordered by order_in_block with the movement library's name and category inlined. A block is the superset unit: a single movement and a superset have the same shape, differing only in the length of movements. Empty levels are empty arrays, never null. A plan whose athlete belongs to another coach is reported as not found.",
                 "produces": [
                     "application/json"
                 ],

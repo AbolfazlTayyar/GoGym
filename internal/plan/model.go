@@ -8,6 +8,9 @@ import (
 	"github.com/google/uuid"
 )
 
+// MaxDaysPerPlan is enforced by the day table's unique, 0-6 bounded order_index, not by a count.
+const MaxDaysPerPlan = 7
+
 // Plan has no coach_id: ownership is reached through its athlete, so it can't use tenant.Scope directly.
 type Plan struct {
 	ID        uuid.UUID `gorm:"column:id;type:uuid;primaryKey"`

@@ -21,3 +21,4 @@ One file per decision, [MADR](https://adr.github.io/madr/)-style. Process rules 
 | [0014](0014-athlete-list-offset-pagination.md) | Offset pagination and private-by-default athlete list | 2026-10-02 | accepted |
 | [0015](0015-child-ownership-via-parent-lookup.md) | Child tables prove ownership through the parent lookup | 2026-10-03 | accepted |
 | [0016](0016-current-plan-latest-started.md) | The current plan is the latest one that has started | 2026-10-06 | accepted |
+| [0017](0017-plan-day-cap-in-schema.md) | A plan has at most 7 days, enforced by the schema | 2026-10-06 | accepted |

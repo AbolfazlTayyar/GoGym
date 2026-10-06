@@ -72,7 +72,7 @@ erDiagram
         uuid id PK
         uuid plan_id FK
         text label
-        int order_index
+        int order_index "0-6, unique per plan"
         timestamptz created_at
     }
 
@@ -121,3 +121,4 @@ erDiagram
 - **`BlockMovement.load` (added in migration `000003`) is free text, not a numeric kg column — an explicit judgment call:** coaches prescribe load as "%1RM", RPE, "bodyweight", or a plain kg figure interchangeably, and a numeric-only column would force lossy conversion at entry time for anything that isn't a plain weight. Nullable, since not every movement (e.g. a timed hold) carries a load. Revisit toward a structured/numeric model once the plan builder or reporting needs to compute or chart load directly.
 - **`Movement.media_url` (added in migration `000003`) is a nullable link to a demo video/image.** Adding the column now does not commit v1 to building an upload flow — it only implies that flow, when built, will need object storage (S3, MinIO, or a local provider). No upload flow is built as part of this change.
 - **Soft delete (`deleted_at`, added in migration `000003`) on `Athlete` and `Movement`:** these are the coach-owned tables a coach can delete from the UI. Both use GORM's `gorm.DeletedAt` convention (nullable `timestamptz`, indexed) so GORM's default query scope excludes soft-deleted rows automatically, without an explicit `deleted_at IS NULL` in application code. This does not change the movement library's own visibility rule (`coach_id = :coach_id OR coach_id IS NULL`) — the soft-delete scope simply ANDs onto it, so a soft-deleted universal or custom movement drops out of every coach's effective library the same way a soft-deleted row drops out of any other query. `Plan`, `Day`, `Block`, `BlockMovement`, `Coach`, and `AthleteMeasurement` are not soft-deleted: they are either reached transitively through a soft-deleted parent (cascading deletes still apply at the DB level for hard deletes) or not directly deletable from the UI in v1. Preloading a soft-deletable parent from a row that references it (e.g. `block_movement → movement`) needs `Unscoped()`, or the parent comes back zero-valued once it's deleted — a plan must still name a movement the coach has since removed from the library.
+- **A plan has at most 7 days (migration `000004`):** `day` has `UNIQUE (plan_id, order_index)` and `CHECK (order_index BETWEEN 0 AND 6)`, so a plan has seven slots and at most one day in each. The cap lives in the schema so concurrent inserts can't get around it — see [ADR 0017](adr/0017-plan-day-cap-in-schema.md).

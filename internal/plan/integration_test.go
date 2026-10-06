@@ -559,3 +559,31 @@ func TestPlanDetail_AnotherCoachsPlanIsNotFound(t *testing.T) {
 		require.Equal(t, http.StatusUnauthorized, do(t, router, http.MethodGet, planPath(planID.String()), "", "").Code)
 	})
 }
+
+func TestDays_AtMostSevenPerPlan(t *testing.T) {
+	router, db := newTestRouter(t)
+	token := signupCoach(t, router, "09121110305")
+	athleteID := createAthlete(t, router, token, "09121230305")
+	planID := insertPlan(t, db, athleteID, "Full week", daysFromToday(-1))
+
+	for i := range plan.MaxDaysPerPlan {
+		_, err := insertDay(db, planID, fmt.Sprintf("day%d", i+1), i)
+		require.NoError(t, err)
+	}
+
+	_, err := insertDay(db, planID, "extra", plan.MaxDaysPerPlan)
+	assert.ErrorIs(t, err, gorm.ErrCheckConstraintViolated, "an 8th day has no order_index slot left")
+
+	_, err = insertDay(db, planID, "dup", 3)
+	assert.ErrorIs(t, err, gorm.ErrDuplicatedKey, "two days can't share a slot")
+
+	_, err = insertDay(db, planID, "negative", -1)
+	assert.ErrorIs(t, err, gorm.ErrCheckConstraintViolated)
+
+	got, _ := getPlan(t, router, token, planID.String())
+	assert.Len(t, got.Days, plan.MaxDaysPerPlan)
+
+	other := insertPlan(t, db, athleteID, "Another week", daysFromToday(1))
+	_, err = insertDay(db, other, "A", 0)
+	assert.NoError(t, err, "the cap is per plan")
+}

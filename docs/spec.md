@@ -15,7 +15,7 @@ Audience: a personal trainer (coach) managing their own athletes. Not athlete-fa
 - `Athlete` — id, coach_id, first_name, last_name, phone, experience_level (beginner/intermediate/advanced), injuries, goal, height, athlete_type (private/public — private athletes pay more and are managed ongoing on the coach's home screen; public athletes pay less and just get a plan link, no further coach work)
 - `AthleteMeasurement` — id, athlete_id, date, weight, chest, waist, arm, thigh, hip — one row per check-in, drives the progress chart
 - `Plan` — id, athlete_id, start_date, title/note — an athlete can have several plans over time
-- `Day` — id, plan_id, label (A/B/C/D/E/F or day1/day2/day3/day4/day5/day6), order_index  — a plan is made of several days
+- `Day` — id, plan_id, label (A/B/C/D/E/F/G or day1/day2/day3/day4/day5/day6/day7), order_index  — a plan is made of up to 7 days (one training week)
 - `Block` — id, day_id, order_index, sets, rest_seconds, notes — a day is made of several blocks
 - `BlockMovement` — id, block_id, movement_id, reps, duration_seconds, order_in_block — a block can hold one or several movements (supersets/combo movements grouped under one block)
 - `Movement` — id, name, category (warmup/strength/cardio/…), coach_id (nullable), description — a coach-editable library, not per-athlete. `coach_id = NULL` marks a universal, system-seeded movement, visible to every coach but not editable or deletable by them; a non-null `coach_id` is a coach's own custom addition.
