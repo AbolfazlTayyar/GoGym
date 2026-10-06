@@ -648,7 +648,7 @@ $ curl -s -H "Authorization: Bearer $TOKEN" localhost:8080/api/v1/athletes/$ID/p
 
 ### Plan detail (MVP feature 4)
 
-⬜ **Not started**
+✅ **Done**
 
 **Description:** Fetch one plan's full nested structure — days, each day's blocks, each block's movements — in one call, ready for a tabbed-by-day UI.
 
