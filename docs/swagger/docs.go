@@ -390,6 +390,74 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/athletes/{id}/plans": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns every plan for the athlete, newest start_date first. At most one plan has is_current true: the latest one whose start_date is today or earlier. A plan starting in the future is upcoming, not current, and if every plan starts in the future none is current. Not paginated. An athlete with no plans yields an empty array; an athlete that belongs to another coach is reported as not found.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "plans"
+                ],
+                "summary": "List an athlete's plans",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Athlete ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.SuccessEnvelope"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/internal_plan.planSummaryResponse"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/auth/login": {
             "post": {
                 "description": "Verifies phone + password and returns a signed JWT. The error is the same whether the phone or the password was wrong.",
@@ -911,6 +979,43 @@ const docTemplate = `{
                 "weight": {
                     "type": "number",
                     "example": 72.5
+                }
+            }
+        },
+        "internal_plan.planSummaryResponse": {
+            "type": "object",
+            "properties": {
+                "athlete_id": {
+                    "type": "string",
+                    "example": "3f0b1c6e-2a1d-4f7b-9c3e-6d5a4b3c2d1e"
+                },
+                "created_at": {
+                    "type": "string",
+                    "example": "2026-09-10T18:00:00Z"
+                },
+                "id": {
+                    "type": "string",
+                    "example": "9b2d4f1a-6c3e-4a7b-8d5f-1e2c3b4a5d6e"
+                },
+                "is_current": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "note": {
+                    "type": "string",
+                    "example": "Deload every 4th week"
+                },
+                "start_date": {
+                    "type": "string",
+                    "example": "2026-09-15"
+                },
+                "title": {
+                    "type": "string",
+                    "example": "Cut phase 1"
+                },
+                "updated_at": {
+                    "type": "string",
+                    "example": "2026-09-10T18:00:00Z"
                 }
             }
         },

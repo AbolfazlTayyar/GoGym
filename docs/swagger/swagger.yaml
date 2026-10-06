@@ -224,6 +224,33 @@ definitions:
         example: 72.5
         type: number
     type: object
+  internal_plan.planSummaryResponse:
+    properties:
+      athlete_id:
+        example: 3f0b1c6e-2a1d-4f7b-9c3e-6d5a4b3c2d1e
+        type: string
+      created_at:
+        example: "2026-09-10T18:00:00Z"
+        type: string
+      id:
+        example: 9b2d4f1a-6c3e-4a7b-8d5f-1e2c3b4a5d6e
+        type: string
+      is_current:
+        example: true
+        type: boolean
+      note:
+        example: Deload every 4th week
+        type: string
+      start_date:
+        example: "2026-09-15"
+        type: string
+      title:
+        example: Cut phase 1
+        type: string
+      updated_at:
+        example: "2026-09-10T18:00:00Z"
+        type: string
+    type: object
   internal_server.healthzErrorResponse:
     properties:
       reason:
@@ -486,6 +513,52 @@ paths:
       summary: Add a measurement
       tags:
       - measurements
+  /api/v1/athletes/{id}/plans:
+    get:
+      description: 'Returns every plan for the athlete, newest start_date first. At
+        most one plan has is_current true: the latest one whose start_date is today
+        or earlier. A plan starting in the future is upcoming, not current, and if
+        every plan starts in the future none is current. Not paginated. An athlete
+        with no plans yields an empty array; an athlete that belongs to another coach
+        is reported as not found.'
+      parameters:
+      - description: Athlete ID
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.SuccessEnvelope'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/internal_plan.planSummaryResponse'
+                  type: array
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope'
+      security:
+      - BearerAuth: []
+      summary: List an athlete's plans
+      tags:
+      - plans
   /api/v1/auth/login:
     post:
       consumes:
