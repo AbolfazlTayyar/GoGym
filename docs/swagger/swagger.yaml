@@ -224,6 +224,98 @@ definitions:
         example: 72.5
         type: number
     type: object
+  internal_plan.blockMovementResponse:
+    properties:
+      category:
+        example: strength
+        type: string
+      duration_seconds:
+        type: integer
+      id:
+        example: 2a3b4c5d-6e7f-4a8b-9c0d-1e2f3a4b5c6d
+        type: string
+      load:
+        example: bodyweight
+        type: string
+      movement_id:
+        example: 8e9f0a1b-2c3d-4e5f-8a6b-7c8d9e0f1a2b
+        type: string
+      name:
+        example: Pull-up
+        type: string
+      order_in_block:
+        example: 0
+        type: integer
+      reps:
+        example: 10
+        type: integer
+    type: object
+  internal_plan.blockResponse:
+    properties:
+      id:
+        example: 7d2e3f4a-5b6c-4d7e-8f9a-0b1c2d3e4f5a
+        type: string
+      movements:
+        items:
+          $ref: '#/definitions/internal_plan.blockMovementResponse'
+        type: array
+      notes:
+        example: superset
+        type: string
+      order_index:
+        example: 1
+        type: integer
+      rest_seconds:
+        example: 60
+        type: integer
+      sets:
+        example: 3
+        type: integer
+    type: object
+  internal_plan.dayResponse:
+    properties:
+      blocks:
+        items:
+          $ref: '#/definitions/internal_plan.blockResponse'
+        type: array
+      id:
+        example: 5c1e2d3f-4a5b-4c6d-8e7f-9a0b1c2d3e4f
+        type: string
+      label:
+        example: A
+        type: string
+      order_index:
+        example: 0
+        type: integer
+    type: object
+  internal_plan.planDetailResponse:
+    properties:
+      athlete_id:
+        example: 3f0b1c6e-2a1d-4f7b-9c3e-6d5a4b3c2d1e
+        type: string
+      created_at:
+        example: "2026-09-10T18:00:00Z"
+        type: string
+      days:
+        items:
+          $ref: '#/definitions/internal_plan.dayResponse'
+        type: array
+      id:
+        example: 9b2d4f1a-6c3e-4a7b-8d5f-1e2c3b4a5d6e
+        type: string
+      note:
+        example: Deload every 4th week
+        type: string
+      start_date:
+        example: "2026-09-15"
+        type: string
+      title:
+        example: Cut phase 1
+        type: string
+      updated_at:
+        example: "2026-09-10T18:00:00Z"
+        type: string
+    type: object
   internal_plan.planSummaryResponse:
     properties:
       athlete_id:
@@ -675,6 +767,51 @@ paths:
       summary: Get the authenticated coach
       tags:
       - auth
+  /api/v1/plans/{id}:
+    get:
+      description: 'Returns the plan with its full nested tree in one response: days
+        ordered by order_index, each day''s blocks ordered by order_index, and each
+        block''s movements ordered by order_in_block with the movement library''s
+        name and category inlined. A block is the superset unit: a single movement
+        and a superset have the same shape, differing only in the length of movements.
+        Empty levels are empty arrays, never null. A plan whose athlete belongs to
+        another coach is reported as not found.'
+      parameters:
+      - description: Plan ID
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.SuccessEnvelope'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_plan.planDetailResponse'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope'
+      security:
+      - BearerAuth: []
+      summary: Get a plan with its days, blocks and movements
+      tags:
+      - plans
   /healthz:
     get:
       description: Reports whether the service and its database connection are healthy.

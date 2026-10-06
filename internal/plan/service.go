@@ -2,6 +2,7 @@ package plan
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/AbolfazlTayyar/gogym/internal/athlete"
@@ -35,6 +36,29 @@ func (s *Service) List(ctx context.Context, coachID, athleteID uuid.UUID) (*List
 	}
 
 	return &ListResult{Plans: plans, CurrentID: currentPlanID(plans, time.Now())}, nil
+}
+
+// Get returns ErrNotFound for another coach's plan, exactly as for one that doesn't exist.
+func (s *Service) Get(ctx context.Context, coachID, planID uuid.UUID) (*Plan, error) {
+	p, err := s.repo.FindByID(ctx, planID)
+	if err != nil {
+		return nil, err
+	}
+
+	if _, err := s.athletes.Get(ctx, coachID, p.AthleteID); err != nil {
+		if errors.Is(err, athlete.ErrNotFound) {
+			return nil, ErrNotFound
+		}
+		return nil, err
+	}
+
+	days, err := s.repo.LoadDays(ctx, p.ID)
+	if err != nil {
+		return nil, err
+	}
+	p.Days = days
+
+	return p, nil
 }
 
 // currentPlanID picks the plan the athlete is on today: the latest one whose start_date is not

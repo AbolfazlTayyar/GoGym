@@ -4,6 +4,7 @@ package plan
 import (
 	"time"
 
+	"github.com/AbolfazlTayyar/gogym/internal/models"
 	"github.com/google/uuid"
 )
 
@@ -16,6 +17,7 @@ type Plan struct {
 	Note      *string   `gorm:"column:note;type:text"`
 	CreatedAt time.Time `gorm:"column:created_at;type:timestamptz;not null"`
 	UpdatedAt time.Time `gorm:"column:updated_at;type:timestamptz;not null"`
+	Days      []Day     `gorm:"foreignKey:PlanID"`
 }
 
 func (Plan) TableName() string {
@@ -28,6 +30,7 @@ type Day struct {
 	Label      string    `gorm:"column:label;type:text;not null"`
 	OrderIndex int       `gorm:"column:order_index;type:int;not null"`
 	CreatedAt  time.Time `gorm:"column:created_at;type:timestamptz;not null"`
+	Blocks     []Block   `gorm:"foreignKey:DayID"`
 }
 
 func (Day) TableName() string {
@@ -35,13 +38,14 @@ func (Day) TableName() string {
 }
 
 type Block struct {
-	ID          uuid.UUID `gorm:"column:id;type:uuid;primaryKey"`
-	DayID       uuid.UUID `gorm:"column:day_id;type:uuid;not null"`
-	OrderIndex  int       `gorm:"column:order_index;type:int;not null"`
-	Sets        int       `gorm:"column:sets;type:int;not null"`
-	RestSeconds *int      `gorm:"column:rest_seconds;type:int"`
-	Notes       *string   `gorm:"column:notes;type:text"`
-	CreatedAt   time.Time `gorm:"column:created_at;type:timestamptz;not null"`
+	ID          uuid.UUID       `gorm:"column:id;type:uuid;primaryKey"`
+	DayID       uuid.UUID       `gorm:"column:day_id;type:uuid;not null"`
+	OrderIndex  int             `gorm:"column:order_index;type:int;not null"`
+	Sets        int             `gorm:"column:sets;type:int;not null"`
+	RestSeconds *int            `gorm:"column:rest_seconds;type:int"`
+	Notes       *string         `gorm:"column:notes;type:text"`
+	CreatedAt   time.Time       `gorm:"column:created_at;type:timestamptz;not null"`
+	Movements   []BlockMovement `gorm:"foreignKey:BlockID"`
 }
 
 func (Block) TableName() string {
@@ -50,14 +54,15 @@ func (Block) TableName() string {
 
 // BlockMovement.Load is free text, not kg: coaches prescribe %1RM, RPE, or bodyweight just as often.
 type BlockMovement struct {
-	ID              uuid.UUID `gorm:"column:id;type:uuid;primaryKey"`
-	BlockID         uuid.UUID `gorm:"column:block_id;type:uuid;not null"`
-	MovementID      uuid.UUID `gorm:"column:movement_id;type:uuid;not null"`
-	Reps            *int      `gorm:"column:reps;type:int"`
-	DurationSeconds *int      `gorm:"column:duration_seconds;type:int"`
-	Load            *string   `gorm:"column:load;type:text"`
-	OrderInBlock    int       `gorm:"column:order_in_block;type:int;not null"`
-	CreatedAt       time.Time `gorm:"column:created_at;type:timestamptz;not null"`
+	ID              uuid.UUID       `gorm:"column:id;type:uuid;primaryKey"`
+	BlockID         uuid.UUID       `gorm:"column:block_id;type:uuid;not null"`
+	MovementID      uuid.UUID       `gorm:"column:movement_id;type:uuid;not null"`
+	Reps            *int            `gorm:"column:reps;type:int"`
+	DurationSeconds *int            `gorm:"column:duration_seconds;type:int"`
+	Load            *string         `gorm:"column:load;type:text"`
+	OrderInBlock    int             `gorm:"column:order_in_block;type:int;not null"`
+	CreatedAt       time.Time       `gorm:"column:created_at;type:timestamptz;not null"`
+	Movement        models.Movement `gorm:"foreignKey:MovementID"`
 }
 
 func (BlockMovement) TableName() string {
