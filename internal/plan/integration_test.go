@@ -133,7 +133,7 @@ func daysFromToday(days int) time.Time {
 	return time.Date(d.Year(), d.Month(), d.Day(), 0, 0, 0, 0, time.UTC)
 }
 
-// insertPlan writes straight to the table: there is no create-plan endpoint yet.
+// insertPlan writes straight to the table, so read-side tests don't depend on the builder's validation.
 func insertPlan(t *testing.T, db *gorm.DB, athleteID, title string, start time.Time) uuid.UUID {
 	t.Helper()
 
@@ -249,7 +249,7 @@ func TestPlans_RequireAToken(t *testing.T) {
 	require.Equal(t, http.StatusUnauthorized, rec.Code)
 }
 
-// The insert helpers below write straight to the tables until the plan-builder endpoints exist.
+// The insert helpers below bypass the builder endpoints for the same reason as insertPlan.
 
 func insertMovement(t *testing.T, db *gorm.DB, name, category string) uuid.UUID {
 	t.Helper()
@@ -326,18 +326,22 @@ type planDetail struct {
 	Title     string `json:"title"`
 	StartDate string `json:"start_date"`
 	Days      []struct {
+		ID         string `json:"id"`
 		Label      string `json:"label"`
 		OrderIndex int    `json:"order_index"`
 		Blocks     []struct {
+			ID          string  `json:"id"`
 			OrderIndex  int     `json:"order_index"`
 			Sets        int     `json:"sets"`
 			RestSeconds *int    `json:"rest_seconds"`
 			Notes       *string `json:"notes"`
 			Movements   []struct {
+				ID           string  `json:"id"`
 				MovementID   string  `json:"movement_id"`
 				Name         string  `json:"name"`
 				Category     *string `json:"category"`
 				Reps         *int    `json:"reps"`
+				Load         *string `json:"load"`
 				OrderInBlock int     `json:"order_in_block"`
 			} `json:"movements"`
 		} `json:"blocks"`
@@ -586,4 +590,399 @@ func TestDays_AtMostSevenPerPlan(t *testing.T) {
 	other := insertPlan(t, db, athleteID, "Another week", daysFromToday(1))
 	_, err = insertDay(db, other, "A", 0)
 	assert.NoError(t, err, "the cap is per plan")
+}
+
+func coachIDByPhone(t *testing.T, db *gorm.DB, phone string) uuid.UUID {
+	t.Helper()
+
+	var c coach.Coach
+	require.NoError(t, db.First(&c, "phone = ?", phone).Error)
+
+	return c.ID
+}
+
+func insertCoachMovement(t *testing.T, db *gorm.DB, coachID uuid.UUID, name string) uuid.UUID {
+	t.Helper()
+
+	id := uuid.New()
+	require.NoError(t, db.Create(&models.Movement{ID: id, CoachID: &coachID, Name: name}).Error)
+
+	return id
+}
+
+func dataID(t *testing.T, env envelope) string {
+	t.Helper()
+
+	var created struct {
+		ID string `json:"id"`
+	}
+	require.NoError(t, json.Unmarshal(env.Data, &created))
+	require.NotEmpty(t, created.ID)
+
+	return created.ID
+}
+
+func daysPath(planID string) string       { return planPath(planID) + "/days" }
+func blocksPath(dayID string) string      { return "/api/v1/days/" + dayID + "/blocks" }
+func movementsPath(blockID string) string { return "/api/v1/blocks/" + blockID + "/movements" }
+
+type builtTree struct {
+	planID, dayID, blockID string
+}
+
+// buildToBlock goes through the builder endpoints, leaving an empty block to add movements to.
+func buildToBlock(t *testing.T, router *gin.Engine, token, athleteID string) builtTree {
+	t.Helper()
+
+	var tree builtTree
+
+	body := fmt.Sprintf(`{"athlete_id":%q,"start_date":"2026-09-15","title":"Cut phase 1"}`, athleteID)
+	tree.planID = dataID(t, decodeEnvelope(t, do(t, router, http.MethodPost, "/api/v1/plans", token, body), http.StatusCreated))
+
+	env := decodeEnvelope(t, do(t, router, http.MethodPost, daysPath(tree.planID), token, `{"label":"A","order_index":0}`), http.StatusCreated)
+	tree.dayID = dataID(t, env)
+
+	env = decodeEnvelope(t, do(t, router, http.MethodPost, blocksPath(tree.dayID), token, `{"order_index":0,"sets":3}`), http.StatusCreated)
+	tree.blockID = dataID(t, env)
+
+	return tree
+}
+
+func countBlockMovements(t *testing.T, db *gorm.DB, blockID string) int64 {
+	t.Helper()
+
+	var n int64
+	require.NoError(t, db.Model(&plan.BlockMovement{}).Where("block_id = ?", blockID).Count(&n).Error)
+
+	return n
+}
+
+func requireValidationFields(t *testing.T, rec *httptest.ResponseRecorder) map[string]string {
+	t.Helper()
+
+	env := decodeEnvelope(t, rec, http.StatusBadRequest)
+	assert.False(t, env.Success)
+	assert.Equal(t, "null", string(env.Data))
+	require.NotNil(t, env.Error)
+	assert.Equal(t, httpx.CodeValidationFailed, env.Error.Code)
+
+	return env.Error.Fields
+}
+
+func TestBuilder_FullPlanBuildUp(t *testing.T) {
+	router, db := newTestRouter(t)
+	const coachPhone = "09121110401"
+	token := signupCoach(t, router, coachPhone)
+	athleteID := createAthlete(t, router, token, "09121230401")
+
+	// One universal and one of the coach's own: a superset can draw from both halves of the library.
+	pullUp := insertMovement(t, db, "Pull-up", "strength")
+	ringDip := insertCoachMovement(t, db, coachIDByPhone(t, db, coachPhone), "Ring dip")
+
+	createBody := fmt.Sprintf(`{"athlete_id":%q,"start_date":"2026-09-15","title":" Cut phase 1 ","note":"Deload every 4th week"}`, athleteID)
+	env := decodeEnvelope(t, do(t, router, http.MethodPost, "/api/v1/plans", token, createBody), http.StatusCreated)
+	assert.True(t, env.Success)
+	assert.Nil(t, env.Error)
+
+	var createdPlan struct {
+		ID        string          `json:"id"`
+		AthleteID string          `json:"athlete_id"`
+		Title     string          `json:"title"`
+		Note      *string         `json:"note"`
+		StartDate string          `json:"start_date"`
+		Days      json.RawMessage `json:"days"`
+	}
+	require.NoError(t, json.Unmarshal(env.Data, &createdPlan))
+	assert.Equal(t, athleteID, createdPlan.AthleteID)
+	assert.Equal(t, "Cut phase 1", createdPlan.Title, "title is trimmed")
+	require.NotNil(t, createdPlan.Note)
+	assert.Equal(t, "Deload every 4th week", *createdPlan.Note)
+	assert.Equal(t, "2026-09-15", createdPlan.StartDate)
+	assert.JSONEq(t, `[]`, string(createdPlan.Days))
+
+	env = decodeEnvelope(t, do(t, router, http.MethodPost, daysPath(createdPlan.ID), token, `{"label":"A","order_index":0}`), http.StatusCreated)
+	var createdDay struct {
+		ID         string          `json:"id"`
+		Label      string          `json:"label"`
+		OrderIndex int             `json:"order_index"`
+		Blocks     json.RawMessage `json:"blocks"`
+	}
+	require.NoError(t, json.Unmarshal(env.Data, &createdDay))
+	assert.NotEmpty(t, createdDay.ID)
+	assert.Equal(t, "A", createdDay.Label)
+	assert.Equal(t, 0, createdDay.OrderIndex)
+	assert.JSONEq(t, `[]`, string(createdDay.Blocks))
+
+	blockBody := `{"order_index":0,"sets":3,"rest_seconds":90,"notes":"superset"}`
+	env = decodeEnvelope(t, do(t, router, http.MethodPost, blocksPath(createdDay.ID), token, blockBody), http.StatusCreated)
+	var createdBlock struct {
+		ID          string          `json:"id"`
+		OrderIndex  int             `json:"order_index"`
+		Sets        int             `json:"sets"`
+		RestSeconds *int            `json:"rest_seconds"`
+		Notes       *string         `json:"notes"`
+		Movements   json.RawMessage `json:"movements"`
+	}
+	require.NoError(t, json.Unmarshal(env.Data, &createdBlock))
+	assert.NotEmpty(t, createdBlock.ID)
+	assert.Equal(t, 3, createdBlock.Sets)
+	require.NotNil(t, createdBlock.RestSeconds)
+	assert.Equal(t, 90, *createdBlock.RestSeconds)
+	require.NotNil(t, createdBlock.Notes)
+	assert.Equal(t, "superset", *createdBlock.Notes)
+	assert.JSONEq(t, `[]`, string(createdBlock.Movements))
+
+	supersetBody := fmt.Sprintf(`[
+		{"movement_id":%q,"reps":10,"load":"bodyweight","order_in_block":0},
+		{"movement_id":%q,"reps":12,"order_in_block":1}
+	]`, pullUp, ringDip)
+	env = decodeEnvelope(t, do(t, router, http.MethodPost, movementsPath(createdBlock.ID), token, supersetBody), http.StatusCreated)
+	var createdMovements []struct {
+		ID           string  `json:"id"`
+		MovementID   string  `json:"movement_id"`
+		Name         string  `json:"name"`
+		Category     *string `json:"category"`
+		Reps         *int    `json:"reps"`
+		Load         *string `json:"load"`
+		OrderInBlock int     `json:"order_in_block"`
+	}
+	require.NoError(t, json.Unmarshal(env.Data, &createdMovements))
+	require.Len(t, createdMovements, 2)
+	assert.Equal(t, []string{"Pull-up", "Ring dip"}, []string{createdMovements[0].Name, createdMovements[1].Name},
+		"the response names each movement from the library")
+	assert.Equal(t, pullUp.String(), createdMovements[0].MovementID)
+	require.NotNil(t, createdMovements[0].Category)
+	assert.Equal(t, "strength", *createdMovements[0].Category)
+	require.NotNil(t, createdMovements[0].Load)
+	assert.Equal(t, "bodyweight", *createdMovements[0].Load)
+	assert.Nil(t, createdMovements[1].Load)
+	require.NotNil(t, createdMovements[1].Reps)
+	assert.Equal(t, 12, *createdMovements[1].Reps)
+
+	got, _ := getPlan(t, router, token, createdPlan.ID)
+	assert.Equal(t, "Cut phase 1", got.Title)
+	require.Len(t, got.Days, 1)
+	assert.Equal(t, createdDay.ID, got.Days[0].ID)
+	require.Len(t, got.Days[0].Blocks, 1)
+	block := got.Days[0].Blocks[0]
+	assert.Equal(t, createdBlock.ID, block.ID)
+	assert.Equal(t, 3, block.Sets)
+	require.Len(t, block.Movements, 2, "both movements landed in one block: a superset")
+	assert.Equal(t, []string{createdMovements[0].ID, createdMovements[1].ID}, []string{block.Movements[0].ID, block.Movements[1].ID})
+	assert.Equal(t, []int{0, 1}, []int{block.Movements[0].OrderInBlock, block.Movements[1].OrderInBlock})
+	require.NotNil(t, block.Movements[0].Load)
+	assert.Equal(t, "bodyweight", *block.Movements[0].Load)
+
+	listed := listPlans(t, router, token, athleteID)
+	require.Len(t, listed, 1)
+	assert.Equal(t, createdPlan.ID, listed[0].ID)
+}
+
+func TestBuilder_MovementOutsideLibraryRejectsWholeBatch(t *testing.T) {
+	router, db := newTestRouter(t)
+	const coachPhone, otherPhone = "09121110402", "09121110403"
+	token := signupCoach(t, router, coachPhone)
+	signupCoach(t, router, otherPhone)
+	athleteID := createAthlete(t, router, token, "09121230402")
+	tree := buildToBlock(t, router, token, athleteID)
+
+	squat := insertMovement(t, db, "Back squat", "strength")
+	ownLunge := insertCoachMovement(t, db, coachIDByPhone(t, db, coachPhone), "Walking lunge")
+	othersLunge := insertCoachMovement(t, db, coachIDByPhone(t, db, otherPhone), "Walking lunge")
+	retired := insertCoachMovement(t, db, coachIDByPhone(t, db, coachPhone), "Retired move")
+	require.NoError(t, db.Delete(&models.Movement{}, "id = ?", retired).Error)
+
+	batch := func(second string) string {
+		return fmt.Sprintf(`[{"movement_id":%q,"reps":8,"order_in_block":0},{"movement_id":%q,"reps":10,"order_in_block":1}]`, squat, second)
+	}
+
+	for name, second := range map[string]string{
+		"another coach's movement":      othersLunge.String(),
+		"a movement that doesn't exist": uuid.NewString(),
+		"a soft-deleted movement":       retired.String(),
+	} {
+		t.Run(name, func(t *testing.T) {
+			fields := requireValidationFields(t, do(t, router, http.MethodPost, movementsPath(tree.blockID), token, batch(second)))
+
+			assert.Equal(t, map[string]string{"[1].movement_id": "not found"}, fields,
+				"the bad entry is pinpointed, and reads the same whether it's foreign, missing or deleted")
+			assert.Zero(t, countBlockMovements(t, db, tree.blockID), "the valid first movement wasn't inserted either")
+		})
+	}
+
+	t.Run("every bad entry is reported at once", func(t *testing.T) {
+		body := fmt.Sprintf(`[{"movement_id":%q,"order_in_block":0},{"movement_id":"not-a-uuid","order_in_block":1},{"movement_id":%q,"reps":0}]`,
+			othersLunge, squat)
+
+		fields := requireValidationFields(t, do(t, router, http.MethodPost, movementsPath(tree.blockID), token, body))
+
+		assert.Equal(t, map[string]string{
+			"[0].movement_id":    "not found",
+			"[1].movement_id":    "must be a UUID",
+			"[2].reps":           "must be between 1 and 1000",
+			"[2].order_in_block": httpx.MsgFieldRequired,
+		}, fields)
+		assert.Zero(t, countBlockMovements(t, db, tree.blockID))
+	})
+
+	t.Run("an empty batch is rejected", func(t *testing.T) {
+		env := decodeEnvelope(t, do(t, router, http.MethodPost, movementsPath(tree.blockID), token, `[]`), http.StatusBadRequest)
+		require.NotNil(t, env.Error)
+		assert.Equal(t, httpx.CodeValidationFailed, env.Error.Code)
+	})
+
+	t.Run("the same batch with the coach's own movement goes through", func(t *testing.T) {
+		decodeEnvelope(t, do(t, router, http.MethodPost, movementsPath(tree.blockID), token, batch(ownLunge.String())), http.StatusCreated)
+		assert.Equal(t, int64(2), countBlockMovements(t, db, tree.blockID))
+	})
+}
+
+// The service rejects bad movements before inserting, so this drives the repository directly to fail
+// mid-batch. One row per INSERT and no GORM default transaction leave only the explicit one to roll back.
+func TestCreateBlockMovements_MidBatchFailureInsertsNothing(t *testing.T) {
+	router, db := newTestRouter(t)
+	token := signupCoach(t, router, "09121110404")
+	athleteID := createAthlete(t, router, token, "09121230404")
+	tree := buildToBlock(t, router, token, athleteID)
+	squat := insertMovement(t, db, "Back squat", "strength")
+
+	repo := plan.NewRepository(db.Session(&gorm.Session{CreateBatchSize: 1, SkipDefaultTransaction: true}))
+	blockID := uuid.MustParse(tree.blockID)
+
+	err := repo.CreateBlockMovements(context.Background(), []plan.BlockMovement{
+		{ID: uuid.New(), BlockID: blockID, MovementID: squat, OrderInBlock: 0},
+		{ID: uuid.New(), BlockID: blockID, MovementID: uuid.New(), OrderInBlock: 1},
+	})
+
+	require.ErrorIs(t, err, gorm.ErrForeignKeyViolated, "the second row names no movement")
+	assert.Zero(t, countBlockMovements(t, db, tree.blockID), "the first row was rolled back with it")
+}
+
+func TestBuilder_DayLabelAndSlotRules(t *testing.T) {
+	router, db := newTestRouter(t)
+	token := signupCoach(t, router, "09121110405")
+	athleteID := createAthlete(t, router, token, "09121230405")
+
+	body := fmt.Sprintf(`{"athlete_id":%q,"start_date":"2026-09-15","title":"Week"}`, athleteID)
+	planID := dataID(t, decodeEnvelope(t, do(t, router, http.MethodPost, "/api/v1/plans", token, body), http.StatusCreated))
+
+	for name, tc := range map[string]struct {
+		body   string
+		fields map[string]string
+	}{
+		"unknown label":           {`{"label":"Z","order_index":0}`, map[string]string{"label": "must be one of A-G or day1-day7"}},
+		"label past the 7th slot": {`{"label":"day8","order_index":0}`, map[string]string{"label": "must be one of A-G or day1-day7"}},
+		"lowercase letter":        {`{"label":"a","order_index":0}`, map[string]string{"label": "must be one of A-G or day1-day7"}},
+		"slot past the 7th":       {`{"label":"A","order_index":7}`, map[string]string{"order_index": "must be between 0 and 6"}},
+		"negative slot":           {`{"label":"A","order_index":-1}`, map[string]string{"order_index": "must be between 0 and 6"}},
+		"slot beyond INT":         {`{"label":"A","order_index":9999999999}`, map[string]string{"order_index": "must be between 0 and 6"}},
+		"nothing given": {`{}`, map[string]string{
+			"label":       httpx.MsgFieldRequired,
+			"order_index": httpx.MsgFieldRequired,
+		}},
+	} {
+		t.Run(name, func(t *testing.T) {
+			assert.Equal(t, tc.fields, requireValidationFields(t, do(t, router, http.MethodPost, daysPath(planID), token, tc.body)))
+		})
+	}
+
+	decodeEnvelope(t, do(t, router, http.MethodPost, daysPath(planID), token, `{"label":"A","order_index":0}`), http.StatusCreated)
+
+	t.Run("a taken slot is a 400 on order_index, not a 500", func(t *testing.T) {
+		fields := requireValidationFields(t, do(t, router, http.MethodPost, daysPath(planID), token, `{"label":"B","order_index":0}`))
+		assert.Equal(t, map[string]string{"order_index": "is already used by another day in this plan"}, fields)
+	})
+
+	t.Run("the schema's range check maps the same way if it's ever reached", func(t *testing.T) {
+		err := plan.NewRepository(db).CreateDay(context.Background(), &plan.Day{
+			ID: uuid.New(), PlanID: uuid.MustParse(planID), Label: "H", OrderIndex: plan.MaxDaysPerPlan,
+		})
+		assert.ErrorIs(t, err, plan.ErrDaySlotOutOfRange)
+	})
+
+	got, _ := getPlan(t, router, token, planID)
+	require.Len(t, got.Days, 1, "no rejected day was stored")
+	assert.Equal(t, "A", got.Days[0].Label)
+}
+
+func TestBuilder_AnotherCoachsTreeIsNotFound(t *testing.T) {
+	router, db := newTestRouter(t)
+	owner := signupCoach(t, router, "09121110406")
+	intruder := signupCoach(t, router, "09121110407")
+	athleteID := createAthlete(t, router, owner, "09121230406")
+	tree := buildToBlock(t, router, owner, athleteID)
+	squat := insertMovement(t, db, "Back squat", "strength")
+
+	// Every body is valid, and squat is universal, so only ownership can turn these away.
+	createPlan := fmt.Sprintf(`{"athlete_id":%q,"start_date":"2026-09-15","title":"Stolen"}`, athleteID)
+	addDay := `{"label":"B","order_index":1}`
+	addBlock := `{"order_index":1,"sets":3}`
+	addMovements := fmt.Sprintf(`[{"movement_id":%q,"reps":8,"order_in_block":0}]`, squat)
+
+	requireNotFound := func(t *testing.T, target, token, body string) {
+		t.Helper()
+
+		env := decodeEnvelope(t, do(t, router, http.MethodPost, target, token, body), http.StatusNotFound)
+		assert.False(t, env.Success)
+		require.NotNil(t, env.Error)
+		assert.Equal(t, httpx.CodeNotFound, env.Error.Code)
+		assert.Equal(t, "null", string(env.Data))
+	}
+
+	t.Run("another coach gets 404 at every level, not 403", func(t *testing.T) {
+		requireNotFound(t, "/api/v1/plans", intruder, createPlan)
+		requireNotFound(t, daysPath(tree.planID), intruder, addDay)
+		requireNotFound(t, blocksPath(tree.dayID), intruder, addBlock)
+		requireNotFound(t, movementsPath(tree.blockID), intruder, addMovements)
+	})
+
+	t.Run("nothing was added to the owner's tree", func(t *testing.T) {
+		assert.Len(t, listPlans(t, router, owner, athleteID), 1)
+
+		got, _ := getPlan(t, router, owner, tree.planID)
+		require.Len(t, got.Days, 1)
+		require.Len(t, got.Days[0].Blocks, 1)
+		assert.Empty(t, got.Days[0].Blocks[0].Movements)
+	})
+
+	t.Run("ids that don't exist read the same", func(t *testing.T) {
+		missingAthlete := fmt.Sprintf(`{"athlete_id":%q,"start_date":"2026-09-15","title":"Ghost"}`, uuid.NewString())
+		requireNotFound(t, "/api/v1/plans", owner, missingAthlete)
+		requireNotFound(t, daysPath(uuid.NewString()), owner, addDay)
+		requireNotFound(t, blocksPath(uuid.NewString()), owner, addBlock)
+		requireNotFound(t, movementsPath(uuid.NewString()), owner, addMovements)
+	})
+
+	t.Run("malformed path ids read the same", func(t *testing.T) {
+		requireNotFound(t, daysPath("not-a-uuid"), owner, addDay)
+		requireNotFound(t, blocksPath("not-a-uuid"), owner, addBlock)
+		requireNotFound(t, movementsPath("not-a-uuid"), owner, addMovements)
+	})
+
+	t.Run("no token is 401", func(t *testing.T) {
+		require.Equal(t, http.StatusUnauthorized, do(t, router, http.MethodPost, movementsPath(tree.blockID), "", addMovements).Code)
+	})
+
+	t.Run("a soft-deleted athlete's tree reads the same", func(t *testing.T) {
+		require.NoError(t, db.Delete(&athlete.Athlete{}, "id = ?", athleteID).Error)
+
+		requireNotFound(t, "/api/v1/plans", owner, createPlan)
+		requireNotFound(t, daysPath(tree.planID), owner, addDay)
+		requireNotFound(t, blocksPath(tree.dayID), owner, addBlock)
+		requireNotFound(t, movementsPath(tree.blockID), owner, addMovements)
+	})
+}
+
+func TestBuilder_CreatePlanRejectsBadInputWithFieldErrors(t *testing.T) {
+	router, _ := newTestRouter(t)
+	token := signupCoach(t, router, "09121110408")
+
+	fields := requireValidationFields(t, do(t, router, http.MethodPost, "/api/v1/plans", token,
+		`{"athlete_id":"not-a-uuid","start_date":"15/09/2026","title":"   "}`))
+
+	assert.Equal(t, map[string]string{
+		"athlete_id": "must be a UUID",
+		"start_date": httpx.MsgDateFormat,
+		"title":      httpx.MsgFieldRequired,
+	}, fields)
 }

@@ -224,6 +224,48 @@ definitions:
         example: 72.5
         type: number
     type: object
+  internal_plan.addBlockRequest:
+    properties:
+      notes:
+        example: superset
+        type: string
+      order_index:
+        example: 1
+        type: integer
+      rest_seconds:
+        example: 60
+        type: integer
+      sets:
+        example: 3
+        type: integer
+    type: object
+  internal_plan.addDayRequest:
+    properties:
+      label:
+        example: A
+        type: string
+      order_index:
+        example: 0
+        type: integer
+    type: object
+  internal_plan.addMovementRequest:
+    properties:
+      duration_seconds:
+        example: 30
+        type: integer
+      load:
+        example: bodyweight
+        type: string
+      movement_id:
+        example: 8e9f0a1b-2c3d-4e5f-8a6b-7c8d9e0f1a2b
+        type: string
+      order_in_block:
+        example: 0
+        type: integer
+      reps:
+        example: 10
+        type: integer
+    type: object
   internal_plan.blockMovementResponse:
     properties:
       category:
@@ -271,6 +313,21 @@ definitions:
       sets:
         example: 3
         type: integer
+    type: object
+  internal_plan.createRequest:
+    properties:
+      athlete_id:
+        example: 3f0b1c6e-2a1d-4f7b-9c3e-6d5a4b3c2d1e
+        type: string
+      note:
+        example: Deload every 4th week
+        type: string
+      start_date:
+        example: "2026-09-15"
+        type: string
+      title:
+        example: Cut phase 1
+        type: string
     type: object
   internal_plan.dayResponse:
     properties:
@@ -735,6 +792,70 @@ paths:
       summary: Sign up a coach
       tags:
       - auth
+  /api/v1/blocks/{id}/movements:
+    post:
+      consumes:
+      - application/json
+      description: 'Adds every movement in the array to the block, or none of them.
+        Send two or more to build a superset in one call. Each entry needs movement_id
+        and order_in_block (0-999); reps (1-1000), duration_seconds (1-14400) and
+        load (free text, e.g. "70kg", "75% 1RM", "RPE 8", "bodyweight") are optional.
+        Every movement_id must be in the coach''s library: their own movements or
+        a universal one. A movement that isn''t, or any other invalid entry, rejects
+        the whole batch with a 400 whose fields are keyed by array position, e.g.
+        "[1].movement_id". The response lists the created movements with their library
+        name and category. A block whose plan''s athlete belongs to another coach
+        is reported as not found.'
+      parameters:
+      - description: Block ID
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Movements to add, in one batch
+        in: body
+        name: request
+        required: true
+        schema:
+          items:
+            $ref: '#/definitions/internal_plan.addMovementRequest'
+          type: array
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.SuccessEnvelope'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/internal_plan.blockMovementResponse'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope'
+      security:
+      - BearerAuth: []
+      summary: Add movements to a block
+      tags:
+      - plans
   /api/v1/coaches/me:
     get:
       description: Returns the profile of the coach identified by the bearer token.
@@ -767,6 +888,110 @@ paths:
       summary: Get the authenticated coach
       tags:
       - auth
+  /api/v1/days/{id}/blocks:
+    post:
+      consumes:
+      - application/json
+      description: 'Adds a block to the day. order_index (0-999) and sets (1-50) are
+        required; rest_seconds (0-3600) and notes are optional. A block is the superset
+        unit: add its movements, one or several, with the block movements endpoint.
+        The response is the new block with an empty movements array. A day whose plan''s
+        athlete belongs to another coach is reported as not found.'
+      parameters:
+      - description: Day ID
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Block details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_plan.addBlockRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.SuccessEnvelope'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_plan.blockResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope'
+      security:
+      - BearerAuth: []
+      summary: Add a block to a day
+      tags:
+      - plans
+  /api/v1/plans:
+    post:
+      consumes:
+      - application/json
+      description: Creates an empty plan for the athlete; add days, blocks and movements
+        to it with the builder endpoints. athlete_id, start_date (YYYY-MM-DD) and
+        title are required, note is optional. The response has the plan detail shape
+        with an empty days array. An athlete that belongs to another coach is reported
+        as not found.
+      parameters:
+      - description: Plan details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_plan.createRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.SuccessEnvelope'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_plan.planDetailResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope'
+      security:
+      - BearerAuth: []
+      summary: Create a plan
+      tags:
+      - plans
   /api/v1/plans/{id}:
     get:
       description: 'Returns the plan with its full nested tree in one response: days
@@ -810,6 +1035,61 @@ paths:
       security:
       - BearerAuth: []
       summary: Get a plan with its days, blocks and movements
+      tags:
+      - plans
+  /api/v1/plans/{id}/days:
+    post:
+      consumes:
+      - application/json
+      description: 'Adds a day to the plan. label must be one of A-G or day1-day7.
+        order_index is the day''s slot, 0-6: a plan holds at most 7 days, one per
+        slot, so a slot outside 0-6 or one another day already uses is a 400 on order_index.
+        The response is the new day with an empty blocks array. A plan whose athlete
+        belongs to another coach is reported as not found.'
+      parameters:
+      - description: Plan ID
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Day details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_plan.addDayRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.SuccessEnvelope'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_plan.dayResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope'
+      security:
+      - BearerAuth: []
+      summary: Add a day to a plan
       tags:
       - plans
   /healthz:

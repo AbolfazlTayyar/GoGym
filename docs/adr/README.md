@@ -22,3 +22,5 @@ One file per decision, [MADR](https://adr.github.io/madr/)-style. Process rules 
 | [0015](0015-child-ownership-via-parent-lookup.md) | Child tables prove ownership through the parent lookup | 2026-10-03 | accepted |
 | [0016](0016-current-plan-latest-started.md) | The current plan is the latest one that has started | 2026-10-06 | accepted |
 | [0017](0017-plan-day-cap-in-schema.md) | A plan has at most 7 days, enforced by the schema | 2026-10-06 | accepted |
+| [0018](0018-workout-logs-snapshot-prescription.md) | Workout logs snapshot the prescription, not the plan rows | 2026-10-07 | accepted |
+| [0019](0019-unusable-body-reference-is-a-field-error.md) | An unusable id in the request body is a field error, not a 404 | 2026-10-07 | accepted |

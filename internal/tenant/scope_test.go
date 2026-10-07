@@ -5,9 +5,11 @@ import (
 
 	"github.com/AbolfazlTayyar/gogym/internal/athlete"
 	coachpkg "github.com/AbolfazlTayyar/gogym/internal/coach"
+	"github.com/AbolfazlTayyar/gogym/internal/models"
 	"github.com/AbolfazlTayyar/gogym/internal/tenant"
 	"github.com/AbolfazlTayyar/gogym/internal/testutil"
 	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -37,4 +39,37 @@ func TestScope_FiltersByCoach(t *testing.T) {
 	var lookup athlete.Athlete
 	err := tenant.Scope(db, coachA.ID).First(&lookup, "id = ?", athleteB.ID).Error
 	require.Error(t, err)
+}
+
+func TestScopeWithUniversal_AddsUniversalRowsOnly(t *testing.T) {
+	db := testutil.NewDB(t)
+
+	coachA := coachpkg.Coach{ID: uuid.New(), FirstName: "A", LastName: "Coach", Phone: "09121000011", PasswordHash: "x"}
+	coachB := coachpkg.Coach{ID: uuid.New(), FirstName: "B", LastName: "Coach", Phone: "09121000012", PasswordHash: "x"}
+	require.NoError(t, db.Create(&coachA).Error)
+	require.NoError(t, db.Create(&coachB).Error)
+
+	movement := func(coachID *uuid.UUID, name string) models.Movement {
+		m := models.Movement{ID: uuid.New(), CoachID: coachID, Name: name}
+		require.NoError(t, db.Create(&m).Error)
+		return m
+	}
+	universal := movement(nil, "Squat")
+	ownA := movement(&coachA.ID, "A's lunge")
+	movement(&coachB.ID, "B's lunge")
+	retired := movement(nil, "Retired")
+	require.NoError(t, db.Delete(&retired).Error)
+
+	var visible []models.Movement
+	require.NoError(t, tenant.ScopeWithUniversal(db, coachA.ID).Order("name").Find(&visible).Error)
+
+	names := make([]string, 0, len(visible))
+	for _, m := range visible {
+		names = append(names, m.Name)
+	}
+	assert.Equal(t, []string{ownA.Name, universal.Name}, names, "own and universal, not another coach's or soft-deleted")
+
+	var leaked []models.Movement
+	require.NoError(t, tenant.ScopeWithUniversal(db, coachA.ID).Where("name = ?", "B's lunge").Find(&leaked).Error)
+	assert.Empty(t, leaked, "the OR stays grouped, so a chained condition can't widen it to another coach's rows")
 }

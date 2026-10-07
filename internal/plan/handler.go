@@ -14,7 +14,13 @@ import (
 // paramAthleteID must match the athlete module's /athletes/:id wildcard; gin panics on two names for one segment.
 const paramAthleteID = "id"
 
-const paramPlanID = "id"
+const (
+	paramPlanID  = "id"
+	paramDayID   = "id"
+	paramBlockID = "id"
+)
+
+const msgNoMovements = "at least one movement is required"
 
 type planSummaryResponse struct {
 	ID        string  `json:"id" example:"9b2d4f1a-6c3e-4a7b-8d5f-1e2c3b4a5d6e"`
@@ -81,6 +87,36 @@ type blockMovementResponse struct {
 	OrderInBlock    int     `json:"order_in_block" example:"0"`
 }
 
+// The create requests have no binding tags on purpose: the service owns every rule, presence included.
+
+type createRequest struct {
+	AthleteID string  `json:"athlete_id" example:"3f0b1c6e-2a1d-4f7b-9c3e-6d5a4b3c2d1e"`
+	StartDate string  `json:"start_date" example:"2026-09-15"`
+	Title     string  `json:"title" example:"Cut phase 1"`
+	Note      *string `json:"note" example:"Deload every 4th week"`
+}
+
+type addDayRequest struct {
+	Label      string `json:"label" example:"A"`
+	OrderIndex *int   `json:"order_index" example:"0"`
+}
+
+type addBlockRequest struct {
+	OrderIndex  *int    `json:"order_index" example:"1"`
+	Sets        *int    `json:"sets" example:"3"`
+	RestSeconds *int    `json:"rest_seconds" example:"60"`
+	Notes       *string `json:"notes" example:"superset"`
+}
+
+// addMovementRequest gives every field an example: Swagger UI pre-fills a missing one with 0, which fails validation.
+type addMovementRequest struct {
+	MovementID      string  `json:"movement_id" example:"8e9f0a1b-2c3d-4e5f-8a6b-7c8d9e0f1a2b"`
+	Reps            *int    `json:"reps" example:"10"`
+	DurationSeconds *int    `json:"duration_seconds" example:"30"`
+	Load            *string `json:"load" example:"bodyweight"`
+	OrderInBlock    *int    `json:"order_in_block" example:"0"`
+}
+
 func newPlanDetailResponse(p *Plan) planDetailResponse {
 	days := make([]dayResponse, 0, len(p.Days))
 	for i := range p.Days {
@@ -116,17 +152,7 @@ func newDayResponse(d *Day) dayResponse {
 func newBlockResponse(b *Block) blockResponse {
 	movements := make([]blockMovementResponse, 0, len(b.Movements))
 	for i := range b.Movements {
-		bm := &b.Movements[i]
-		movements = append(movements, blockMovementResponse{
-			ID:              bm.ID.String(),
-			MovementID:      bm.MovementID.String(),
-			Name:            bm.Movement.Name,
-			Category:        bm.Movement.Category,
-			Reps:            bm.Reps,
-			DurationSeconds: bm.DurationSeconds,
-			Load:            bm.Load,
-			OrderInBlock:    bm.OrderInBlock,
-		})
+		movements = append(movements, newBlockMovementResponse(&b.Movements[i]))
 	}
 
 	return blockResponse{
@@ -136,6 +162,19 @@ func newBlockResponse(b *Block) blockResponse {
 		RestSeconds: b.RestSeconds,
 		Notes:       b.Notes,
 		Movements:   movements,
+	}
+}
+
+func newBlockMovementResponse(bm *BlockMovement) blockMovementResponse {
+	return blockMovementResponse{
+		ID:              bm.ID.String(),
+		MovementID:      bm.MovementID.String(),
+		Name:            bm.Movement.Name,
+		Category:        bm.Movement.Category,
+		Reps:            bm.Reps,
+		DurationSeconds: bm.DurationSeconds,
+		Load:            bm.Load,
+		OrderInBlock:    bm.OrderInBlock,
 	}
 }
 
@@ -221,8 +260,214 @@ func (h *Handler) Get(c *gin.Context) {
 	httpx.OK(c, newPlanDetailResponse(p))
 }
 
+// Create starts an empty plan for one of the authenticated coach's athletes.
+//
+//	@Summary		Create a plan
+//	@Description	Creates an empty plan for the athlete; add days, blocks and movements to it with the builder endpoints. athlete_id, start_date (YYYY-MM-DD) and title are required, note is optional. The response has the plan detail shape with an empty days array. An athlete that belongs to another coach is reported as not found.
+//	@Tags			plans
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			request	body		createRequest	true	"Plan details"
+//	@Success		201		{object}	httpx.SuccessEnvelope{data=planDetailResponse}
+//	@Failure		400		{object}	httpx.ErrorEnvelope
+//	@Failure		401		{object}	httpx.ErrorEnvelope
+//	@Failure		404		{object}	httpx.ErrorEnvelope
+//	@Failure		500		{object}	httpx.ErrorEnvelope
+//	@Router			/api/v1/plans [post]
+func (h *Handler) Create(c *gin.Context) {
+	coachID, ok := tenant.CoachIDFromContext(c)
+	if !ok {
+		httpx.Error(c, http.StatusUnauthorized, httpx.CodeUnauthorized, httpx.MsgUnauthorized)
+		return
+	}
+
+	var req createRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		httpx.ErrorFields(c, http.StatusBadRequest, httpx.CodeValidationFailed, httpx.MsgInvalidRequest, httpx.ValidationFields(err))
+		return
+	}
+
+	created, err := h.svc.Create(c.Request.Context(), coachID, CreateInput{
+		AthleteID: req.AthleteID,
+		StartDate: req.StartDate,
+		Title:     req.Title,
+		Note:      req.Note,
+	})
+	if err != nil {
+		writeServiceError(c, err)
+		return
+	}
+
+	httpx.Created(c, newPlanDetailResponse(created))
+}
+
+// AddDay adds a training day to a plan, in one of its seven slots.
+//
+//	@Summary		Add a day to a plan
+//	@Description	Adds a day to the plan. label must be one of A-G or day1-day7. order_index is the day's slot, 0-6: a plan holds at most 7 days, one per slot, so a slot outside 0-6 or one another day already uses is a 400 on order_index. The response is the new day with an empty blocks array. A plan whose athlete belongs to another coach is reported as not found.
+//	@Tags			plans
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			id		path		string			true	"Plan ID"	format(uuid)
+//	@Param			request	body		addDayRequest	true	"Day details"
+//	@Success		201		{object}	httpx.SuccessEnvelope{data=dayResponse}
+//	@Failure		400		{object}	httpx.ErrorEnvelope
+//	@Failure		401		{object}	httpx.ErrorEnvelope
+//	@Failure		404		{object}	httpx.ErrorEnvelope
+//	@Failure		500		{object}	httpx.ErrorEnvelope
+//	@Router			/api/v1/plans/{id}/days [post]
+func (h *Handler) AddDay(c *gin.Context) {
+	coachID, ok := tenant.CoachIDFromContext(c)
+	if !ok {
+		httpx.Error(c, http.StatusUnauthorized, httpx.CodeUnauthorized, httpx.MsgUnauthorized)
+		return
+	}
+
+	planID, ok := httpx.PathUUID(c, paramPlanID)
+	if !ok {
+		return
+	}
+
+	var req addDayRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		httpx.ErrorFields(c, http.StatusBadRequest, httpx.CodeValidationFailed, httpx.MsgInvalidRequest, httpx.ValidationFields(err))
+		return
+	}
+
+	created, err := h.svc.AddDay(c.Request.Context(), coachID, planID, AddDayInput{
+		Label:      req.Label,
+		OrderIndex: req.OrderIndex,
+	})
+	if err != nil {
+		writeServiceError(c, err)
+		return
+	}
+
+	httpx.Created(c, newDayResponse(created))
+}
+
+// AddBlock adds a block to a day; its movements are added separately, as one batch.
+//
+//	@Summary		Add a block to a day
+//	@Description	Adds a block to the day. order_index (0-999) and sets (1-50) are required; rest_seconds (0-3600) and notes are optional. A block is the superset unit: add its movements, one or several, with the block movements endpoint. The response is the new block with an empty movements array. A day whose plan's athlete belongs to another coach is reported as not found.
+//	@Tags			plans
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			id		path		string			true	"Day ID"	format(uuid)
+//	@Param			request	body		addBlockRequest	true	"Block details"
+//	@Success		201		{object}	httpx.SuccessEnvelope{data=blockResponse}
+//	@Failure		400		{object}	httpx.ErrorEnvelope
+//	@Failure		401		{object}	httpx.ErrorEnvelope
+//	@Failure		404		{object}	httpx.ErrorEnvelope
+//	@Failure		500		{object}	httpx.ErrorEnvelope
+//	@Router			/api/v1/days/{id}/blocks [post]
+func (h *Handler) AddBlock(c *gin.Context) {
+	coachID, ok := tenant.CoachIDFromContext(c)
+	if !ok {
+		httpx.Error(c, http.StatusUnauthorized, httpx.CodeUnauthorized, httpx.MsgUnauthorized)
+		return
+	}
+
+	dayID, ok := httpx.PathUUID(c, paramDayID)
+	if !ok {
+		return
+	}
+
+	var req addBlockRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		httpx.ErrorFields(c, http.StatusBadRequest, httpx.CodeValidationFailed, httpx.MsgInvalidRequest, httpx.ValidationFields(err))
+		return
+	}
+
+	created, err := h.svc.AddBlock(c.Request.Context(), coachID, dayID, AddBlockInput{
+		OrderIndex:  req.OrderIndex,
+		Sets:        req.Sets,
+		RestSeconds: req.RestSeconds,
+		Notes:       req.Notes,
+	})
+	if err != nil {
+		writeServiceError(c, err)
+		return
+	}
+
+	httpx.Created(c, newBlockResponse(created))
+}
+
+// AddMovements adds one or more movements to a block in a single all-or-nothing call, so a superset is never half-created.
+//
+//	@Summary		Add movements to a block
+//	@Description	Adds every movement in the array to the block, or none of them. Send two or more to build a superset in one call. Each entry needs movement_id and order_in_block (0-999); reps (1-1000), duration_seconds (1-14400) and load (free text, e.g. "70kg", "75% 1RM", "RPE 8", "bodyweight") are optional. Every movement_id must be in the coach's library: their own movements or a universal one. A movement that isn't, or any other invalid entry, rejects the whole batch with a 400 whose fields are keyed by array position, e.g. "[1].movement_id". The response lists the created movements with their library name and category. A block whose plan's athlete belongs to another coach is reported as not found.
+//	@Tags			plans
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			id		path		string					true	"Block ID"	format(uuid)
+//	@Param			request	body		[]addMovementRequest	true	"Movements to add, in one batch"
+//	@Success		201		{object}	httpx.SuccessEnvelope{data=[]blockMovementResponse}
+//	@Failure		400		{object}	httpx.ErrorEnvelope
+//	@Failure		401		{object}	httpx.ErrorEnvelope
+//	@Failure		404		{object}	httpx.ErrorEnvelope
+//	@Failure		500		{object}	httpx.ErrorEnvelope
+//	@Router			/api/v1/blocks/{id}/movements [post]
+func (h *Handler) AddMovements(c *gin.Context) {
+	coachID, ok := tenant.CoachIDFromContext(c)
+	if !ok {
+		httpx.Error(c, http.StatusUnauthorized, httpx.CodeUnauthorized, httpx.MsgUnauthorized)
+		return
+	}
+
+	blockID, ok := httpx.PathUUID(c, paramBlockID)
+	if !ok {
+		return
+	}
+
+	var req []addMovementRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		httpx.ErrorFields(c, http.StatusBadRequest, httpx.CodeValidationFailed, httpx.MsgInvalidRequest, httpx.ValidationFields(err))
+		return
+	}
+
+	inputs := make([]AddMovementInput, 0, len(req))
+	for _, r := range req {
+		inputs = append(inputs, AddMovementInput{
+			MovementID:      r.MovementID,
+			Reps:            r.Reps,
+			DurationSeconds: r.DurationSeconds,
+			Load:            r.Load,
+			OrderInBlock:    r.OrderInBlock,
+		})
+	}
+
+	created, err := h.svc.AddMovements(c.Request.Context(), coachID, blockID, inputs)
+	if err != nil {
+		writeServiceError(c, err)
+		return
+	}
+
+	items := make([]blockMovementResponse, 0, len(created))
+	for i := range created {
+		items = append(items, newBlockMovementResponse(&created[i]))
+	}
+
+	httpx.Created(c, items)
+}
+
 // writeServiceError hides unexpected errors behind a generic 500; the detail belongs in logs.
 func writeServiceError(c *gin.Context, err error) {
+	var verr *ValidationError
+	if errors.As(err, &verr) {
+		httpx.ErrorFields(c, http.StatusBadRequest, httpx.CodeValidationFailed, httpx.MsgInvalidRequest, verr.Fields)
+		return
+	}
+
+	if errors.Is(err, ErrNoMovements) {
+		httpx.Error(c, http.StatusBadRequest, httpx.CodeValidationFailed, msgNoMovements)
+		return
+	}
+
 	if errors.Is(err, athlete.ErrNotFound) || errors.Is(err, ErrNotFound) {
 		httpx.Error(c, http.StatusNotFound, httpx.CodeNotFound, httpx.MsgNotFound)
 		return

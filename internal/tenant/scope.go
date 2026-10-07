@@ -28,3 +28,9 @@ func CoachIDFromContext(c *gin.Context) (uuid.UUID, bool) {
 func Scope(db *gorm.DB, coachID uuid.UUID) *gorm.DB {
 	return db.Where("coach_id = ?", coachID)
 }
+
+// ScopeWithUniversal also admits universal rows (coach_id NULL), which every coach can read but none
+// owns: use it to read, never to pick a row to update or delete.
+func ScopeWithUniversal(db *gorm.DB, coachID uuid.UUID) *gorm.DB {
+	return db.Where("(coach_id = ? OR coach_id IS NULL)", coachID)
+}

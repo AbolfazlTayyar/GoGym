@@ -27,6 +27,18 @@ func (Plan) TableName() string {
 	return "plan"
 }
 
+// Day, Block and BlockMovement carry created_at only, because the builder deletes and recreates
+// them instead of editing in place. That is safe only while nothing outside this tree holds their ids.
+//
+// Workout logging must not break that. A log row that foreign-keys to block_movement (or block, or
+// day) is orphaned by every plan edit, and training history is the hardest data in the product to
+// replace. A log references movement_id plus a snapshot of what was prescribed at the time (sets,
+// reps, duration and load as programmed), never the plan structure.
+//
+// Plan templates and duplication pull the other way: they copy a plan and then edit the copy in
+// place. If they are coming, delete-and-recreate is on borrowed time, and updated_at on these three
+// tables is cheap to add while there is no data to backfill.
+
 type Day struct {
 	ID         uuid.UUID `gorm:"column:id;type:uuid;primaryKey"`
 	PlanID     uuid.UUID `gorm:"column:plan_id;type:uuid;not null"`
