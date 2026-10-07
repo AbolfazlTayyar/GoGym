@@ -26,3 +26,5 @@ const (
 
 // MsgFieldRequired is shared by binding-tag and service-level validation so a missing field reads the same either way.
 const MsgFieldRequired = "is required"
+
+const MsgDateFormat = "must be a date in YYYY-MM-DD format"

@@ -46,9 +46,9 @@ func TestBuildMeasurement_Date(t *testing.T) {
 	}{
 		"missing":              {date: "", wantMsg: httpx.MsgFieldRequired},
 		"whitespace":           {date: "   ", wantMsg: httpx.MsgFieldRequired},
-		"timestamp not a date": {date: "2026-09-24T09:30:00Z", wantMsg: msgDateFormat},
-		"day first":            {date: "24-09-2026", wantMsg: msgDateFormat},
-		"impossible day":       {date: "2026-02-30", wantMsg: msgDateFormat},
+		"timestamp not a date": {date: "2026-09-24T09:30:00Z", wantMsg: httpx.MsgDateFormat},
+		"day first":            {date: "24-09-2026", wantMsg: httpx.MsgDateFormat},
+		"impossible day":       {date: "2026-02-30", wantMsg: httpx.MsgDateFormat},
 	} {
 		t.Run(name, func(t *testing.T) {
 			_, err := buildMeasurement(uuid.New(), CreateInput{Date: tc.date, Weight: fltptr(70)})
@@ -113,7 +113,7 @@ func TestBuildMeasurement_ReportsEveryBadFieldAtOnce(t *testing.T) {
 	})
 
 	fields := requireValidationFields(t, err)
-	assert.Equal(t, msgDateFormat, fields["date"])
+	assert.Equal(t, httpx.MsgDateFormat, fields["date"])
 	assert.Contains(t, fields["weight"], unitKilograms)
 	assert.Contains(t, fields["waist"], unitCentimetres)
 	assert.Len(t, fields, 3)

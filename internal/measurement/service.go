@@ -27,10 +27,7 @@ const (
 	unitCentimetres = "centimetres"
 )
 
-const (
-	msgDateFormat = "must be a date in YYYY-MM-DD format"
-	msgNoValues   = "at least one of weight, chest, waist, arm, thigh or hip is required"
-)
+const msgNoValues = "at least one of weight, chest, waist, arm, thigh or hip is required"
 
 // ValidationError's Fields are keyed by the json names the client sent.
 type ValidationError struct {
@@ -105,7 +102,7 @@ func buildMeasurement(athleteID uuid.UUID, input CreateInput) (*Measurement, err
 	case rawDate == "":
 		fields["date"] = httpx.MsgFieldRequired
 	case err != nil:
-		fields["date"] = msgDateFormat
+		fields["date"] = httpx.MsgDateFormat
 	}
 
 	metrics := []metric{
