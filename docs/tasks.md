@@ -705,7 +705,7 @@ $ curl -s -H "Authorization: Bearer $TOKEN" localhost:8080/api/v1/plans/$PLAN_ID
 
 ### Plan builder (MVP feature 5) **[A3]**
 
-⬜ **Not started**
+✅ **Done**
 
 **Description:** The write side of plan-building — add a day to a plan, add a block to a day, add movement(s) to a block — including searching the movement library while building.
 
@@ -770,8 +770,9 @@ $ curl -s -X POST -H "Authorization: Bearer $TOKEN" localhost:8080/api/v1/plans/
 {"success":false,"data":null,"error":{"code":"validation_failed","message":"invalid request","fields":{"label":"must be one of A-G or day1-day7"}}}
 
 $ curl -s -X POST ... /blocks/$BLOCK_ID/movements -d '[{"movement_id":"<valid>",...},{"movement_id":"<other coach>",...}]'
-{"success":false,"data":null,"error":{"code":"not_found","message":"movement not found"}}
+{"success":false,"data":null,"error":{"code":"validation_failed","message":"invalid request","fields":{"[1].movement_id":"not found"}}}
 # and SELECT count(*) FROM block_movement WHERE block_id = '<BLOCK_ID>' is unchanged
+# (a 400 naming the bad entry, not a 404 — see docs/adr/0019)
 ```
 
 **In short:** you can build a full training plan from scratch through the API — days, blocks, supersets — and a bad request never leaves half a plan behind.
