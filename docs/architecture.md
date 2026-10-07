@@ -46,6 +46,10 @@ athletes to another.
   query against a tenant-owned table must be built from this, never a hand-written
   `.Where("coach_id = ?", ...)` — see [CLAUDE.md](../CLAUDE.md#data-access-conventions).
   Constructing an unscoped query for a tenant-owned table should look visibly wrong in review.
+- `tenant.ScopeWithUniversal(db, coachID)` widens that to `coach_id = ? OR coach_id IS NULL`
+  for tables with universal, system-seeded rows (today only `movement`). It is for reads only:
+  an update or delete must still pick its row through `tenant.Scope`, so a coach can see a
+  universal row but never modify it.
 - `tenant.SetCoachID` / `tenant.CoachIDFromContext` move the authenticated coach's id through
   the Gin context; `coach.AuthMiddleware` sets it after validating the JWT, handlers/services
   read it from there.

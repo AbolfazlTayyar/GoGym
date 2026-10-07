@@ -44,6 +44,8 @@ Pin tool/action versions in `.github/workflows/*.yml` (e.g. `golangci-lint-actio
 
 Tenant-owned queries (any table with a `coach_id` column) must go through `internal/tenant.Scope(db, coachID)`, never a hand-written `db.Where("coach_id = ?", ...)`. It's the single enforcement point for tenant isolation — see [docs/architecture.md](docs/architecture.md) for why and for the 404-not-403 convention that goes with it.
 
+Tables with universal rows (`movement`, where `coach_id IS NULL`) are read through `tenant.ScopeWithUniversal(db, coachID)`. Updates and deletes still pick their row through `tenant.Scope`, so a coach can never modify a universal row.
+
 Tables without a `coach_id` (measurement, and later plan/day/block) prove ownership by loading their parent through that parent's tenant-scoped lookup (e.g. `athlete.Service.Get`) before touching the child; their repositories trust the parent id and say so in a comment.
 
 GORM is opened with `TranslateError: true` (`internal/db`, `internal/testutil`) so repositories can check portable errors like `errors.Is(err, gorm.ErrDuplicatedKey)` instead of parsing Postgres-specific error codes. Keep using the portable sentinels — without this config the driver-specific check would silently never match.
