@@ -5,12 +5,13 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/AbolfazlTayyar/gogym/internal/search"
 	"github.com/AbolfazlTayyar/gogym/internal/tenant"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
-// ESCAPE '\' is Postgres's default, stated explicitly because searchPattern escapes with it.
+// ESCAPE '\' is Postgres's default, stated explicitly because search.ContainsPattern escapes with it.
 const nameSearchClause = `(first_name ILIKE @pattern ESCAPE '\' OR last_name ILIKE @pattern ESCAPE '\')`
 
 // ErrNotFound also covers another coach's athlete, so callers can 404 without revealing it exists.
@@ -72,7 +73,7 @@ func (r *Repository) filtered(ctx context.Context, coachID uuid.UUID, opts ListO
 		query = query.Where("athlete_type = ?", opts.Type)
 	}
 
-	if pattern := searchPattern(opts.Query); pattern != "" {
+	if pattern := search.ContainsPattern(opts.Query); pattern != "" {
 		query = query.Where(nameSearchClause, map[string]any{"pattern": pattern})
 	}
 

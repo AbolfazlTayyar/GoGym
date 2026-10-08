@@ -241,15 +241,3 @@ func normalizeListOptions(opts ListOptions) (ListOptions, error) {
 
 	return out, nil
 }
-
-// searchPattern escapes LIKE wildcards so a literal % or _ in the search matches literally.
-func searchPattern(query string) string {
-	trimmed := strings.TrimSpace(query)
-	if trimmed == "" {
-		return ""
-	}
-
-	escaper := strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`)
-
-	return "%" + escaper.Replace(trimmed) + "%"
-}

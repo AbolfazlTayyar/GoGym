@@ -214,23 +214,3 @@ func TestNormalizeListOptions_TrimsQuery(t *testing.T) {
 
 	assert.Equal(t, "ada", got.Query)
 }
-
-func TestSearchPattern(t *testing.T) {
-	for name, tc := range map[string]struct {
-		query string
-		want  string
-	}{
-		"empty is no filter":                 {query: "", want: ""},
-		"whitespace is no filter":            {query: "   ", want: ""},
-		"partial name":                       {query: "ad", want: "%ad%"},
-		"padding is trimmed":                 {query: "  ad  ", want: "%ad%"},
-		"percent is escaped, not a wildcard": {query: "50%", want: `%50\%%`},
-		"underscore is escaped":              {query: "a_b", want: `%a\_b%`},
-		"backslash is escaped first":         {query: `a\b`, want: `%a\\b%`},
-		"persian passes through":             {query: "سارا", want: "%سارا%"},
-	} {
-		t.Run(name, func(t *testing.T) {
-			assert.Equal(t, tc.want, searchPattern(tc.query))
-		})
-	}
-}
