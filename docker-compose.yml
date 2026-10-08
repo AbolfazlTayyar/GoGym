@@ -10,6 +10,19 @@ services:
     ports:
       - "${SERVER_PORT:-8080}:${SERVER_PORT:-8080}"
     depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  migrate:
+    # Same version as golang-migrate in go.mod.
+    image: migrate/migrate:v4.20.1
+    volumes:
+      - ./migrations:/migrations:ro
+    command:
+      - "-path=/migrations"
+      - "-database=postgres://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}?sslmode=${DB_SSLMODE}"
+      - "up"
+    depends_on:
       db:
         condition: service_healthy
 

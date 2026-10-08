@@ -27,3 +27,4 @@ One file per decision, [MADR](https://adr.github.io/madr/)-style. Process rules 
 | [0020](0020-movement-filter-vocabularies.md) | Movement muscle group and equipment are closed vocabularies | 2026-10-08 | accepted |
 | [0021](0021-universal-rows-forbidden.md) | Changing a universal row is a 403; another coach's row stays a 404 | 2026-10-08 | accepted |
 | [0022](0022-delete-movement-in-use.md) | Deleting a movement a plan uses is allowed, as a soft delete | 2026-10-08 | accepted |
+| [0023](0023-migrations-in-compose-service.md) | Migrations run in a one-shot Compose service before the API starts | 2026-10-08 | accepted |
