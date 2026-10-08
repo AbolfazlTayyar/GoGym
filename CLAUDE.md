@@ -44,7 +44,7 @@ Pin tool/action versions in `.github/workflows/*.yml` (e.g. `golangci-lint-actio
 
 Tenant-owned queries (any table with a `coach_id` column) must go through `internal/tenant.Scope(db, coachID)`, never a hand-written `db.Where("coach_id = ?", ...)`. It's the single enforcement point for tenant isolation — see [docs/architecture.md](docs/architecture.md) for why and for the 404-not-403 convention that goes with it.
 
-Tables with universal rows (`movement`, where `coach_id IS NULL`) are read through `tenant.ScopeWithUniversal(db, coachID)`. Updates and deletes still pick their row through `tenant.Scope`, so a coach can never modify a universal row.
+Tables with universal rows (`movement`, where `coach_id IS NULL`) are read through `tenant.ScopeWithUniversal(db, coachID)`. Updates and deletes still pick their row through `tenant.Scope`, so a coach can never modify a universal row. Such a write answers 403 `forbidden` (the coach can already see the row, so nothing leaks); another coach's row stays 404 — see [ADR 0021](docs/adr/0021-universal-rows-forbidden.md).
 
 Tables without a `coach_id` (measurement, and later plan/day/block) prove ownership by loading their parent through that parent's tenant-scoped lookup (e.g. `athlete.Service.Get`) before touching the child; their repositories trust the parent id and say so in a comment.
 

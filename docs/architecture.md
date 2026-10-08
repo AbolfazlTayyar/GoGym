@@ -55,6 +55,8 @@ athletes to another.
   read it from there.
 - A lookup that's out of scope for the authenticated coach (another coach's row) must 404, not
   403 — don't leak that the row exists at all.
+- A write to a universal row is the one 403 (`forbidden`): the coach can already read that row,
+  so refusing it openly leaks nothing — see [ADR 0021](adr/0021-universal-rows-forbidden.md).
 - Postgres row-level security was considered as defense in depth and deliberately deferred:
   v1 has exactly one enforcement path —
   this package — so a second, DB-level copy of the same rule is redundant until something else
