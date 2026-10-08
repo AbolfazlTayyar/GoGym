@@ -5,8 +5,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/AbolfazlTayyar/gogym/internal/movement"
-	"github.com/AbolfazlTayyar/gogym/internal/tenant"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -102,17 +100,6 @@ func (r *Repository) LoadDays(ctx context.Context, planID uuid.UUID) ([]Day, err
 		return nil, fmt.Errorf("plan: failed to load days: %w", err)
 	}
 	return days, nil
-}
-
-// FindVisibleMovements leaves out ids the coach can't use: unknown, another coach's, or soft-deleted.
-func (r *Repository) FindVisibleMovements(ctx context.Context, coachID uuid.UUID, ids []uuid.UUID) ([]movement.Movement, error) {
-	movements := make([]movement.Movement, 0, len(ids))
-	if err := tenant.ScopeWithUniversal(r.db.WithContext(ctx), coachID).
-		Where("id IN ?", ids).
-		Find(&movements).Error; err != nil {
-		return nil, fmt.Errorf("plan: failed to find movements: %w", err)
-	}
-	return movements, nil
 }
 
 func (r *Repository) Create(ctx context.Context, p *Plan) error {

@@ -37,7 +37,7 @@ func newTestRouter(t *testing.T) (*gin.Engine, *gorm.DB) {
 	coachRepo := coach.NewRepository(db)
 	coachSvc := coach.NewService(coachRepo, "test-secret", time.Hour)
 	athleteSvc := athlete.NewService(athlete.NewRepository(db))
-	planSvc := plan.NewService(plan.NewRepository(db), athleteSvc)
+	planSvc := plan.NewService(plan.NewRepository(db), athleteSvc, movement.NewService(movement.NewRepository(db)))
 
 	gin.SetMode(gin.TestMode)
 	router := gin.New()

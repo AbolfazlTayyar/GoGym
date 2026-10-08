@@ -70,7 +70,7 @@ func New(cfg config.Config, gormDB *gorm.DB, log zerolog.Logger) *gin.Engine {
 	movement.RegisterRoutes(protected, movement.NewHandler(movementSvc))
 
 	planRepo := plan.NewRepository(gormDB)
-	planSvc := plan.NewService(planRepo, athleteSvc)
+	planSvc := plan.NewService(planRepo, athleteSvc, movementSvc)
 	plan.RegisterRoutes(protected, plan.NewHandler(planSvc))
 
 	return router

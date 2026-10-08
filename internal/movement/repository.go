@@ -46,6 +46,17 @@ func (r *Repository) FindVisible(ctx context.Context, coachID, id uuid.UUID) (*M
 	return &m, nil
 }
 
+// FindVisibleByIDs leaves out ids the coach can't use: unknown, another coach's, or soft-deleted.
+func (r *Repository) FindVisibleByIDs(ctx context.Context, coachID uuid.UUID, ids []uuid.UUID) ([]Movement, error) {
+	movements := make([]Movement, 0, len(ids))
+	if err := tenant.ScopeWithUniversal(r.db.WithContext(ctx), coachID).
+		Where("id IN ?", ids).
+		Find(&movements).Error; err != nil {
+		return nil, fmt.Errorf("movement: failed to find by ids: %w", err)
+	}
+	return movements, nil
+}
+
 // List expects opts already normalized by normalizeListOptions.
 func (r *Repository) List(ctx context.Context, coachID uuid.UUID, opts ListOptions) ([]Movement, error) {
 	query := tenant.ScopeWithUniversal(r.db.WithContext(ctx), coachID)

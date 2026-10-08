@@ -102,12 +102,13 @@ type AddMovementInput struct {
 }
 
 type Service struct {
-	repo     *Repository
-	athletes *athlete.Service
+	repo      *Repository
+	athletes  *athlete.Service
+	movements *movement.Service
 }
 
-func NewService(repo *Repository, athletes *athlete.Service) *Service {
-	return &Service{repo: repo, athletes: athletes}
+func NewService(repo *Repository, athletes *athlete.Service, movements *movement.Service) *Service {
+	return &Service{repo: repo, athletes: athletes, movements: movements}
 }
 
 // List returns athlete.ErrNotFound rather than an empty list for another coach's athlete.
@@ -273,7 +274,7 @@ func (s *Service) attachLibrary(ctx context.Context, coachID uuid.UUID, movement
 		return nil
 	}
 
-	found, err := s.repo.FindVisibleMovements(ctx, coachID, ids)
+	found, err := s.movements.Visible(ctx, coachID, ids)
 	if err != nil {
 		return err
 	}

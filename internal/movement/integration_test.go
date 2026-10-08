@@ -55,8 +55,10 @@ func newTestRouter(t *testing.T) (*gin.Engine, *gorm.DB) {
 	protected.Use(coach.AuthMiddleware(coachSvc))
 
 	coach.RegisterRoutes(v1, protected, coach.NewHandler(coachSvc, coachRepo))
-	movement.RegisterRoutes(protected, movement.NewHandler(movement.NewService(movement.NewRepository(db))))
-	plan.RegisterRoutes(protected, plan.NewHandler(plan.NewService(plan.NewRepository(db), athleteSvc)))
+	movementSvc := movement.NewService(movement.NewRepository(db))
+
+	movement.RegisterRoutes(protected, movement.NewHandler(movementSvc))
+	plan.RegisterRoutes(protected, plan.NewHandler(plan.NewService(plan.NewRepository(db), athleteSvc, movementSvc)))
 
 	return router, db
 }

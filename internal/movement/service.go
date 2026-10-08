@@ -74,6 +74,12 @@ func (s *Service) List(ctx context.Context, coachID uuid.UUID, opts ListOptions)
 	return s.repo.List(ctx, coachID, normalized)
 }
 
+// Visible is how other modules check movement ids against the coach's library: it returns the ones
+// the coach can use and silently drops the rest, so a caller can't tell another coach's from unknown.
+func (s *Service) Visible(ctx context.Context, coachID uuid.UUID, ids []uuid.UUID) ([]Movement, error) {
+	return s.repo.FindVisibleByIDs(ctx, coachID, ids)
+}
+
 func (s *Service) Create(ctx context.Context, coachID uuid.UUID, input Input) (*Movement, error) {
 	m := &Movement{ID: uuid.New(), CoachID: &coachID}
 	if err := applyInput(m, input); err != nil {
