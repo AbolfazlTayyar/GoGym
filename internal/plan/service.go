@@ -11,7 +11,7 @@ import (
 
 	"github.com/AbolfazlTayyar/gogym/internal/athlete"
 	"github.com/AbolfazlTayyar/gogym/internal/httpx"
-	"github.com/AbolfazlTayyar/gogym/internal/models"
+	"github.com/AbolfazlTayyar/gogym/internal/movement"
 	"github.com/google/uuid"
 )
 
@@ -278,7 +278,7 @@ func (s *Service) attachLibrary(ctx context.Context, coachID uuid.UUID, movement
 		return err
 	}
 
-	library := make(map[uuid.UUID]models.Movement, len(found))
+	library := make(map[uuid.UUID]movement.Movement, len(found))
 	for _, m := range found {
 		library[m.ID] = m
 	}

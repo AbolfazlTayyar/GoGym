@@ -16,7 +16,7 @@ import (
 	"github.com/AbolfazlTayyar/gogym/internal/athlete"
 	"github.com/AbolfazlTayyar/gogym/internal/coach"
 	"github.com/AbolfazlTayyar/gogym/internal/httpx"
-	"github.com/AbolfazlTayyar/gogym/internal/models"
+	"github.com/AbolfazlTayyar/gogym/internal/movement"
 	"github.com/AbolfazlTayyar/gogym/internal/plan"
 	"github.com/AbolfazlTayyar/gogym/internal/testutil"
 	"github.com/gin-gonic/gin"
@@ -255,7 +255,7 @@ func insertMovement(t *testing.T, db *gorm.DB, name, category string) uuid.UUID 
 	t.Helper()
 
 	id := uuid.New()
-	require.NoError(t, db.Create(&models.Movement{ID: id, Name: name, Category: &category}).Error)
+	require.NoError(t, db.Create(&movement.Movement{ID: id, Name: name, Category: &category}).Error)
 
 	return id
 }
@@ -495,7 +495,7 @@ func TestPlanDetail_NestedTreeInDisplayOrder(t *testing.T) {
 	})
 
 	t.Run("a soft-deleted movement still names itself", func(t *testing.T) {
-		require.NoError(t, db.Delete(&models.Movement{}, "id = ?", squat).Error)
+		require.NoError(t, db.Delete(&movement.Movement{}, "id = ?", squat).Error)
 
 		after, _ := getPlan(t, router, token, planID.String())
 		assert.Equal(t, "Back squat", after.Days[0].Blocks[0].Movements[0].Name)
@@ -605,7 +605,7 @@ func insertCoachMovement(t *testing.T, db *gorm.DB, coachID uuid.UUID, name stri
 	t.Helper()
 
 	id := uuid.New()
-	require.NoError(t, db.Create(&models.Movement{ID: id, CoachID: &coachID, Name: name}).Error)
+	require.NoError(t, db.Create(&movement.Movement{ID: id, CoachID: &coachID, Name: name}).Error)
 
 	return id
 }
@@ -790,7 +790,7 @@ func TestBuilder_MovementOutsideLibraryRejectsWholeBatch(t *testing.T) {
 	ownLunge := insertCoachMovement(t, db, coachIDByPhone(t, db, coachPhone), "Walking lunge")
 	othersLunge := insertCoachMovement(t, db, coachIDByPhone(t, db, otherPhone), "Walking lunge")
 	retired := insertCoachMovement(t, db, coachIDByPhone(t, db, coachPhone), "Retired move")
-	require.NoError(t, db.Delete(&models.Movement{}, "id = ?", retired).Error)
+	require.NoError(t, db.Delete(&movement.Movement{}, "id = ?", retired).Error)
 
 	batch := func(second string) string {
 		return fmt.Sprintf(`[{"movement_id":%q,"reps":8,"order_in_block":0},{"movement_id":%q,"reps":10,"order_in_block":1}]`, squat, second)

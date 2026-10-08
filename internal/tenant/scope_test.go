@@ -5,7 +5,7 @@ import (
 
 	"github.com/AbolfazlTayyar/gogym/internal/athlete"
 	coachpkg "github.com/AbolfazlTayyar/gogym/internal/coach"
-	"github.com/AbolfazlTayyar/gogym/internal/models"
+	"github.com/AbolfazlTayyar/gogym/internal/movement"
 	"github.com/AbolfazlTayyar/gogym/internal/tenant"
 	"github.com/AbolfazlTayyar/gogym/internal/testutil"
 	"github.com/google/uuid"
@@ -49,19 +49,22 @@ func TestScopeWithUniversal_AddsUniversalRowsOnly(t *testing.T) {
 	require.NoError(t, db.Create(&coachA).Error)
 	require.NoError(t, db.Create(&coachB).Error)
 
-	movement := func(coachID *uuid.UUID, name string) models.Movement {
-		m := models.Movement{ID: uuid.New(), CoachID: coachID, Name: name}
+	var created []uuid.UUID
+	insert := func(coachID *uuid.UUID, name string) movement.Movement {
+		m := movement.Movement{ID: uuid.New(), CoachID: coachID, Name: name}
 		require.NoError(t, db.Create(&m).Error)
+		created = append(created, m.ID)
 		return m
 	}
-	universal := movement(nil, "Squat")
-	ownA := movement(&coachA.ID, "A's lunge")
-	movement(&coachB.ID, "B's lunge")
-	retired := movement(nil, "Retired")
+	universal := insert(nil, "Squat")
+	ownA := insert(&coachA.ID, "A's lunge")
+	insert(&coachB.ID, "B's lunge")
+	retired := insert(nil, "Retired")
 	require.NoError(t, db.Delete(&retired).Error)
 
-	var visible []models.Movement
-	require.NoError(t, tenant.ScopeWithUniversal(db, coachA.ID).Order("name").Find(&visible).Error)
+	// Limited to this test's rows, since the migrations also seed universal movements.
+	var visible []movement.Movement
+	require.NoError(t, tenant.ScopeWithUniversal(db, coachA.ID).Where("id IN ?", created).Order("name").Find(&visible).Error)
 
 	names := make([]string, 0, len(visible))
 	for _, m := range visible {
@@ -69,7 +72,7 @@ func TestScopeWithUniversal_AddsUniversalRowsOnly(t *testing.T) {
 	}
 	assert.Equal(t, []string{ownA.Name, universal.Name}, names, "own and universal, not another coach's or soft-deleted")
 
-	var leaked []models.Movement
+	var leaked []movement.Movement
 	require.NoError(t, tenant.ScopeWithUniversal(db, coachA.ID).Where("name = ?", "B's lunge").Find(&leaked).Error)
 	assert.Empty(t, leaked, "the OR stays grouped, so a chained condition can't widen it to another coach's rows")
 }

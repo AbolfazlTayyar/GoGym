@@ -8,7 +8,9 @@ const (
 	CodeInvalidCredentials = "invalid_credentials"
 	CodeUnauthorized       = "unauthorized"
 	// CodeNotFound also covers resources the coach can't see (404, not 403).
-	CodeNotFound         = "not_found"
+	CodeNotFound = "not_found"
+	// CodeForbidden is for a resource the coach can see but not change, such as a universal movement.
+	CodeForbidden        = "forbidden"
 	CodeConflict         = "conflict"
 	CodeRateLimited      = "rate_limited"
 	CodeMethodNotAllowed = "method_not_allowed"

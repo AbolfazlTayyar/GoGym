@@ -24,3 +24,6 @@ One file per decision, [MADR](https://adr.github.io/madr/)-style. Process rules 
 | [0017](0017-plan-day-cap-in-schema.md) | A plan has at most 7 days, enforced by the schema | 2026-10-06 | accepted |
 | [0018](0018-workout-logs-snapshot-prescription.md) | Workout logs snapshot the prescription, not the plan rows | 2026-10-07 | accepted |
 | [0019](0019-unusable-body-reference-is-a-field-error.md) | An unusable id in the request body is a field error, not a 404 | 2026-10-07 | accepted |
+| [0020](0020-movement-filter-vocabularies.md) | Movement muscle group and equipment are closed vocabularies | 2026-10-08 | accepted |
+| [0021](0021-universal-rows-forbidden.md) | Changing a universal row is a 403; another coach's row stays a 404 | 2026-10-08 | accepted |
+| [0022](0022-delete-movement-in-use.md) | Deleting a movement a plan uses is allowed, as a soft delete | 2026-10-08 | accepted |

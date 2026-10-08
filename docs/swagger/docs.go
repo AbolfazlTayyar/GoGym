@@ -819,6 +819,316 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/movements": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Lists the authenticated coach's own movements together with the universal, system-seeded ones, ordered by name. A universal movement has a null coach_id and is read-only. Filters combine with AND; an unknown muscle_group or equipment value is a 400, not an empty list. Not paginated.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "movements"
+                ],
+                "summary": "List movements",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Case-insensitive partial match on name",
+                        "name": "q",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "chest",
+                            "back",
+                            "shoulders",
+                            "arms",
+                            "legs",
+                            "core",
+                            "full_body"
+                        ],
+                        "type": "string",
+                        "description": "Only movements for this primary muscle group",
+                        "name": "muscle_group",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "bodyweight",
+                            "barbell",
+                            "dumbbell",
+                            "kettlebell",
+                            "machine",
+                            "cable",
+                            "band",
+                            "other"
+                        ],
+                        "type": "string",
+                        "description": "Only movements using this equipment",
+                        "name": "equipment",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.SuccessEnvelope"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/internal_movement.movementResponse"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Adds a movement owned by the authenticated coach. The owner comes from the bearer token — a coach_id in the body is ignored. name is required (at most 100 characters); category (at most 50), description (at most 2000), muscle_group and equipment are optional. muscle_group and equipment are matched case-insensitively and stored lowercase.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "movements"
+                ],
+                "summary": "Create a movement",
+                "parameters": [
+                    {
+                        "description": "Movement details",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_movement.movementRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.SuccessEnvelope"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/internal_movement.movementResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/movements/{id}": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Replaces every editable field of one of the authenticated coach's own movements, under the same rules as create: an optional field left out is cleared. media_url is not editable and is kept. A universal movement is a 403; another coach's movement is reported as not found, the same as one that doesn't exist.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "movements"
+                ],
+                "summary": "Update a movement",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Movement ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Movement details",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_movement.movementRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.SuccessEnvelope"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/internal_movement.movementResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Removes one of the authenticated coach's own movements from the library; data is null on success. Plans that already use it are left intact and keep showing it, but it can no longer be added to a block. A universal movement is a 403; another coach's movement is reported as not found, the same as one that doesn't exist.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "movements"
+                ],
+                "summary": "Delete a movement",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Movement ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.SuccessEnvelope"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/plans": {
             "post": {
                 "security": [
@@ -1374,6 +1684,114 @@ const docTemplate = `{
                 "weight": {
                     "type": "number",
                     "example": 72.5
+                }
+            }
+        },
+        "internal_movement.movementRequest": {
+            "type": "object",
+            "properties": {
+                "category": {
+                    "type": "string",
+                    "example": "strength"
+                },
+                "description": {
+                    "type": "string",
+                    "example": "Rear foot on a bench"
+                },
+                "equipment": {
+                    "type": "string",
+                    "enum": [
+                        "bodyweight",
+                        "barbell",
+                        "dumbbell",
+                        "kettlebell",
+                        "machine",
+                        "cable",
+                        "band",
+                        "other"
+                    ],
+                    "example": "dumbbell"
+                },
+                "muscle_group": {
+                    "type": "string",
+                    "enum": [
+                        "chest",
+                        "back",
+                        "shoulders",
+                        "arms",
+                        "legs",
+                        "core",
+                        "full_body"
+                    ],
+                    "example": "legs"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Bulgarian split squat"
+                }
+            }
+        },
+        "internal_movement.movementResponse": {
+            "type": "object",
+            "properties": {
+                "category": {
+                    "type": "string",
+                    "example": "strength"
+                },
+                "coach_id": {
+                    "type": "string",
+                    "example": "3f0b1c6e-2a1d-4f7b-9c3e-6d5a4b3c2d1e"
+                },
+                "created_at": {
+                    "type": "string",
+                    "example": "2026-10-08T09:30:00Z"
+                },
+                "description": {
+                    "type": "string",
+                    "example": "High bar, below parallel"
+                },
+                "equipment": {
+                    "type": "string",
+                    "enum": [
+                        "bodyweight",
+                        "barbell",
+                        "dumbbell",
+                        "kettlebell",
+                        "machine",
+                        "cable",
+                        "band",
+                        "other"
+                    ],
+                    "example": "barbell"
+                },
+                "id": {
+                    "type": "string",
+                    "example": "e3935578-9941-45f9-b273-4ce0086cb0b8"
+                },
+                "media_url": {
+                    "type": "string",
+                    "example": "https://example.com/back-squat.mp4"
+                },
+                "muscle_group": {
+                    "type": "string",
+                    "enum": [
+                        "chest",
+                        "back",
+                        "shoulders",
+                        "arms",
+                        "legs",
+                        "core",
+                        "full_body"
+                    ],
+                    "example": "legs"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Back squat"
+                },
+                "updated_at": {
+                    "type": "string",
+                    "example": "2026-10-08T09:30:00Z"
                 }
             }
         },
