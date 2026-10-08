@@ -98,15 +98,7 @@ func (h *Handler) Create(c *gin.Context) {
 		return
 	}
 
-	created, err := h.svc.Create(c.Request.Context(), coachID, athleteID, CreateInput{
-		Date:   req.Date,
-		Weight: req.Weight,
-		Chest:  req.Chest,
-		Waist:  req.Waist,
-		Arm:    req.Arm,
-		Thigh:  req.Thigh,
-		Hip:    req.Hip,
-	})
+	created, err := h.svc.Create(c.Request.Context(), coachID, athleteID, CreateInput(req))
 	if err != nil {
 		writeServiceError(c, err)
 		return

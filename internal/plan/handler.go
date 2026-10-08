@@ -288,12 +288,7 @@ func (h *Handler) Create(c *gin.Context) {
 		return
 	}
 
-	created, err := h.svc.Create(c.Request.Context(), coachID, CreateInput{
-		AthleteID: req.AthleteID,
-		StartDate: req.StartDate,
-		Title:     req.Title,
-		Note:      req.Note,
-	})
+	created, err := h.svc.Create(c.Request.Context(), coachID, CreateInput(req))
 	if err != nil {
 		writeServiceError(c, err)
 		return
@@ -336,10 +331,7 @@ func (h *Handler) AddDay(c *gin.Context) {
 		return
 	}
 
-	created, err := h.svc.AddDay(c.Request.Context(), coachID, planID, AddDayInput{
-		Label:      req.Label,
-		OrderIndex: req.OrderIndex,
-	})
+	created, err := h.svc.AddDay(c.Request.Context(), coachID, planID, AddDayInput(req))
 	if err != nil {
 		writeServiceError(c, err)
 		return
@@ -382,12 +374,7 @@ func (h *Handler) AddBlock(c *gin.Context) {
 		return
 	}
 
-	created, err := h.svc.AddBlock(c.Request.Context(), coachID, dayID, AddBlockInput{
-		OrderIndex:  req.OrderIndex,
-		Sets:        req.Sets,
-		RestSeconds: req.RestSeconds,
-		Notes:       req.Notes,
-	})
+	created, err := h.svc.AddBlock(c.Request.Context(), coachID, dayID, AddBlockInput(req))
 	if err != nil {
 		writeServiceError(c, err)
 		return
@@ -432,13 +419,7 @@ func (h *Handler) AddMovements(c *gin.Context) {
 
 	inputs := make([]AddMovementInput, 0, len(req))
 	for _, r := range req {
-		inputs = append(inputs, AddMovementInput{
-			MovementID:      r.MovementID,
-			Reps:            r.Reps,
-			DurationSeconds: r.DurationSeconds,
-			Load:            r.Load,
-			OrderInBlock:    r.OrderInBlock,
-		})
+		inputs = append(inputs, AddMovementInput(r))
 	}
 
 	created, err := h.svc.AddMovements(c.Request.Context(), coachID, blockID, inputs)

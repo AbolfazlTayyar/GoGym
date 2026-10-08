@@ -104,12 +104,7 @@ func (h *Handler) Signup(c *gin.Context) {
 		return
 	}
 
-	created, err := h.svc.Signup(c.Request.Context(), SignupInput{
-		FirstName: req.FirstName,
-		LastName:  req.LastName,
-		Phone:     req.Phone,
-		Password:  req.Password,
-	})
+	created, err := h.svc.Signup(c.Request.Context(), SignupInput(req))
 	if err != nil {
 		if errors.Is(err, ErrPhoneTaken) {
 			httpx.Error(c, http.StatusConflict, httpx.CodeConflict, "phone already registered")
