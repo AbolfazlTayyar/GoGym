@@ -781,7 +781,7 @@ $ curl -s -X POST ... /blocks/$BLOCK_ID/movements -d '[{"movement_id":"<valid>",
 
 ### Movement library management (MVP feature 6)
 
-⬜ **Not started**
+✅ **Done**
 
 **Description:** The coach's own movement library — list, search, add, edit, delete — with system-seeded universal movements visible but read-only.
 
@@ -819,21 +819,28 @@ movement; universal movements appear in every coach's list.
 Add swagger annotations to all four handlers and rerun `make swagger`.
 ```
 
-**Checkpoint:** As a fresh coach with no movements of their own, `GET /movements` still returns the seeded universal set. Create a custom movement, confirm it appears too. Attempt to `PUT`/`DELETE` a universal movement's id — confirm 403. Attempt the same against another coach's custom movement — confirm the same guard applies. Confirm all four endpoints are listed and usable from Swagger UI — this is also a convenient spot to eyeball the whole API surface in one place and confirm every earlier task's endpoints are still present in the generated docs.
+**Checkpoint:** As a fresh coach with no movements of their own, `GET /movements` still returns the seeded universal set. Create a custom movement, confirm it appears too. Attempt to `PUT`/`DELETE` a universal movement's id — confirm 403. Attempt the same against another coach's custom movement — confirm it's refused too, as a 404 rather than a 403 (see docs/adr/0021). Confirm all four endpoints are listed and usable from Swagger UI — this is also a convenient spot to eyeball the whole API surface in one place and confirm every earlier task's endpoints are still present in the generated docs.
 
 **Expected output:**
 ```
 $ curl -s -H "Authorization: Bearer $NEW_COACH_TOKEN" "localhost:8080/api/v1/movements?muscle_group=legs"
 {"success":true,"data":[
-  {"id":"...","name":"Back squat","category":"strength","muscle_group":"legs","equipment":"barbell","coach_id":null},
-  {"id":"...","name":"Walking lunge","category":"strength","muscle_group":"legs","equipment":"dumbbell","coach_id":null}
+  {"id":"...","coach_id":null,"name":"Back squat","category":"strength","description":null,"muscle_group":"legs","equipment":"barbell","media_url":null,...},
+  {"id":"...","coach_id":null,"name":"Bodyweight squat","category":"warmup","description":null,"muscle_group":"legs","equipment":"bodyweight","media_url":null,...},
+  ...
 ],"error":null}
+# 6 seeded movements, ordered by name
 
 $ curl -s -X PUT -H "Authorization: Bearer $TOKEN" localhost:8080/api/v1/movements/$UNIVERSAL_ID -d '{"name":"Squat"}'
-{"success":false,"data":null,"error":{"code":"forbidden","message":"universal movements can't be edited"}}
+{"success":false,"data":null,"error":{"code":"forbidden","message":"universal movements can't be edited or deleted"}}
+
+$ curl -s -X PUT -H "Authorization: Bearer $TOKEN" localhost:8080/api/v1/movements/$OTHER_COACH_ID -d '{"name":"Squat"}'
+{"success":false,"data":null,"error":{"code":"not_found","message":"not found"}}
+# a 404, not a 403, so another coach's movement isn't confirmed to exist — see docs/adr/0021
 
 $ curl -s -X DELETE -H "Authorization: Bearer $TOKEN" localhost:8080/api/v1/movements/$IN_USE_ID
-{"success":false,"data":null,"error":{"code":"conflict","message":"movement is used in a plan"}}
+{"success":true,"data":null,"error":null}
+# a soft delete, not a 409: the plan still names the movement, it just leaves the library — see docs/adr/0022
 ```
 
 **In short:** every coach starts with a ready-made exercise library they can search and filter, and can add, edit and remove their own exercises without touching the shared ones.
