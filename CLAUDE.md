@@ -36,6 +36,8 @@ When a literal (string key, magic number, etc.) is used in more than one place, 
 
 Comments explain why or warn about a non-obvious constraint, in one line where possible; don't restate the code or reference docs/specs/migrations. Package comments are one sentence. Exported identifiers get a doc comment only when the name isn't self-explanatory.
 
+When wiring a new module into `internal/server/server.go`, check whether the wiring has hit one of the growth triggers in [docs/architecture.md](docs/architecture.md#when-the-wiring-outgrows-servergo); if so, raise the restructure instead of adding another block.
+
 ## CI conventions
 
 Pin tool/action versions in `.github/workflows/*.yml` (e.g. `golangci-lint-action`'s `version: v2.13.2`, not `latest`). A floating `latest` can silently change behavior between runs — we hit this once when it resolved to a stale golangci-lint v1 binary incompatible with our v2-schema `.golangci.yml`, and it also defeats the point of a fail-fast lint/unit gate if the tool itself becomes the surprise failure. Bump pinned versions deliberately, in their own commit.

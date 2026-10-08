@@ -35,6 +35,26 @@ handler := <module>.NewHandler(svc, repo)
 for every route that isn't `/auth/*`. Register unauthenticated routes on `v1` directly and
 everything else on `protected`.
 
+### When the wiring outgrows `server.go`
+
+Keeping every module's wiring inline in `server.New` is deliberate: it's a few lines per module,
+and reading it top to bottom shows the cross-module dependency graph. Revisit it when any of
+these happens:
+
+- Module wiring reaches about 10 modules, or finding one in `New` takes scrolling. Next step:
+  move the module blocks into `registerModules(v1, cfg, gormDB)` in `internal/server/modules.go`
+  and leave `New` with the engine, middleware and infra routes. One wiring place in the package
+  still holds, but ADR 0002 names `server.go`, so decide whether that wording needs a
+  superseding ADR.
+- The same dependencies (logger, clock, config) get passed to most constructors. Bundle them in
+  a small `Deps` struct.
+- A module needs to start and stop something (a background worker, scheduled reminders). That
+  needs an `App` with `Run`/`Shutdown` instead of `router.Run`, and is the point to weigh a DI
+  framework with lifecycle hooks such as `uber-go/fx`.
+
+Don't reach for a DI framework or `init()` self-registration before that. Both hide the
+dependency graph that the inline wiring makes visible.
+
 ## Tenant isolation
 
 Every coach-owned table carries `coach_id`, and `internal/tenant` is the single place that
