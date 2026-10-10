@@ -1,6 +1,7 @@
 package server
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/AbolfazlTayyar/gogym/internal/httpx"
@@ -19,6 +20,6 @@ func methodNotAllowedHandler(c *gin.Context) {
 }
 
 // recoveryHandler replaces gin.Recovery's empty-body 500; gin.CustomRecovery still logs the stack.
-func recoveryHandler(c *gin.Context, _ any) {
-	httpx.Error(c, http.StatusInternalServerError, httpx.CodeInternalError, httpx.MsgInternalError)
+func recoveryHandler(c *gin.Context, recovered any) {
+	httpx.InternalError(c, fmt.Errorf("panic: %v", recovered))
 }

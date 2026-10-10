@@ -1,6 +1,7 @@
 package server
 
 import (
+	"bytes"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -82,4 +83,21 @@ func TestNew_RejectsInvalidTrustedProxy(t *testing.T) {
 	_, err := New(config.Config{TrustedProxies: []string{"not-an-ip"}}, nil, zerolog.Nop())
 
 	assert.Error(t, err)
+}
+
+func TestNew_RecoveredPanicIsLogged(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	var logs bytes.Buffer
+
+	router, err := New(config.Config{}, nil, zerolog.New(&logs))
+	require.NoError(t, err)
+	router.GET("/test/panics", func(*gin.Context) { panic("boom") })
+
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/test/panics", http.NoBody))
+
+	require.Equal(t, http.StatusInternalServerError, rec.Code)
+	assert.NotContains(t, rec.Body.String(), "boom")
+	assert.Contains(t, logs.String(), `"level":"error"`)
+	assert.Contains(t, logs.String(), `"errors":["panic: boom"]`)
 }

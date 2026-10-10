@@ -35,7 +35,8 @@ func New(cfg config.Config, gormDB *gorm.DB, log zerolog.Logger) (*gin.Engine, e
 		return nil, fmt.Errorf("server: invalid trusted proxies: %w", err)
 	}
 
-	router.Use(gin.CustomRecovery(recoveryHandler), requestLogger(log))
+	// The logger wraps recovery so a recovered panic still gets its request log line.
+	router.Use(requestLogger(log), gin.CustomRecovery(recoveryHandler))
 	router.HandleMethodNotAllowed = true
 	router.NoRoute(notFoundHandler)
 	router.NoMethod(methodNotAllowedHandler)
