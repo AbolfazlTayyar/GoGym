@@ -9,7 +9,10 @@ import (
 	"gorm.io/gorm"
 )
 
-const healthzPingTimeout = 3 * time.Second
+const (
+	healthzPath        = "/healthz"
+	healthzPingTimeout = 3 * time.Second
+)
 
 type healthzOKResponse struct {
 	Status string `json:"status" example:"ok"`

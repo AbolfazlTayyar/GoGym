@@ -48,7 +48,7 @@ func New(cfg config.Config, gormDB *gorm.DB, log zerolog.Logger) (*gin.Engine, e
 		MaxAge:          12 * time.Hour,
 	}))
 
-	router.GET("/healthz", healthzHandler(gormDB))
+	router.GET(healthzPath, healthzHandler(gormDB))
 
 	if cfg.Environment == config.EnvDevelopment {
 		router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))

@@ -1,6 +1,7 @@
 package server
 
 import (
+	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -14,6 +15,11 @@ func requestLogger(log zerolog.Logger) gin.HandlerFunc {
 		query := c.Request.URL.RawQuery
 
 		c.Next()
+
+		// Probes hit this every few seconds; only a failing check is worth a log line.
+		if path == healthzPath && c.Writer.Status() == http.StatusOK {
+			return
+		}
 
 		event := log.Info()
 		if len(c.Errors) > 0 {
