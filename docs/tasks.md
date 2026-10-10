@@ -953,6 +953,66 @@ $ docker compose -f restore.yml exec db psql -U gogym -c "SELECT count(*) FROM a
 
 ---
 
+### Uptime monitoring & alerting
+
+⬜ **Not started**
+
+**Description:** The `api` container has a healthcheck, but Compose only turns it into a status label — nothing restarts the app and nobody is told when it goes down. A check nobody watches catches nothing. This task makes an outage reach a person, and makes a crash recover on its own.
+
+**Prompt:**
+```
+Make production failures visible and self-healing where restarting actually helps. Needs
+the VPS deployment and backup tasks above to be done: there must be a public URL and a
+backup job to watch.
+
+1. Add `restart: unless-stopped` to the api and db services in docker-compose.yml, so a
+   crashed process or a rebooted VPS comes back without anyone SSHing in. Don't restart
+   on `unhealthy` (no autoheal container): an unhealthy api almost always means the
+   database is down, and restarting the api doesn't fix that — it needs a person.
+   To test it, kill the process from the host (`sudo kill -9 <container's host PID>`):
+   `docker kill`/`docker stop` count as a manual stop, so the policy never restarts them.
+
+2. Set up an external uptime monitor (UptimeRobot, Better Stack, or Uptime Kuma hosted
+   somewhere other than the VPS — pick one and tell me why) that GETs
+   https://<your-domain>/healthz every 1–5 minutes and alerts me (email or Telegram) when
+   it fails and again when it recovers. It must run outside the VPS: nothing on the box
+   can report the box itself, its network, Caddy or an expired TLS certificate being down.
+
+3. /healthz is public from now on, so stop returning the raw driver error as the 503
+   `reason` — it exposes internal hostnames and IPs. Log the error server-side and return
+   a fixed reason instead. Keep the bare {"status": ...} body (no envelope): the monitor
+   and the container healthcheck match on it.
+
+4. Give the backup job from the Backup & restore drill task a heartbeat (dead-man's switch,
+   e.g. Healthchecks.io): the job pings a URL after a successful upload, and I'm alerted
+   when the ping doesn't arrive on schedule. A backup that silently stops is the failure
+   nobody notices until the restore.
+
+Don't add a metrics/dashboard stack (Prometheus, Grafana) here — alerting on "down" and
+"backup missed" is the whole scope.
+```
+
+**Checkpoint:** Stop `db` on the VPS and the alert reaches you within the monitor's interval plus a few minutes; start it again and the recovery notice arrives. Kill the api process from the host (not with `docker kill`) and the container comes back on its own. The 503 body during the outage has a fixed reason with no hostnames or IPs, and the real error is in the api logs. Skip one scheduled backup (or point its heartbeat at the wrong URL) and the missed-heartbeat alert arrives.
+
+**Expected output:**
+```
+$ ssh vps 'docker compose stop db'
+$ curl -s https://<your-domain>/healthz
+{"status":"unavailable","reason":"database unreachable"}
+# ...alert arrives: "gogym /healthz is DOWN (503)"
+
+$ ssh vps 'docker compose start db'
+# ...alert arrives: "gogym /healthz is UP"
+
+$ ssh vps 'sudo kill -9 $(docker inspect -f "{{.State.Pid}}" $(docker compose ps -q api))'
+$ ssh vps 'sleep 15 && docker inspect -f "{{.RestartCount}} {{.State.Health.Status}}" $(docker compose ps -q api)'
+1 healthy
+```
+
+**In short:** if the app or its backups stop working, you hear about it from your phone instead of from a coach, and a crash fixes itself.
+
+---
+
 ### Frontend stack decision
 
 ⬜ **Not started**
