@@ -1021,6 +1021,61 @@ $ ssh vps 'sleep 15 && docker inspect -f "{{.RestartCount}} {{.State.Health.Stat
 
 ---
 
+### Request IDs
+
+⏸ **Deferred** — start when a second coach is using the app.
+
+**Description:** A 500 tells the client only `internal_error`; the cause is in the request log line (`httpx.InternalError` attaches it). With one coach, a reported failure is found in the log by time and path, since nearly every line is theirs. Once several coaches share the log, "it failed around 3pm" matches several lines, and a support request needs something to quote that points to exactly one. This was built once and reverted as premature for a single user; the design below is what was settled then.
+
+**Prompt:**
+```
+Add a request id to every response and its request log line, so a failure a coach reports
+can be found with one grep.
+
+- A middleware in internal/server/middleware.go mints a UUID per request (google/uuid is
+  already a dependency), stores it in the gin context, and sets an X-Request-ID response
+  header. requestLogger adds it as a request_id field. Extract the header name and the
+  key to constants — each is used in more than one place.
+- Always mint a fresh id; ignore any incoming X-Request-ID. A caller-chosen id could make
+  one request's log line pass for another's. That's also why not gin-contrib/requestid:
+  it reuses an incoming id, and it's a dependency for about ten lines of code. If
+  Caddy's access log ever needs linking to the app log, trust the incoming header only
+  from TRUSTED_PROXIES peers (docs/adr/0024).
+- Register it first in router.Use, ahead of requestLogger and recovery, so every
+  response carries it: handlers, NoRoute/NoMethod fallbacks, recovered panics and the
+  unenveloped /healthz.
+- Return it in the header, not the envelope: the header reaches responses the envelope
+  doesn't cover, and the envelope contract stays unchanged.
+- Add the header to the CORS config's ExposeHeaders, or a browser client can't read it
+  to show in an error message.
+
+Record the decision as the next ADR (generated vs reused incoming id, header vs body,
+library vs in-house) and add a short "Request log" section to docs/architecture.md on
+tracing a reported 500 by its id.
+
+Tests go through server.New, not a hand-built router: the response id is a UUID and
+equals the log line's request_id for a handled request, a recovered panic and an
+unmatched path; a caller-sent X-Request-ID is not echoed back; consecutive requests get
+different ids; a request with an Origin header gets the id in
+Access-Control-Expose-Headers (the cors package canonicalizes it to X-Request-Id, so
+compare with http.CanonicalHeaderKey).
+```
+
+**Checkpoint:** Send a request with `-H "X-Request-ID: caller-chosen"` to an unknown path: the response carries a different, server-made UUID, and grepping the api logs for it finds exactly that request's line. Stop `db` and hit `/healthz`: the 503's id finds an error-level line whose `errors` field has the real cause. Each test above fails if its piece is removed (for example, reusing the incoming id fails the "not echoed back" case).
+
+**Expected output:**
+```
+$ curl -s -D - -o /dev/null -H "X-Request-ID: caller-chosen" localhost:8080/api/v1/nope | grep -i x-request-id
+X-Request-Id: cd1a1111-318a-40f8-8e63-ff1055aef9f3
+
+$ docker compose logs --no-log-prefix api | grep cd1a1111-318a-40f8-8e63-ff1055aef9f3
+{"level":"info","request_id":"cd1a1111-318a-40f8-8e63-ff1055aef9f3","method":"GET","path":"/api/v1/nope","status":404,...}
+```
+
+**In short:** when a coach reports an error, the id from that response leads straight to its log line and the real cause.
+
+---
+
 ### Frontend stack decision
 
 ⬜ **Not started**
