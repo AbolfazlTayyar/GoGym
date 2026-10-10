@@ -488,7 +488,7 @@ definitions:
   internal_server.healthzErrorResponse:
     properties:
       reason:
-        example: failed to connect to database
+        example: database unreachable
         type: string
       status:
         example: unavailable

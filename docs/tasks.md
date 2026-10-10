@@ -991,12 +991,7 @@ backup job to watch.
    it fails and again when it recovers. It must run outside the VPS: nothing on the box
    can report the box itself, its network, Caddy or an expired TLS certificate being down.
 
-3. /healthz is public from now on, so stop returning the raw driver error as the 503
-   `reason` — it exposes internal hostnames and IPs. Log the error server-side and return
-   a fixed reason instead. Keep the bare {"status": ...} body (no envelope): the monitor
-   and the container healthcheck match on it.
-
-4. Give the backup job from the Backup & restore drill task a heartbeat (dead-man's switch,
+3. Give the backup job from the Backup & restore drill task a heartbeat (dead-man's switch,
    e.g. Healthchecks.io): the job pings a URL after a successful upload, and I'm alerted
    when the ping doesn't arrive on schedule. A backup that silently stops is the failure
    nobody notices until the restore.

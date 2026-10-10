@@ -2046,7 +2046,7 @@ const docTemplate = `{
             "properties": {
                 "reason": {
                     "type": "string",
-                    "example": "failed to connect to database"
+                    "example": "database unreachable"
                 },
                 "status": {
                     "type": "string",

@@ -23,7 +23,7 @@ func requestLogger(log zerolog.Logger) gin.HandlerFunc {
 
 		event := log.Info()
 		if len(c.Errors) > 0 {
-			event = log.Error()
+			event = log.Error().Strs("errors", c.Errors.Errors())
 		}
 
 		event.
