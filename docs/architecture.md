@@ -17,7 +17,7 @@ Each feature lives in its own `internal/<module>` package, split by responsibili
 | `routes.go` | A `RegisterRoutes` function that mounts the module's endpoints onto the router groups it's given. |
 
 `internal/coach` is the reference implementation of this shape (added in the coach-auth task,
-`docs/tasks.md` **[A1]**) — copy its structure rather than inventing a new one.
+`docs/tasks/backend.md` **[A1]**) — copy its structure rather than inventing a new one.
 
 ## Wiring a module in
 

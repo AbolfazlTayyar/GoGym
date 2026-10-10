@@ -7,7 +7,7 @@
 > core and should be built as written.
 >
 > Anything in here that must be decided *before* v1 ships has already been folded into
-> [tasks.md](tasks.md) as the tasks marked `[A1]`–`[A4]`. Treat those tasks as actionable and
+> [tasks/](tasks/README.md) as the tasks marked `[A1]`–`[A4]`. Treat those tasks as actionable and
 > this document as the argument behind them.
 
 ## The thesis
@@ -57,7 +57,7 @@ coach keep the tab open.
 because the plan builder deletes and recreates them. If logs foreign-key to `block_movement_id`,
 every plan edit orphans training history. Logs should point at `movement_id` plus a denormalized
 snapshot of what was prescribed (sets/reps/load as programmed), not at the plan structure. This
-is recorded as a required comment in the Plan builder task in [tasks.md](tasks.md).
+is recorded as a required comment in the Plan builder task in [tasks/backend.md](tasks/backend.md).
 
 ### 3. Templates — the highest-ROI feature for a paying coach
 
@@ -103,7 +103,7 @@ data model enough to be worth settling before the module is designed.
 
 ### 6. Obligations that begin the moment the data is not yours
 
-These were the original gap list. The first five are now scheduled in [tasks.md](tasks.md) as the
+These were the original gap list. The first five are now scheduled in [tasks/](tasks/README.md) as the
 `[A1]`–`[A4]` tasks; the rest are still open and belong to the post-v1 milestone.
 
 **Now covered by a task:**
@@ -146,7 +146,7 @@ instead of every repository. That is the cheap hedge.
 
 1. **Finish v1 as specced.** The loop in [spec.md](spec.md) is the core of any version
    of this product. Do not stop and redesign.
-2. **Do the `[A1]`–`[A4]` tasks in [tasks.md](tasks.md)** — the things that are free now and expensive
+2. **Do the `[A1]`–`[A4]` tasks in [tasks/](tasks/README.md)** — the things that are free now and expensive
    later. These attach to existing v1 tasks; they are not a separate phase.
 3. **Then the "sellable" milestone**, in this order:
    1. Plan share link (athlete-visible, no login)

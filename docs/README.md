@@ -7,7 +7,7 @@ higher wins.
 
 | Document | What it is | When you touch it |
 |---|---|---|
-| [tasks.md](tasks.md) | The build checklist — one task per feature, each with a paste-ready prompt and a checkpoint. Tracks progress with ✅ / ⬜. | Constantly. This is the doc you work from. |
+| [tasks/](tasks/README.md) | The build checklists — backend, deployment and frontend in separate files, one task per feature, each with a paste-ready prompt and a checkpoint. Tracks progress with ✅ / ⬜. | Constantly. This is the doc you work from. |
 | [spec.md](spec.md) | What v1 is and, just as importantly, what it is not. Users, entities, the six MVP features, out-of-scope list. | When scope changes. Rare on purpose. |
 | [er-diagram.md](er-diagram.md) | The schema. Hand-maintained, **not** generated. | In the **same commit** as any migration — see [CLAUDE.md](../CLAUDE.md). |
 | [architecture.md](architecture.md) | The module layout new feature modules should follow, how they're wired into `internal/server`, and the tenant-isolation pattern (`internal/tenant`). | When a new module's shape or wiring deviates from `internal/coach`'s precedent, or the tenant-scoping decision changes. |
@@ -20,9 +20,9 @@ for." It is not committed scope.
 
 | Document | What it is |
 |---|---|
-| [product-direction.md](product-direction.md) | The post-v1 hypothesis: why v1 alone is hard to sell, what is missing, and in what order to fix it. Explicitly unvalidated — it is reasoning from these docs, not from users. The parts of it that must happen *during* v1 are already folded into [tasks.md](tasks.md) as the tasks marked `[A1]`–`[A4]`. |
+| [product-direction.md](product-direction.md) | The post-v1 hypothesis: why v1 alone is hard to sell, what is missing, and in what order to fix it. Explicitly unvalidated — it is reasoning from these docs, not from users. The parts of it that must happen *during* v1 are already folded into [tasks/](tasks/README.md) as the tasks marked `[A1]`–`[A4]`. |
 
-If it ever conflicts with [tasks.md](tasks.md), tasks.md is what gets built — fix the task text,
+If it ever conflicts with [tasks/](tasks/README.md), the task files are what gets built — fix the task text,
 don't work from the rationale.
 
 ## Generated — do not edit by hand
