@@ -1021,6 +1021,69 @@ $ ssh vps 'sleep 15 && docker inspect -f "{{.RestartCount}} {{.State.Health.Stat
 
 ---
 
+### Hide /healthz behind a secret path
+
+⬜ **Not started**
+
+**Description:** `/healthz` is unauthenticated and pings the database on every request, so a flood of it competes with real traffic for the connection pool. Nothing public needs it except the uptime monitor: the container healthcheck calls it from inside the container, and after the VPS task the api port isn't published. This task makes Caddy refuse the plain path and serve the check only on a hard-to-guess one that the monitor uses. Needs the VPS deployment and uptime monitoring tasks above.
+
+**Prompt:**
+```
+Stop serving /healthz to the public through Caddy, without losing the external uptime
+monitor's database check.
+
+- Generate a random path segment (e.g. `openssl rand -hex 16`) and keep it in the VPS's
+  env as HEALTH_PATH, passed to the caddy service. Never commit the real value; if you
+  add a placeholder to an example env file, say which.
+- In the Caddyfile, use mutually exclusive handle blocks: plain /healthz answers 404,
+  /{$HEALTH_PATH} is rewritten to /healthz and proxied to the api, everything else is
+  proxied as before:
+
+    your-domain.com {
+        handle /healthz {
+            respond 404
+        }
+        handle /{$HEALTH_PATH} {
+            rewrite * /healthz
+            reverse_proxy api:8080
+        }
+        handle {
+            reverse_proxy api:8080
+        }
+    }
+
+  The api still sees /healthz, so the healthy-probe log skip and the 503 logging keep
+  working unchanged. Don't change the api or the container healthcheck: neither goes
+  through Caddy.
+- An unset HEALTH_PATH makes the second block `handle /`, which serves the health check
+  at the site root. Make the deploy fail when it's empty (e.g. `${HEALTH_PATH:?}` in the
+  compose environment) rather than relying on someone noticing.
+- Point the uptime monitor at https://<your-domain>/<HEALTH_PATH>. Keep that URL off any
+  public status page the monitor offers.
+- Add to the deploy runbook how to rotate the secret: new value in the env, restart
+  caddy, update the monitor URL. A leaked value exposes only the health check, so
+  rotation is cheap, not an emergency.
+```
+
+**Checkpoint:** From outside the VPS, plain `/healthz` and its variants all get Caddy's 404, not the api's response: `/healthz`, `/healthz/`, `/HEALTHZ`, `//healthz`, and `curl --path-as-is https://<your-domain>/api/../healthz`. The secret path returns `{"status":"ok"}`. Stop `db`: the secret path returns the 503 and the uptime monitor alerts, so the database check survived the change. `docker compose ps` still shows the api `healthy`. With `HEALTH_PATH` unset, `docker compose up` refuses to start rather than serving the check at `/`.
+
+**Expected output:**
+```
+$ curl -s -o /dev/null -w "%{http_code}\n" https://<your-domain>/healthz
+404
+
+$ curl -s https://<your-domain>/$HEALTH_PATH
+{"status":"ok"}
+
+$ ssh vps 'docker compose stop db' && curl -s https://<your-domain>/$HEALTH_PATH
+{"status":"unavailable","reason":"database unreachable"}
+# ...uptime monitor alert arrives
+```
+
+**In short:** strangers can't reach the health check, and your uptime monitor still can, so it still notices when the database goes down.
+
+---
+
 ### Request IDs
 
 ⏸ **Deferred** — start when a second coach is using the app.
