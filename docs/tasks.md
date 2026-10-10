@@ -860,8 +860,18 @@ $ curl -s -X DELETE -H "Authorization: Bearer $TOKEN" localhost:8080/api/v1/move
 Stand up the v1 deployment target per docs/archive/prestart-roadmap.md step 7: a VPS
 (Hetzner/DigitalOcean or similar) running the existing docker-compose.yml (api + db),
 behind a reverse proxy (Caddy is the simplest TLS option) terminating HTTPS. Don't reach
-for Kubernetes. Set TRUSTED_PROXIES to Caddy's address (docs/adr/0024), or every client
-shares Caddy's auth rate-limit bucket.
+for Kubernetes.
+
+Run Caddy as a Compose service with a fixed IP (a network with a pinned subnet and
+`ipv4_address` on caddy), and set TRUSTED_PROXIES to exactly that IP (docs/adr/0024).
+Container IPs change across restarts unless pinned, and an empty TRUSTED_PROXIES puts every
+client in Caddy's auth rate-limit bucket. Never widen it to 0.0.0.0/0 — that brings
+back X-Forwarded-For spoofing.
+
+On the VPS, don't publish the api (8080) or db (5432) ports — docker-compose.yml publishes
+both on all interfaces for local dev. Only Caddy's 80/443 face the internet; a published
+5432 exposes Postgres, and a published 8080 lets callers skip Caddy. Use a prod override
+file or bind them to 127.0.0.1 if you need them for SSH tunnels — say which.
 
 Define and document how migrations reach production — this app has no auto-migrate on
 container startup today (internal/db explicitly disables GORM AutoMigrate; migrations/
@@ -885,12 +895,15 @@ and restart — no need for anything fancier yet) — call out explicitly if you
 that to a separate task instead of doing it here.
 ```
 
-**Checkpoint:** A real migration (start with the existing `000001`/`000002` files) has actually been applied against the VPS's Postgres, not just described — confirm via `\dt`/`\d athlete` over SSH. Deploying a trivial code change (e.g. a log line) end-to-end once, following only the written runbook, succeeds without undocumented manual steps. Rolling back one migration via the down file has been exercised at least once, not just assumed to work.
+**Checkpoint:** A real migration (start with the existing `000001`/`000002` files) has actually been applied against the VPS's Postgres, not just described — confirm via `\dt`/`\d athlete` over SSH. Deploying a trivial code change (e.g. a log line) end-to-end once, following only the written runbook, succeeds without undocumented manual steps. Rolling back one migration via the down file has been exercised at least once, not just assumed to work. A request from your own machine logs your real public IP as `client_ip` (not Caddy's), and the same request with `-H "X-Forwarded-For: 1.2.3.4"` still logs your real IP. From outside the VPS, ports 8080 and 5432 can't be reached.
 
 **Expected output:**
 ```
 $ curl -s https://<your-domain>/healthz
 {"status":"ok"}
+
+$ nc -zv -w3 <vps-ip> 5432
+nc: connect to <vps-ip> port 5432 (tcp) failed: Connection refused
 
 $ ssh vps 'docker compose exec db psql -U gogym -c "\dt"'
  public | athlete              | table | gogym
