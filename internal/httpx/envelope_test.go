@@ -2,6 +2,7 @@ package httpx_test
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -109,6 +110,25 @@ func TestError(t *testing.T) {
 	assert.Equal(t, httpx.CodeConflict, errBody["code"])
 	assert.Equal(t, "phone already registered", errBody["message"])
 	assert.NotContains(t, errBody, "fields", "fields is omitted when the helper carries none")
+}
+
+func TestInternalError(t *testing.T) {
+	c, rec := newTestContext()
+	cause := errors.New("dial tcp 10.0.0.7:5432: connection refused")
+
+	httpx.InternalError(c, cause)
+
+	assert.Equal(t, http.StatusInternalServerError, rec.Code)
+	assert.True(t, c.IsAborted())
+	assert.NotContains(t, rec.Body.String(), "10.0.0.7", "the cause must never reach the client")
+
+	errBody, ok := decode(t, rec)["error"].(map[string]any)
+	require.True(t, ok, "error must be an object")
+	assert.Equal(t, httpx.CodeInternalError, errBody["code"])
+	assert.Equal(t, httpx.MsgInternalError, errBody["message"])
+
+	require.Len(t, c.Errors, 1, "the cause is attached for the request log")
+	assert.ErrorIs(t, c.Errors[0].Err, cause)
 }
 
 func TestErrorFields(t *testing.T) {

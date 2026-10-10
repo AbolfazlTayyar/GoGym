@@ -110,7 +110,7 @@ func (h *Handler) Signup(c *gin.Context) {
 			httpx.Error(c, http.StatusConflict, httpx.CodeConflict, "phone already registered")
 			return
 		}
-		httpx.Error(c, http.StatusInternalServerError, httpx.CodeInternalError, httpx.MsgInternalError)
+		httpx.InternalError(c, err)
 		return
 	}
 
@@ -175,7 +175,7 @@ func (h *Handler) Me(c *gin.Context) {
 			httpx.Error(c, http.StatusNotFound, httpx.CodeNotFound, httpx.MsgNotFound)
 			return
 		}
-		httpx.Error(c, http.StatusInternalServerError, httpx.CodeInternalError, httpx.MsgInternalError)
+		httpx.InternalError(c, err)
 		return
 	}
 

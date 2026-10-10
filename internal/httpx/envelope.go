@@ -53,3 +53,9 @@ func ErrorFields(c *gin.Context, status int, code, message string, fields map[st
 		Error:   &ErrorBody{Code: code, Message: message, Fields: fields},
 	})
 }
+
+// InternalError hides err from the client and attaches it to c so the request log records the cause.
+func InternalError(c *gin.Context, err error) {
+	_ = c.Error(err)
+	Error(c, http.StatusInternalServerError, CodeInternalError, MsgInternalError)
+}

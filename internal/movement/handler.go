@@ -242,5 +242,5 @@ func writeServiceError(c *gin.Context, err error) {
 		return
 	}
 
-	httpx.Error(c, http.StatusInternalServerError, httpx.CodeInternalError, httpx.MsgInternalError)
+	httpx.InternalError(c, err)
 }
