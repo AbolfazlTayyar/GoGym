@@ -2,6 +2,7 @@
 package server
 
 import (
+	"fmt"
 	"time"
 
 	_ "github.com/AbolfazlTayyar/gogym/docs/swagger"
@@ -21,12 +22,18 @@ import (
 
 const APIV1Prefix = "/api/v1"
 
-func New(cfg config.Config, gormDB *gorm.DB, log zerolog.Logger) *gin.Engine {
+func New(cfg config.Config, gormDB *gorm.DB, log zerolog.Logger) (*gin.Engine, error) {
 	if cfg.Environment == config.EnvProduction {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
 	router := gin.New()
+
+	// Gin trusts X-Forwarded-For from any peer by default, which lets a caller pick its own
+	// ClientIP and dodge the per-IP auth rate limit.
+	if err := router.SetTrustedProxies(cfg.TrustedProxies); err != nil {
+		return nil, fmt.Errorf("server: invalid trusted proxies: %w", err)
+	}
 
 	router.Use(gin.CustomRecovery(recoveryHandler), requestLogger(log))
 	router.HandleMethodNotAllowed = true
@@ -73,5 +80,5 @@ func New(cfg config.Config, gormDB *gorm.DB, log zerolog.Logger) *gin.Engine {
 	planSvc := plan.NewService(planRepo, athleteSvc, movementSvc)
 	plan.RegisterRoutes(protected, plan.NewHandler(planSvc))
 
-	return router
+	return router, nil
 }

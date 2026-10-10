@@ -108,4 +108,6 @@ bodies a client can't parse.
 `AuthMiddleware`. Passwords are bcrypt-hashed, never logged or stored in plaintext. `/auth/*`
 is rate-limited in-process, keyed by both IP and phone (`internal/coach/ratelimit.go`) — a
 simple sliding-window limiter, sufficient for v1's single-instance deployment; a
-multi-instance deployment would need a shared store instead.
+multi-instance deployment would need a shared store instead. The IP is `c.ClientIP()`, which honors
+`X-Forwarded-For` only from peers listed in `TRUSTED_PROXIES` (empty trusts none), so a caller
+can't pick its own bucket — see [0024](adr/0024-trusted-proxies-explicit.md).

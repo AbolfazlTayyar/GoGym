@@ -33,7 +33,10 @@ func main() {
 		log.Fatal().Err(err).Msg("failed to connect to database")
 	}
 
-	router := server.New(cfg, gormDB, log)
+	router, err := server.New(cfg, gormDB, log)
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to build router")
+	}
 
 	if err := router.Run(":" + cfg.ServerPort); err != nil {
 		log.Fatal().Err(err).Msg("server stopped")

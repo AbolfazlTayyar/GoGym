@@ -860,7 +860,8 @@ $ curl -s -X DELETE -H "Authorization: Bearer $TOKEN" localhost:8080/api/v1/move
 Stand up the v1 deployment target per docs/archive/prestart-roadmap.md step 7: a VPS
 (Hetzner/DigitalOcean or similar) running the existing docker-compose.yml (api + db),
 behind a reverse proxy (Caddy is the simplest TLS option) terminating HTTPS. Don't reach
-for Kubernetes.
+for Kubernetes. Set TRUSTED_PROXIES to Caddy's address (docs/adr/0024), or every client
+shares Caddy's auth rate-limit bucket.
 
 Define and document how migrations reach production — this app has no auto-migrate on
 container startup today (internal/db explicitly disables GORM AutoMigrate; migrations/

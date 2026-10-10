@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/joho/godotenv"
@@ -21,6 +22,8 @@ type Config struct {
 	JWTSecret   string
 	JWTExpiry   time.Duration
 	Environment string
+	// TrustedProxies are the only peers whose X-Forwarded-For is believed; empty trusts none.
+	TrustedProxies []string
 }
 
 type DBConfig struct {
@@ -47,10 +50,11 @@ func Load() Config {
 			Name:     mustGetEnv("DB_NAME"),
 			SSLMode:  mustGetEnv("DB_SSLMODE"),
 		},
-		ServerPort:  mustGetEnv("SERVER_PORT"),
-		JWTSecret:   mustGetEnv("JWT_SECRET"),
-		JWTExpiry:   mustGetDurationEnv("JWT_EXPIRY"),
-		Environment: getEnvOrDefault("APP_ENV", EnvDevelopment),
+		ServerPort:     mustGetEnv("SERVER_PORT"),
+		JWTSecret:      mustGetEnv("JWT_SECRET"),
+		JWTExpiry:      mustGetDurationEnv("JWT_EXPIRY"),
+		Environment:    getEnvOrDefault("APP_ENV", EnvDevelopment),
+		TrustedProxies: getListEnv("TRUSTED_PROXIES"),
 	}
 
 	return cfg
@@ -61,6 +65,17 @@ func getEnvOrDefault(key, fallback string) string {
 		return val
 	}
 	return fallback
+}
+
+// getListEnv splits a comma-separated variable, dropping blank entries; unset yields nil.
+func getListEnv(key string) []string {
+	var list []string
+	for _, item := range strings.Split(os.Getenv(key), ",") {
+		if item = strings.TrimSpace(item); item != "" {
+			list = append(list, item)
+		}
+	}
+	return list
 }
 
 func mustGetEnv(key string) string {
@@ -83,8 +98,9 @@ func mustGetDurationEnv(key string) time.Duration {
 // String is logged at startup, so it must never include secrets.
 func (c Config) String() string {
 	return fmt.Sprintf(
-		"server_port=%s db_host=%s db_port=%s db_name=%s db_sslmode=%s jwt_expiry=%s environment=%s",
+		"server_port=%s db_host=%s db_port=%s db_name=%s db_sslmode=%s jwt_expiry=%s environment=%s trusted_proxies=%s",
 		c.ServerPort, c.DB.Host, c.DB.Port, c.DB.Name, c.DB.SSLMode, c.JWTExpiry, c.Environment,
+		strings.Join(c.TrustedProxies, ","),
 	)
 }
 
