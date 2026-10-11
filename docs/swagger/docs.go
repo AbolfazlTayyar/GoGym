@@ -1284,7 +1284,7 @@ const docTemplate = `{
         },
         "/healthz": {
             "get": {
-                "description": "Reports whether the service and its database connection are healthy.",
+                "description": "Reports whether the service and its database connection are healthy. The result is cached for a few seconds.",
                 "produces": [
                     "application/json"
                 ],
