@@ -522,76 +522,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/auth/signup": {
-            "post": {
-                "description": "Creates a coach account. v1 is single-coach, so this is open with no admin gate.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "auth"
-                ],
-                "summary": "Sign up a coach",
-                "parameters": [
-                    {
-                        "description": "Signup details",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/internal_coach.signupRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Created",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.SuccessEnvelope"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/internal_coach.coachResponse"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope"
-                        }
-                    },
-                    "409": {
-                        "description": "Conflict",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope"
-                        }
-                    },
-                    "429": {
-                        "description": "Too Many Requests",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ErrorEnvelope"
-                        }
-                    }
-                }
-            }
-        },
         "/api/v1/blocks/{id}/movements": {
             "post": {
                 "security": [
@@ -1574,34 +1504,6 @@ const docTemplate = `{
                 "token": {
                     "type": "string",
                     "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-                }
-            }
-        },
-        "internal_coach.signupRequest": {
-            "type": "object",
-            "required": [
-                "first_name",
-                "last_name",
-                "password",
-                "phone"
-            ],
-            "properties": {
-                "first_name": {
-                    "type": "string",
-                    "example": "Ada"
-                },
-                "last_name": {
-                    "type": "string",
-                    "example": "Lovelace"
-                },
-                "password": {
-                    "type": "string",
-                    "minLength": 8,
-                    "example": "correct-horse-battery-staple"
-                },
-                "phone": {
-                    "type": "string",
-                    "example": "09372144430"
                 }
             }
         },

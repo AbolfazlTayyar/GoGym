@@ -2,6 +2,7 @@ package measurement_test
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -90,14 +91,22 @@ func do(t *testing.T, router *gin.Engine, method, target, token, body string) *h
 	return rec
 }
 
-func signupCoach(t *testing.T, router *gin.Engine, phone string) string {
+// createCoach goes through coach.Service because the API has no signup route.
+func createCoach(t *testing.T, router *gin.Engine, db *gorm.DB, phone string) string {
 	t.Helper()
 
-	credentials := fmt.Sprintf(`{"first_name":"Test","last_name":"Coach","phone":%q,"password":"correct-horse-battery-staple"}`, phone)
+	const password = "correct-horse-battery-staple"
 
-	signup := do(t, router, http.MethodPost, "/api/v1/auth/signup", "", credentials)
-	require.Equal(t, http.StatusCreated, signup.Code, "body: %s", signup.Body.String())
+	// Create never issues a token, so the service needs no JWT settings.
+	_, err := coach.NewService(coach.NewRepository(db), "", 0).Create(context.Background(), coach.CreateInput{
+		FirstName: "Test",
+		LastName:  "Coach",
+		Phone:     phone,
+		Password:  password,
+	})
+	require.NoError(t, err)
 
+	credentials := fmt.Sprintf(`{"phone":%q,"password":%q}`, phone, password)
 	env := decodeEnvelope(t, do(t, router, http.MethodPost, "/api/v1/auth/login", "", credentials), http.StatusOK)
 
 	var payload struct {
@@ -162,8 +171,8 @@ func dates(ms []measurementResponse) []string {
 }
 
 func TestMeasurements_ListedInDateOrder(t *testing.T) {
-	router, _ := newTestRouter(t)
-	token := signupCoach(t, router, "09121110101")
+	router, db := newTestRouter(t)
+	token := createCoach(t, router, db, "09121110101")
 	athleteID := createAthlete(t, router, token, "09121230101")
 
 	// Posted out of order, so insertion order and date order disagree.
@@ -191,8 +200,8 @@ func TestMeasurements_ListedInDateOrder(t *testing.T) {
 }
 
 func TestMeasurements_EmptyHistoryIsAnEmptyArray(t *testing.T) {
-	router, _ := newTestRouter(t)
-	token := signupCoach(t, router, "09121110102")
+	router, db := newTestRouter(t)
+	token := createCoach(t, router, db, "09121110102")
 	athleteID := createAthlete(t, router, token, "09121230102")
 
 	env := decodeEnvelope(t, do(t, router, http.MethodGet, measurementsPath(athleteID), token, ""), http.StatusOK)
@@ -203,8 +212,8 @@ func TestMeasurements_EmptyHistoryIsAnEmptyArray(t *testing.T) {
 func TestMeasurements_AnotherCoachsAthleteIsNotFound(t *testing.T) {
 	router, db := newTestRouter(t)
 
-	owner := signupCoach(t, router, "09121110103")
-	intruder := signupCoach(t, router, "09121110104")
+	owner := createCoach(t, router, db, "09121110103")
+	intruder := createCoach(t, router, db, "09121110104")
 	athleteID := createAthlete(t, router, owner, "09121230103")
 
 	addMeasurement(t, router, owner, athleteID, `{"date":"2026-09-01","weight":70}`)
@@ -241,7 +250,7 @@ func TestMeasurements_AnotherCoachsAthleteIsNotFound(t *testing.T) {
 
 func TestMeasurements_SoftDeletedAthleteIsNotFound(t *testing.T) {
 	router, db := newTestRouter(t)
-	token := signupCoach(t, router, "09121110105")
+	token := createCoach(t, router, db, "09121110105")
 	athleteID := createAthlete(t, router, token, "09121230105")
 
 	require.NoError(t, db.Delete(&athlete.Athlete{}, "id = ?", athleteID).Error)
@@ -251,8 +260,8 @@ func TestMeasurements_SoftDeletedAthleteIsNotFound(t *testing.T) {
 }
 
 func TestMeasurements_RejectsBadInputWithFieldErrors(t *testing.T) {
-	router, _ := newTestRouter(t)
-	token := signupCoach(t, router, "09121110106")
+	router, db := newTestRouter(t)
+	token := createCoach(t, router, db, "09121110106")
 	athleteID := createAthlete(t, router, token, "09121230106")
 
 	rec := do(t, router, http.MethodPost, measurementsPath(athleteID), token, `{"date":"24/09/2026","waist":0.8}`)

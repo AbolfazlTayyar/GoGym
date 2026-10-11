@@ -42,7 +42,10 @@ Pick one deliberately and tell me why:
 Whichever you pick, the DSN must come from the same internal/config-driven env vars used
 locally — no separate prod-only connection logic. Add a short runbook (a doc or a section
 in this file) covering: how to deploy a new image, how/when migrations run relative to
-that, and how to roll back a bad migration (down migration + previous image tag).
+that, and how to roll back a bad migration (down migration + previous image tag). The
+runbook also covers creating the first coach and resetting a password with
+`docker compose exec -T api coachctl ...`, since the API has no signup endpoint
+(docs/adr/0025).
 
 Per docs/archive/prestart-roadmap.md step 10, this is also the natural point to wire basic
 CD (a GitHub Actions job that builds and pushes the image, then SSHs to the VPS to pull

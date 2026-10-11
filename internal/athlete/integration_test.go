@@ -2,6 +2,7 @@ package athlete_test
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -22,15 +23,7 @@ import (
 const athletesPath = "/api/v1/athletes"
 
 // newTestRouter wires the coach module too, since athlete requests need a real coach's token.
-func newTestRouter(t *testing.T) *gin.Engine {
-	t.Helper()
-
-	router, _ := newTestRouterWithDB(t)
-
-	return router
-}
-
-func newTestRouterWithDB(t *testing.T) (*gin.Engine, *gorm.DB) {
+func newTestRouter(t *testing.T) (*gin.Engine, *gorm.DB) {
 	t.Helper()
 
 	db := testutil.NewDB(t)
@@ -100,16 +93,23 @@ func do(t *testing.T, router *gin.Engine, method, target, token, body string) *h
 	return rec
 }
 
-func signupCoach(t *testing.T, router *gin.Engine, phone string) string {
+// createCoach goes through coach.Service because the API has no signup route.
+func createCoach(t *testing.T, router *gin.Engine, db *gorm.DB, phone string) string {
 	t.Helper()
 
-	credentials := fmt.Sprintf(`{"first_name":"Test","last_name":"Coach","phone":%q,"password":"correct-horse-battery-staple"}`, phone)
+	const password = "correct-horse-battery-staple"
 
-	signup := do(t, router, http.MethodPost, "/api/v1/auth/signup", "", credentials)
-	require.Equal(t, http.StatusCreated, signup.Code, "body: %s", signup.Body.String())
+	// Create never issues a token, so the service needs no JWT settings.
+	_, err := coach.NewService(coach.NewRepository(db), "", 0).Create(context.Background(), coach.CreateInput{
+		FirstName: "Test",
+		LastName:  "Coach",
+		Phone:     phone,
+		Password:  password,
+	})
+	require.NoError(t, err)
 
-	login := do(t, router, http.MethodPost, "/api/v1/auth/login", "", credentials)
-	env := decodeEnvelope(t, login, http.StatusOK)
+	credentials := fmt.Sprintf(`{"phone":%q,"password":%q}`, phone, password)
+	env := decodeEnvelope(t, do(t, router, http.MethodPost, "/api/v1/auth/login", "", credentials), http.StatusOK)
 
 	var payload struct {
 		Token string `json:"token"`
@@ -160,10 +160,10 @@ func names(athletes []athleteResponse) []string {
 }
 
 func TestAthleteLifecycle(t *testing.T) {
-	router := newTestRouter(t)
+	router, db := newTestRouter(t)
 
-	coachA := signupCoach(t, router, "09121110001")
-	coachB := signupCoach(t, router, "09121110002")
+	coachA := createCoach(t, router, db, "09121110001")
+	coachB := createCoach(t, router, db, "09121110002")
 
 	created := createAthlete(t, router, coachA, `{
 		"first_name": "Sara", "last_name": "Ahmadi", "phone": "09121230001",
@@ -226,8 +226,8 @@ func TestAthleteLifecycle(t *testing.T) {
 }
 
 func TestList_AthleteTypeFilter(t *testing.T) {
-	router := newTestRouter(t)
-	token := signupCoach(t, router, "09121110003")
+	router, db := newTestRouter(t)
+	token := createCoach(t, router, db, "09121110003")
 
 	createAthlete(t, router, token, `{"first_name":"Private","last_name":"One","phone":"09121230011"}`)
 	createAthlete(t, router, token, `{"first_name":"Public","last_name":"Two","phone":"09121230012","athlete_type":"public"}`)
@@ -263,8 +263,8 @@ func TestList_AthleteTypeFilter(t *testing.T) {
 }
 
 func TestList_Paginates(t *testing.T) {
-	router := newTestRouter(t)
-	token := signupCoach(t, router, "09121110004")
+	router, db := newTestRouter(t)
+	token := createCoach(t, router, db, "09121110004")
 
 	const total = 5
 	for i := range total {
@@ -291,8 +291,8 @@ func TestList_Paginates(t *testing.T) {
 }
 
 func TestCreate_RejectsBadInputWithFieldErrors(t *testing.T) {
-	router := newTestRouter(t)
-	token := signupCoach(t, router, "09121110005")
+	router, db := newTestRouter(t)
+	token := createCoach(t, router, db, "09121110005")
 
 	rec := do(t, router, http.MethodPost, athletesPath, token,
 		`{"first_name":"Sara","last_name":"","phone":"+15550001111","athlete_type":"vip"}`)
@@ -311,10 +311,10 @@ func TestCreate_RejectsBadInputWithFieldErrors(t *testing.T) {
 }
 
 func TestCreate_IgnoresCoachIDInBody(t *testing.T) {
-	router := newTestRouter(t)
+	router, db := newTestRouter(t)
 
-	victim := signupCoach(t, router, "09121110006")
-	attacker := signupCoach(t, router, "09121110007")
+	victim := createCoach(t, router, db, "09121110006")
+	attacker := createCoach(t, router, db, "09121110007")
 
 	createAthlete(t, router, victim, `{"first_name":"Sara","last_name":"Ahmadi","phone":"09121230031"}`)
 
@@ -333,10 +333,10 @@ func TestCreate_IgnoresCoachIDInBody(t *testing.T) {
 }
 
 func TestGet(t *testing.T) {
-	router, db := newTestRouterWithDB(t)
+	router, db := newTestRouter(t)
 
-	owner := signupCoach(t, router, "09121110009")
-	intruder := signupCoach(t, router, "09121110010")
+	owner := createCoach(t, router, db, "09121110009")
+	intruder := createCoach(t, router, db, "09121110010")
 
 	created := createAthlete(t, router, owner, `{
 		"first_name": "Sara", "last_name": "Ahmadi", "phone": "09121230051",
@@ -385,8 +385,8 @@ func TestGet(t *testing.T) {
 
 // GORM's soft-delete scope comes from the model, so a Count without one would include deleted rows.
 func TestList_ExcludesSoftDeletedAthletes(t *testing.T) {
-	router, db := newTestRouterWithDB(t)
-	token := signupCoach(t, router, "09121110008")
+	router, db := newTestRouter(t)
+	token := createCoach(t, router, db, "09121110008")
 
 	kept := createAthlete(t, router, token, `{"first_name":"Kept","last_name":"Athlete","phone":"09121230041"}`)
 	removed := createAthlete(t, router, token, `{"first_name":"Removed","last_name":"Athlete","phone":"09121230042"}`)

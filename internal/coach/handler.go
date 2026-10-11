@@ -6,7 +6,6 @@ import (
 
 	"github.com/AbolfazlTayyar/gogym/internal/httpx"
 	"github.com/AbolfazlTayyar/gogym/internal/tenant"
-	"github.com/AbolfazlTayyar/gogym/internal/validate"
 	"github.com/gin-gonic/gin"
 )
 
@@ -25,13 +24,6 @@ func newCoachResponse(c *Coach) coachResponse {
 		LastName:  c.LastName,
 		Phone:     c.Phone,
 	}
-}
-
-type signupRequest struct {
-	FirstName string `json:"first_name" binding:"required" example:"Ada"`
-	LastName  string `json:"last_name" binding:"required" example:"Lovelace"`
-	Phone     string `json:"phone" binding:"required" example:"09372144430"`
-	Password  string `json:"password" binding:"required,min=8" example:"correct-horse-battery-staple"`
 }
 
 type loginRequest struct {
@@ -70,51 +62,6 @@ func (h *Handler) rateLimited(c *gin.Context, phone string) bool {
 		return true
 	}
 	return false
-}
-
-// Signup handles coach account creation.
-//
-// @Summary		Sign up a coach
-// @Description	Creates a coach account. v1 is single-coach, so this is open with no admin gate.
-// @Tags			auth
-// @Accept			json
-// @Produce		json
-// @Param			request	body		signupRequest	true	"Signup details"
-// @Success		201		{object}	httpx.SuccessEnvelope{data=coachResponse}
-// @Failure		400		{object}	httpx.ErrorEnvelope
-// @Failure		409		{object}	httpx.ErrorEnvelope
-// @Failure		429		{object}	httpx.ErrorEnvelope
-// @Failure		500		{object}	httpx.ErrorEnvelope
-// @Router			/api/v1/auth/signup [post]
-func (h *Handler) Signup(c *gin.Context) {
-	var req signupRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		httpx.ErrorFields(c, http.StatusBadRequest, httpx.CodeValidationFailed, httpx.MsgInvalidRequest, httpx.ValidationFields(err))
-		return
-	}
-
-	// Checked before rate limiting so per-phone buckets are only keyed by well-formed numbers.
-	if !validate.IsIranMobile(req.Phone) {
-		httpx.ErrorFields(c, http.StatusBadRequest, httpx.CodeValidationFailed, httpx.MsgInvalidRequest,
-			map[string]string{"phone": validate.MsgIranMobile})
-		return
-	}
-
-	if h.rateLimited(c, req.Phone) {
-		return
-	}
-
-	created, err := h.svc.Signup(c.Request.Context(), SignupInput(req))
-	if err != nil {
-		if errors.Is(err, ErrPhoneTaken) {
-			httpx.Error(c, http.StatusConflict, httpx.CodeConflict, "phone already registered")
-			return
-		}
-		httpx.InternalError(c, err)
-		return
-	}
-
-	httpx.Created(c, newCoachResponse(created))
 }
 
 // Login handles coach authentication.

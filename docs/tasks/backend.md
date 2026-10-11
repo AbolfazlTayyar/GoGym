@@ -450,6 +450,54 @@ existing tenant-scoping note.
 
 ---
 
+### Close public signup: coach accounts by CLI
+
+✅ **Done**
+
+**Description:** `POST /api/v1/auth/signup` was open to anyone, so once the API is deployed, anyone who finds the URL could create a coach account. With one coach, nobody needs to sign up. The endpoint is gone. Accounts are created, and passwords reset, with a small CLI that goes through the same `coach.Service`. Self-service signup comes back with the deferred *Coach auth hardening* task. [ADR 0025](../adr/0025-coach-accounts-by-cli.md) explains why this is a CLI and not a config flag.
+
+**Prompt:**
+```
+Close public signup and give the one coach a way back in that doesn't need a raw SQL
+UPDATE.
+
+- Remove POST /api/v1/auth/signup with its handler, request type and swagger
+  annotations, and rerun `make swagger`. Login and /coaches/me stay as they are.
+- Move the input rules the handler enforced (Iranian mobile format, a password of at
+  least 8 characters) into coach.Service, rename Signup to Create, and add
+  ResetPassword(phone, password), which returns ErrNotFound for an unknown phone.
+- Add cmd/coachctl with two subcommands: `create -first-name -last-name -phone` and
+  `reset-password -phone`. Read the password from stdin, never from a flag, so it stays
+  out of shell history and the process list. Load config through internal/config, like
+  cmd/api does.
+- Build coachctl into the Docker image next to api, so it runs on the VPS through
+  `docker compose exec`.
+- Tests that signed coaches up over HTTP create them through coach.Service instead and
+  still log in over HTTP. Add a test that /auth/signup answers 404, so the route can't
+  come back by accident.
+
+Record the decision as the next ADR.
+```
+
+**Checkpoint:** `curl -X POST .../api/v1/auth/signup` returns an enveloped 404. `coachctl create` makes a coach who can then log in. Running it again with the same phone fails with `phone already registered`. `coachctl reset-password` changes the password: the old one now gets `invalid_credentials` and the new one gets a token. An unknown phone fails with `not found`. Swagger UI no longer lists signup. `make test` passes.
+
+**Expected output:**
+```
+# read -s keeps the password off the screen; printf is a shell builtin, so it never shows in ps
+$ read -rs PW && printf '%s\n' "$PW" | docker compose exec -T api coachctl create -first-name Ada -last-name Lovelace -phone 09372144430; unset PW
+created coach 6f1c2d0e-5b7a-4f43-9c1e-2a8d7e4b9c10 (09372144430)
+
+$ read -rs PW && printf '%s\n' "$PW" | docker compose exec -T api coachctl reset-password -phone 09372144430; unset PW
+password reset for 09372144430; tokens issued before now stay valid until they expire
+
+$ curl -s -X POST localhost:8080/api/v1/auth/signup -d '{}'
+{"success":false,"data":null,"error":{"code":"not_found","message":"not found"}}
+```
+
+**In short:** nobody can create an account by finding the URL, and a forgotten password is a one-line command instead of a database edit.
+
+---
+
 ### Coach auth hardening: phone verification & password reset **[A4]**
 
 ⬜ **Not started**

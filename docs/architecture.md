@@ -104,10 +104,15 @@ bodies a client can't parse.
 
 ## Auth
 
-`internal/coach` owns the one login this app has: signup, login, JWT issuance/validation, and
+`internal/coach` owns the one login this app has: login, JWT issuance/validation, and
 `AuthMiddleware`. Passwords are bcrypt-hashed, never logged or stored in plaintext. `/auth/*`
 is rate-limited in-process, keyed by both IP and phone (`internal/coach/ratelimit.go`) — a
 simple sliding-window limiter, sufficient for v1's single-instance deployment; a
 multi-instance deployment would need a shared store instead. The IP is `c.ClientIP()`, which honors
 `X-Forwarded-For` only from peers listed in `TRUSTED_PROXIES` (empty trusts none), so a caller
 can't pick its own bucket — see [0024](adr/0024-trusted-proxies-explicit.md).
+
+There is no signup endpoint. Coach accounts are created, and passwords reset, with
+`cmd/coachctl`, which goes through the same `coach.Service` and is built into the image
+(`docker compose exec api coachctl ...`). It reads the password from stdin. Self-service
+signup returns when a second coach needs it — see [0025](adr/0025-coach-accounts-by-cli.md).

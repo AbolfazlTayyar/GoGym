@@ -62,15 +62,11 @@ func requireErrorEnvelope(t *testing.T, rec *httptest.ResponseRecorder, wantStat
 	return env.Error
 }
 
-func TestSignup_ReportsFieldLevelBindingErrors(t *testing.T) {
-	rec := postJSONBody(newHandlerTestRouter(), "/api/v1/auth/signup",
-		`{"first_name":"Ada","phone":"09372144430","password":"short"}`)
+func TestLogin_ReportsFieldLevelBindingErrors(t *testing.T) {
+	rec := postJSONBody(newHandlerTestRouter(), "/api/v1/auth/login", `{"phone":"09372144430"}`)
 
 	errBody := requireErrorEnvelope(t, rec, http.StatusBadRequest, httpx.CodeValidationFailed)
-	assert.Equal(t, map[string]string{
-		"last_name": "is required",
-		"password":  "must be at least 8 characters",
-	}, errBody.Fields)
+	assert.Equal(t, map[string]string{"password": "is required"}, errBody.Fields)
 }
 
 func TestLogin_MalformedBodyHasNoFields(t *testing.T) {

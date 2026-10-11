@@ -53,3 +53,14 @@ func (r *Repository) FindByID(ctx context.Context, id uuid.UUID) (*Coach, error)
 	}
 	return &c, nil
 }
+
+func (r *Repository) UpdatePasswordHash(ctx context.Context, phone, hash string) error {
+	result := r.db.WithContext(ctx).Model(&Coach{}).Where("phone = ?", phone).Update("password_hash", hash)
+	if result.Error != nil {
+		return fmt.Errorf("coach: failed to update password: %w", result.Error)
+	}
+	if result.RowsAffected == 0 {
+		return ErrNotFound
+	}
+	return nil
+}

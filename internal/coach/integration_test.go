@@ -2,6 +2,7 @@ package coach_test
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -16,7 +17,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func newTestRouter(t *testing.T) *gin.Engine {
+// newTestRouter also returns the service, since coaches are created through it rather than over HTTP.
+func newTestRouter(t *testing.T) (*gin.Engine, *coach.Service) {
 	t.Helper()
 
 	db := testutil.NewDB(t)
@@ -34,7 +36,7 @@ func newTestRouter(t *testing.T) *gin.Engine {
 
 	coach.RegisterRoutes(v1, protected, handler)
 
-	return router
+	return router, svc
 }
 
 type envelope struct {
@@ -89,27 +91,33 @@ func postJSON(t *testing.T, router *gin.Engine, path string, body map[string]str
 	return rec
 }
 
-func TestSignupLoginProtectedRoute(t *testing.T) {
-	router := newTestRouter(t)
+const (
+	testPhone    = "09372144430"
+	testPassword = "correct-horse-battery-staple"
+)
 
-	signupRec := postJSON(t, router, "/api/v1/auth/signup", map[string]string{
-		"first_name": "Ada",
-		"last_name":  "Lovelace",
-		"phone":      "09372144430",
-		"password":   "correct-horse-battery-staple",
+func createTestCoach(t *testing.T, svc *coach.Service, phone string) *coach.Coach {
+	t.Helper()
+
+	created, err := svc.Create(context.Background(), coach.CreateInput{
+		FirstName: "Ada",
+		LastName:  "Lovelace",
+		Phone:     phone,
+		Password:  testPassword,
 	})
+	require.NoError(t, err)
 
-	var signupResp struct {
-		ID    string `json:"id"`
-		Phone string `json:"phone"`
-	}
-	decodeSuccess(t, signupRec, http.StatusCreated, &signupResp)
-	require.Equal(t, "09372144430", signupResp.Phone)
-	require.NotContains(t, signupRec.Body.String(), "password_hash")
+	return created
+}
+
+func TestCreateLoginProtectedRoute(t *testing.T) {
+	router, svc := newTestRouter(t)
+
+	created := createTestCoach(t, svc, testPhone)
 
 	loginRec := postJSON(t, router, "/api/v1/auth/login", map[string]string{
-		"phone":    "09372144430",
-		"password": "correct-horse-battery-staple",
+		"phone":    testPhone,
+		"password": testPassword,
 	})
 
 	var loginResp struct {
@@ -133,56 +141,75 @@ func TestSignupLoginProtectedRoute(t *testing.T) {
 		Phone string `json:"phone"`
 	}
 	decodeSuccess(t, meRec, http.StatusOK, &meResp)
-	require.Equal(t, signupResp.ID, meResp.ID)
+	require.Equal(t, created.ID.String(), meResp.ID)
+	require.Equal(t, testPhone, meResp.Phone)
+	require.NotContains(t, meRec.Body.String(), "password_hash")
+}
+
+func TestSignupIsNotPublic(t *testing.T) {
+	router, _ := newTestRouter(t)
+
+	rec := postJSON(t, router, "/api/v1/auth/signup", map[string]string{
+		"first_name": "Ada",
+		"last_name":  "Lovelace",
+		"phone":      testPhone,
+		"password":   testPassword,
+	})
+
+	require.Equal(t, http.StatusNotFound, rec.Code)
 }
 
 func TestLogin_WrongPassword(t *testing.T) {
-	router := newTestRouter(t)
+	router, svc := newTestRouter(t)
 
-	postJSON(t, router, "/api/v1/auth/signup", map[string]string{
-		"first_name": "Ada",
-		"last_name":  "Lovelace",
-		"phone":      "09163503284",
-		"password":   "correct-horse-battery-staple",
-	})
+	createTestCoach(t, svc, testPhone)
 
 	loginRec := postJSON(t, router, "/api/v1/auth/login", map[string]string{
-		"phone":    "09163503284",
+		"phone":    testPhone,
 		"password": "wrong-password",
 	})
 
 	decodeError(t, loginRec, http.StatusUnauthorized, httpx.CodeInvalidCredentials)
 }
 
-func TestSignup_RejectsNonIranianPhone(t *testing.T) {
-	router := newTestRouter(t)
+func TestCreate_DuplicatePhone(t *testing.T) {
+	_, svc := newTestRouter(t)
 
-	rec := postJSON(t, router, "/api/v1/auth/signup", map[string]string{
-		"first_name": "Ada",
-		"last_name":  "Lovelace",
-		"phone":      "+15550001111",
-		"password":   "correct-horse-battery-staple",
+	createTestCoach(t, svc, testPhone)
+
+	_, err := svc.Create(context.Background(), coach.CreateInput{
+		FirstName: "Grace",
+		LastName:  "Hopper",
+		Phone:     testPhone,
+		Password:  testPassword,
 	})
-
-	errBody := decodeError(t, rec, http.StatusBadRequest, httpx.CodeValidationFailed)
-	require.Contains(t, errBody.Fields["phone"], "Iranian mobile number")
+	require.ErrorIs(t, err, coach.ErrPhoneTaken)
 }
 
-func TestSignup_DuplicatePhoneConflicts(t *testing.T) {
-	router := newTestRouter(t)
+func TestResetPassword(t *testing.T) {
+	router, svc := newTestRouter(t)
 
-	body := map[string]string{
-		"first_name": "Ada",
-		"last_name":  "Lovelace",
-		"phone":      "09121234567",
-		"password":   "correct-horse-battery-staple",
+	createTestCoach(t, svc, testPhone)
+
+	const newPassword = "battery-staple-correct-horse"
+	require.NoError(t, svc.ResetPassword(context.Background(), testPhone, newPassword))
+
+	oldRec := postJSON(t, router, "/api/v1/auth/login", map[string]string{"phone": testPhone, "password": testPassword})
+	decodeError(t, oldRec, http.StatusUnauthorized, httpx.CodeInvalidCredentials)
+
+	var loginResp struct {
+		Token string `json:"token"`
 	}
+	newRec := postJSON(t, router, "/api/v1/auth/login", map[string]string{"phone": testPhone, "password": newPassword})
+	decodeSuccess(t, newRec, http.StatusOK, &loginResp)
+	require.NotEmpty(t, loginResp.Token)
+}
 
-	first := postJSON(t, router, "/api/v1/auth/signup", body)
-	require.Equal(t, http.StatusCreated, first.Code)
+func TestResetPassword_UnknownPhone(t *testing.T) {
+	_, svc := newTestRouter(t)
 
-	second := postJSON(t, router, "/api/v1/auth/signup", body)
-	decodeError(t, second, http.StatusConflict, httpx.CodeConflict)
+	err := svc.ResetPassword(context.Background(), "09120000000", testPassword)
+	require.ErrorIs(t, err, coach.ErrNotFound)
 }
 
 // rateLimitProbeAttempts exceeds authRateLimitMax, which this external test package can't reference.
@@ -190,7 +217,7 @@ const rateLimitProbeAttempts = 20
 
 // TestAuthRateLimit_Envelope needs a real database: the requests before the 429 are real failed logins.
 func TestAuthRateLimit_Envelope(t *testing.T) {
-	router := newTestRouter(t)
+	router, _ := newTestRouter(t)
 
 	body := map[string]string{"phone": "09121112233", "password": "wrong-password"}
 

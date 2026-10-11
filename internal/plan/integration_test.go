@@ -93,14 +93,22 @@ func do(t *testing.T, router *gin.Engine, method, target, token, body string) *h
 	return rec
 }
 
-func signupCoach(t *testing.T, router *gin.Engine, phone string) string {
+// createCoach goes through coach.Service because the API has no signup route.
+func createCoach(t *testing.T, router *gin.Engine, db *gorm.DB, phone string) string {
 	t.Helper()
 
-	credentials := fmt.Sprintf(`{"first_name":"Test","last_name":"Coach","phone":%q,"password":"correct-horse-battery-staple"}`, phone)
+	const password = "correct-horse-battery-staple"
 
-	signup := do(t, router, http.MethodPost, "/api/v1/auth/signup", "", credentials)
-	require.Equal(t, http.StatusCreated, signup.Code, "body: %s", signup.Body.String())
+	// Create never issues a token, so the service needs no JWT settings.
+	_, err := coach.NewService(coach.NewRepository(db), "", 0).Create(context.Background(), coach.CreateInput{
+		FirstName: "Test",
+		LastName:  "Coach",
+		Phone:     phone,
+		Password:  password,
+	})
+	require.NoError(t, err)
 
+	credentials := fmt.Sprintf(`{"phone":%q,"password":%q}`, phone, password)
 	env := decodeEnvelope(t, do(t, router, http.MethodPost, "/api/v1/auth/login", "", credentials), http.StatusOK)
 
 	var payload struct {
@@ -167,7 +175,7 @@ func listPlans(t *testing.T, router *gin.Engine, token, athleteID string) []plan
 
 func TestPlans_ListedNewestFirstWithOneCurrent(t *testing.T) {
 	router, db := newTestRouter(t)
-	token := signupCoach(t, router, "09121110201")
+	token := createCoach(t, router, db, "09121110201")
 	athleteID := createAthlete(t, router, token, "09121230201")
 
 	// Inserted out of order, so insertion order and start_date order disagree.
@@ -195,7 +203,7 @@ func TestPlans_ListedNewestFirstWithOneCurrent(t *testing.T) {
 
 func TestPlans_OnlyFuturePlansMeansNoneCurrent(t *testing.T) {
 	router, db := newTestRouter(t)
-	token := signupCoach(t, router, "09121110202")
+	token := createCoach(t, router, db, "09121110202")
 	athleteID := createAthlete(t, router, token, "09121230202")
 
 	insertPlan(t, db, athleteID, "Next block", daysFromToday(14))
@@ -206,8 +214,8 @@ func TestPlans_OnlyFuturePlansMeansNoneCurrent(t *testing.T) {
 }
 
 func TestPlans_EmptyListIsAnEmptyArray(t *testing.T) {
-	router, _ := newTestRouter(t)
-	token := signupCoach(t, router, "09121110203")
+	router, db := newTestRouter(t)
+	token := createCoach(t, router, db, "09121110203")
 	athleteID := createAthlete(t, router, token, "09121230203")
 
 	env := decodeEnvelope(t, do(t, router, http.MethodGet, plansPath(athleteID), token, ""), http.StatusOK)
@@ -218,8 +226,8 @@ func TestPlans_EmptyListIsAnEmptyArray(t *testing.T) {
 func TestPlans_AnotherCoachsAthleteIsNotFound(t *testing.T) {
 	router, db := newTestRouter(t)
 
-	owner := signupCoach(t, router, "09121110204")
-	intruder := signupCoach(t, router, "09121110205")
+	owner := createCoach(t, router, db, "09121110204")
+	intruder := createCoach(t, router, db, "09121110205")
 	athleteID := createAthlete(t, router, owner, "09121230204")
 
 	insertPlan(t, db, athleteID, "Base", daysFromToday(-30))
@@ -382,7 +390,7 @@ func objectKeys(t *testing.T, raw json.RawMessage) []string {
 
 func TestPlanDetail_NestedTreeInDisplayOrder(t *testing.T) {
 	router, db := newTestRouter(t)
-	token := signupCoach(t, router, "09121110301")
+	token := createCoach(t, router, db, "09121110301")
 	athleteID := createAthlete(t, router, token, "09121230301")
 	planID := insertPlan(t, db, athleteID, "Cut phase 1", daysFromToday(-10))
 
@@ -504,7 +512,7 @@ func TestPlanDetail_NestedTreeInDisplayOrder(t *testing.T) {
 
 func TestPlanDetail_EmptyLevelsAreEmptyArrays(t *testing.T) {
 	router, db := newTestRouter(t)
-	token := signupCoach(t, router, "09121110302")
+	token := createCoach(t, router, db, "09121110302")
 	athleteID := createAthlete(t, router, token, "09121230302")
 
 	empty := insertPlan(t, db, athleteID, "Empty", daysFromToday(-1))
@@ -533,8 +541,8 @@ func objectField(t *testing.T, raw json.RawMessage, name string) json.RawMessage
 func TestPlanDetail_AnotherCoachsPlanIsNotFound(t *testing.T) {
 	router, db := newTestRouter(t)
 
-	owner := signupCoach(t, router, "09121110303")
-	intruder := signupCoach(t, router, "09121110304")
+	owner := createCoach(t, router, db, "09121110303")
+	intruder := createCoach(t, router, db, "09121110304")
 	athleteID := createAthlete(t, router, owner, "09121230303")
 	planID := insertPlan(t, db, athleteID, "Base", daysFromToday(-30))
 
@@ -566,7 +574,7 @@ func TestPlanDetail_AnotherCoachsPlanIsNotFound(t *testing.T) {
 
 func TestDays_AtMostSevenPerPlan(t *testing.T) {
 	router, db := newTestRouter(t)
-	token := signupCoach(t, router, "09121110305")
+	token := createCoach(t, router, db, "09121110305")
 	athleteID := createAthlete(t, router, token, "09121230305")
 	planID := insertPlan(t, db, athleteID, "Full week", daysFromToday(-1))
 
@@ -672,7 +680,7 @@ func requireValidationFields(t *testing.T, rec *httptest.ResponseRecorder) map[s
 func TestBuilder_FullPlanBuildUp(t *testing.T) {
 	router, db := newTestRouter(t)
 	const coachPhone = "09121110401"
-	token := signupCoach(t, router, coachPhone)
+	token := createCoach(t, router, db, coachPhone)
 	athleteID := createAthlete(t, router, token, "09121230401")
 
 	// One universal and one of the coach's own: a superset can draw from both halves of the library.
@@ -781,8 +789,8 @@ func TestBuilder_FullPlanBuildUp(t *testing.T) {
 func TestBuilder_MovementOutsideLibraryRejectsWholeBatch(t *testing.T) {
 	router, db := newTestRouter(t)
 	const coachPhone, otherPhone = "09121110402", "09121110403"
-	token := signupCoach(t, router, coachPhone)
-	signupCoach(t, router, otherPhone)
+	token := createCoach(t, router, db, coachPhone)
+	createCoach(t, router, db, otherPhone)
 	athleteID := createAthlete(t, router, token, "09121230402")
 	tree := buildToBlock(t, router, token, athleteID)
 
@@ -841,7 +849,7 @@ func TestBuilder_MovementOutsideLibraryRejectsWholeBatch(t *testing.T) {
 // mid-batch. One row per INSERT and no GORM default transaction leave only the explicit one to roll back.
 func TestCreateBlockMovements_MidBatchFailureInsertsNothing(t *testing.T) {
 	router, db := newTestRouter(t)
-	token := signupCoach(t, router, "09121110404")
+	token := createCoach(t, router, db, "09121110404")
 	athleteID := createAthlete(t, router, token, "09121230404")
 	tree := buildToBlock(t, router, token, athleteID)
 	squat := insertMovement(t, db, "Back squat", "strength")
@@ -860,7 +868,7 @@ func TestCreateBlockMovements_MidBatchFailureInsertsNothing(t *testing.T) {
 
 func TestBuilder_DayLabelAndSlotRules(t *testing.T) {
 	router, db := newTestRouter(t)
-	token := signupCoach(t, router, "09121110405")
+	token := createCoach(t, router, db, "09121110405")
 	athleteID := createAthlete(t, router, token, "09121230405")
 
 	body := fmt.Sprintf(`{"athlete_id":%q,"start_date":"2026-09-15","title":"Week"}`, athleteID)
@@ -907,8 +915,8 @@ func TestBuilder_DayLabelAndSlotRules(t *testing.T) {
 
 func TestBuilder_AnotherCoachsTreeIsNotFound(t *testing.T) {
 	router, db := newTestRouter(t)
-	owner := signupCoach(t, router, "09121110406")
-	intruder := signupCoach(t, router, "09121110407")
+	owner := createCoach(t, router, db, "09121110406")
+	intruder := createCoach(t, router, db, "09121110407")
 	athleteID := createAthlete(t, router, owner, "09121230406")
 	tree := buildToBlock(t, router, owner, athleteID)
 	squat := insertMovement(t, db, "Back squat", "strength")
@@ -974,8 +982,8 @@ func TestBuilder_AnotherCoachsTreeIsNotFound(t *testing.T) {
 }
 
 func TestBuilder_CreatePlanRejectsBadInputWithFieldErrors(t *testing.T) {
-	router, _ := newTestRouter(t)
-	token := signupCoach(t, router, "09121110408")
+	router, db := newTestRouter(t)
+	token := createCoach(t, router, db, "09121110408")
 
 	fields := requireValidationFields(t, do(t, router, http.MethodPost, "/api/v1/plans", token,
 		`{"athlete_id":"not-a-uuid","start_date":"15/09/2026","title":"   "}`))

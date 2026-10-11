@@ -2,6 +2,7 @@ package movement_test
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"maps"
@@ -120,25 +121,31 @@ type testCoach struct {
 	token string
 }
 
-func signupCoach(t *testing.T, router *gin.Engine, phone string) testCoach {
+// createCoach goes through coach.Service because the API has no signup route.
+func createCoach(t *testing.T, router *gin.Engine, db *gorm.DB, phone string) testCoach {
 	t.Helper()
 
-	credentials := fmt.Sprintf(`{"first_name":"Test","last_name":"Coach","phone":%q,"password":"correct-horse-battery-staple"}`, phone)
+	const password = "correct-horse-battery-staple"
 
-	var signedUp struct {
-		ID string `json:"id"`
-	}
-	env := decodeEnvelope(t, do(t, router, http.MethodPost, "/api/v1/auth/signup", "", credentials), http.StatusCreated)
-	require.NoError(t, json.Unmarshal(env.Data, &signedUp))
+	// Create never issues a token, so the service needs no JWT settings.
+	created, err := coach.NewService(coach.NewRepository(db), "", 0).Create(context.Background(), coach.CreateInput{
+		FirstName: "Test",
+		LastName:  "Coach",
+		Phone:     phone,
+		Password:  password,
+	})
+	require.NoError(t, err)
+
+	credentials := fmt.Sprintf(`{"phone":%q,"password":%q}`, phone, password)
+	env := decodeEnvelope(t, do(t, router, http.MethodPost, "/api/v1/auth/login", "", credentials), http.StatusOK)
 
 	var loggedIn struct {
 		Token string `json:"token"`
 	}
-	env = decodeEnvelope(t, do(t, router, http.MethodPost, "/api/v1/auth/login", "", credentials), http.StatusOK)
 	require.NoError(t, json.Unmarshal(env.Data, &loggedIn))
 	require.NotEmpty(t, loggedIn.Token)
 
-	return testCoach{id: signedUp.ID, token: loggedIn.Token}
+	return testCoach{id: created.ID.String(), token: loggedIn.Token}
 }
 
 func listMovements(t *testing.T, router *gin.Engine, token, query string) []movementResponse {
@@ -182,10 +189,10 @@ func findMovement(t *testing.T, db *gorm.DB, id string) movement.Movement {
 }
 
 func TestList_UniversalMovementsInEveryCoachsList(t *testing.T) {
-	router, _ := newTestRouter(t)
+	router, db := newTestRouter(t)
 
-	coachA := signupCoach(t, router, "09121000001")
-	coachB := signupCoach(t, router, "09121000002")
+	coachA := createCoach(t, router, db, "09121000001")
+	coachB := createCoach(t, router, db, "09121000002")
 
 	for name, c := range map[string]testCoach{"coach A": coachA, "coach B": coachB} {
 		t.Run(name+" starts with the seeded library", func(t *testing.T) {
@@ -218,7 +225,7 @@ func TestList_UniversalMovementsInEveryCoachsList(t *testing.T) {
 
 func TestList_SeededLibraryFillsEveryFilter(t *testing.T) {
 	router, db := newTestRouter(t)
-	c := signupCoach(t, router, "09121000003")
+	c := createCoach(t, router, db, "09121000003")
 
 	var incomplete int64
 	require.NoError(t, db.Model(&movement.Movement{}).
@@ -250,9 +257,9 @@ func TestList_SeededLibraryFillsEveryFilter(t *testing.T) {
 }
 
 func TestList_FiltersAndSearch(t *testing.T) {
-	router, _ := newTestRouter(t)
+	router, db := newTestRouter(t)
 
-	c := signupCoach(t, router, "09121000004")
+	c := createCoach(t, router, db, "09121000004")
 	createMovement(t, router, c.token, `{"name":"Goblet squat","muscle_group":"legs","equipment":"kettlebell"}`)
 	createMovement(t, router, c.token, `{"name":"100% effort sprint","category":"cardio"}`)
 
@@ -303,8 +310,8 @@ func TestList_FiltersAndSearch(t *testing.T) {
 func TestCreate(t *testing.T) {
 	router, db := newTestRouter(t)
 
-	c := signupCoach(t, router, "09121000005")
-	other := signupCoach(t, router, "09121000006")
+	c := createCoach(t, router, db, "09121000005")
+	other := createCoach(t, router, db, "09121000006")
 
 	t.Run("owner comes from the token, never the body", func(t *testing.T) {
 		body := fmt.Sprintf(`{"name":"Bulgarian split squat","category":"strength","muscle_group":"Legs","equipment":"dumbbell","coach_id":%q}`, other.id)
@@ -332,7 +339,7 @@ func TestCreate(t *testing.T) {
 
 func TestUpdateAndDelete_OwnMovement(t *testing.T) {
 	router, db := newTestRouter(t)
-	c := signupCoach(t, router, "09121000007")
+	c := createCoach(t, router, db, "09121000007")
 
 	created := createMovement(t, router, c.token, `{"name":"Goblet squat","category":"strength","description":"Hold at the chest","muscle_group":"legs","equipment":"kettlebell"}`)
 	path := movementsPath + "/" + created.ID
@@ -386,8 +393,8 @@ func TestUpdateAndDelete_OwnMovement(t *testing.T) {
 func TestUpdateAndDelete_OnlyTheOwnerMayChangeAMovement(t *testing.T) {
 	router, db := newTestRouter(t)
 
-	c := signupCoach(t, router, "09121000008")
-	other := signupCoach(t, router, "09121000009")
+	c := createCoach(t, router, db, "09121000008")
+	other := createCoach(t, router, db, "09121000009")
 	othersLunge := createMovement(t, router, other.token, `{"name":"Other coach's lunge"}`)
 
 	for name, tc := range map[string]struct {
@@ -419,7 +426,7 @@ func TestUpdateAndDelete_OnlyTheOwnerMayChangeAMovement(t *testing.T) {
 
 func TestDelete_MovementUsedInAPlan(t *testing.T) {
 	router, db := newTestRouter(t)
-	c := signupCoach(t, router, "09121000010")
+	c := createCoach(t, router, db, "09121000010")
 
 	used := createMovement(t, router, c.token, `{"name":"Goblet squat","category":"strength"}`)
 	planID := insertPlanUsing(t, db, uuid.MustParse(c.id), uuid.MustParse(used.ID))
