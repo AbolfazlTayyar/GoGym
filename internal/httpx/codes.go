@@ -18,12 +18,13 @@ const (
 )
 
 const (
-	MsgUnauthorized     = "unauthorized"
-	MsgInvalidRequest   = "invalid request"
-	MsgTooManyRequests  = "too many requests"
-	MsgInternalError    = "internal error"
-	MsgNotFound         = "not found"
-	MsgMethodNotAllowed = "method not allowed"
+	MsgUnauthorized       = "unauthorized"
+	MsgInvalidRequest     = "invalid request"
+	MsgTooManyRequests    = "too many requests"
+	MsgInternalError      = "internal error"
+	MsgNotFound           = "not found"
+	MsgMethodNotAllowed   = "method not allowed"
+	MsgInvalidCredentials = "invalid credentials"
 )
 
 // MsgFieldRequired is shared by binding-tag and service-level validation so a missing field reads the same either way.

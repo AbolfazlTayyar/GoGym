@@ -91,9 +91,9 @@ func NewHandler(svc *Service) *Handler {
 //	@Security		BearerAuth
 //	@Param			request	body		createRequest	true	"Athlete details"
 //	@Success		201		{object}	httpx.SuccessEnvelope{data=athleteResponse}
-//	@Failure		400		{object}	httpx.ErrorEnvelope
-//	@Failure		401		{object}	httpx.ErrorEnvelope
-//	@Failure		500		{object}	httpx.ErrorEnvelope
+//	@Failure		400		{object}	httpx.ValidationErrorEnvelope
+//	@Failure		401		{object}	httpx.UnauthorizedEnvelope
+//	@Failure		500		{object}	httpx.InternalErrorEnvelope
 //	@Router			/api/v1/athletes [post]
 func (h *Handler) Create(c *gin.Context) {
 	coachID, ok := tenant.CoachIDFromContext(c)
@@ -142,9 +142,9 @@ func (h *Handler) Create(c *gin.Context) {
 //	@Param			limit			query		int		false	"Page size, 1-100"									default(20)
 //	@Param			offset			query		int		false	"Rows to skip"										default(0)
 //	@Success		200				{object}	httpx.SuccessEnvelope{data=[]athleteResponse,meta=listMeta}
-//	@Failure		400				{object}	httpx.ErrorEnvelope
-//	@Failure		401				{object}	httpx.ErrorEnvelope
-//	@Failure		500				{object}	httpx.ErrorEnvelope
+//	@Failure		400				{object}	httpx.ValidationErrorEnvelope
+//	@Failure		401				{object}	httpx.UnauthorizedEnvelope
+//	@Failure		500				{object}	httpx.InternalErrorEnvelope
 //	@Router			/api/v1/athletes [get]
 func (h *Handler) List(c *gin.Context) {
 	coachID, ok := tenant.CoachIDFromContext(c)
@@ -189,9 +189,9 @@ func (h *Handler) List(c *gin.Context) {
 //	@Security		BearerAuth
 //	@Param			id	path		string	true	"Athlete ID"	format(uuid)
 //	@Success		200	{object}	httpx.SuccessEnvelope{data=athleteResponse}
-//	@Failure		401	{object}	httpx.ErrorEnvelope
-//	@Failure		404	{object}	httpx.ErrorEnvelope
-//	@Failure		500	{object}	httpx.ErrorEnvelope
+//	@Failure		401	{object}	httpx.UnauthorizedEnvelope
+//	@Failure		404	{object}	httpx.NotFoundEnvelope
+//	@Failure		500	{object}	httpx.InternalErrorEnvelope
 //	@Router			/api/v1/athletes/{id} [get]
 func (h *Handler) Get(c *gin.Context) {
 	coachID, ok := tenant.CoachIDFromContext(c)

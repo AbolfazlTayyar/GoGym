@@ -75,10 +75,10 @@ func NewHandler(svc *Service) *Handler {
 //	@Param			id		path		string			true	"Athlete ID"	format(uuid)
 //	@Param			request	body		createRequest	true	"Measurement values"
 //	@Success		201		{object}	httpx.SuccessEnvelope{data=measurementResponse}
-//	@Failure		400		{object}	httpx.ErrorEnvelope
-//	@Failure		401		{object}	httpx.ErrorEnvelope
-//	@Failure		404		{object}	httpx.ErrorEnvelope
-//	@Failure		500		{object}	httpx.ErrorEnvelope
+//	@Failure		400		{object}	httpx.ValidationErrorEnvelope
+//	@Failure		401		{object}	httpx.UnauthorizedEnvelope
+//	@Failure		404		{object}	httpx.NotFoundEnvelope
+//	@Failure		500		{object}	httpx.InternalErrorEnvelope
 //	@Router			/api/v1/athletes/{id}/measurements [post]
 func (h *Handler) Create(c *gin.Context) {
 	coachID, ok := tenant.CoachIDFromContext(c)
@@ -116,9 +116,9 @@ func (h *Handler) Create(c *gin.Context) {
 //	@Security		BearerAuth
 //	@Param			id	path		string	true	"Athlete ID"	format(uuid)
 //	@Success		200	{object}	httpx.SuccessEnvelope{data=[]measurementResponse}
-//	@Failure		401	{object}	httpx.ErrorEnvelope
-//	@Failure		404	{object}	httpx.ErrorEnvelope
-//	@Failure		500	{object}	httpx.ErrorEnvelope
+//	@Failure		401	{object}	httpx.UnauthorizedEnvelope
+//	@Failure		404	{object}	httpx.NotFoundEnvelope
+//	@Failure		500	{object}	httpx.InternalErrorEnvelope
 //	@Router			/api/v1/athletes/{id}/measurements [get]
 func (h *Handler) List(c *gin.Context) {
 	coachID, ok := tenant.CoachIDFromContext(c)

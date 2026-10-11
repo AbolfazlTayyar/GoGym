@@ -73,9 +73,9 @@ func (h *Handler) rateLimited(c *gin.Context, phone string) bool {
 // @Produce		json
 // @Param			request	body		loginRequest	true	"Login credentials"
 // @Success		200		{object}	httpx.SuccessEnvelope{data=loginResponse}
-// @Failure		400		{object}	httpx.ErrorEnvelope
-// @Failure		401		{object}	httpx.ErrorEnvelope
-// @Failure		429		{object}	httpx.ErrorEnvelope
+// @Failure		400		{object}	httpx.ValidationErrorEnvelope
+// @Failure		401		{object}	httpx.InvalidCredentialsEnvelope
+// @Failure		429		{object}	httpx.RateLimitedEnvelope
 // @Router			/api/v1/auth/login [post]
 func (h *Handler) Login(c *gin.Context) {
 	var req loginRequest
@@ -90,7 +90,7 @@ func (h *Handler) Login(c *gin.Context) {
 
 	token, err := h.svc.Login(c.Request.Context(), req.Phone, req.Password)
 	if err != nil {
-		httpx.Error(c, http.StatusUnauthorized, httpx.CodeInvalidCredentials, "invalid credentials")
+		httpx.Error(c, http.StatusUnauthorized, httpx.CodeInvalidCredentials, httpx.MsgInvalidCredentials)
 		return
 	}
 
@@ -105,9 +105,9 @@ func (h *Handler) Login(c *gin.Context) {
 // @Produce		json
 // @Security		BearerAuth
 // @Success		200	{object}	httpx.SuccessEnvelope{data=coachResponse}
-// @Failure		401	{object}	httpx.ErrorEnvelope
-// @Failure		404	{object}	httpx.ErrorEnvelope
-// @Failure		500	{object}	httpx.ErrorEnvelope
+// @Failure		401	{object}	httpx.UnauthorizedEnvelope
+// @Failure		404	{object}	httpx.NotFoundEnvelope
+// @Failure		500	{object}	httpx.InternalErrorEnvelope
 // @Router			/api/v1/coaches/me [get]
 func (h *Handler) Me(c *gin.Context) {
 	coachID, ok := tenant.CoachIDFromContext(c)

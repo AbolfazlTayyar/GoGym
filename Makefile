@@ -37,5 +37,9 @@ migrate-down:
 # (cmd/api/main.go for general API info, individual handlers for endpoints).
 # Rerun this after adding or changing annotated handlers — the generated
 # files are committed, so a stale run means stale docs shipped in the UI.
+# The sed steps turn x-null-example markers into null examples (see internal/httpx/swagger.go).
 swagger:
 	go run github.com/swaggo/swag/cmd/swag@$(SWAG_VERSION) init -g cmd/api/main.go -o docs/swagger --parseDependency
+	sed -i 's/"x-null-example": true/"example": null/' docs/swagger/docs.go docs/swagger/swagger.json
+	sed -i 's/x-null-example: true/example: null/' docs/swagger/swagger.yaml
+	! grep -rq x-null-example docs/swagger

@@ -81,9 +81,9 @@ func NewHandler(svc *Service) *Handler {
 //	@Param			muscle_group	query		string	false	"Only movements for this primary muscle group"	Enums(chest, back, shoulders, arms, legs, core, full_body)
 //	@Param			equipment		query		string	false	"Only movements using this equipment"			Enums(bodyweight, barbell, dumbbell, kettlebell, machine, cable, band, other)
 //	@Success		200				{object}	httpx.SuccessEnvelope{data=[]movementResponse}
-//	@Failure		400				{object}	httpx.ErrorEnvelope
-//	@Failure		401				{object}	httpx.ErrorEnvelope
-//	@Failure		500				{object}	httpx.ErrorEnvelope
+//	@Failure		400				{object}	httpx.ValidationErrorEnvelope
+//	@Failure		401				{object}	httpx.UnauthorizedEnvelope
+//	@Failure		500				{object}	httpx.InternalErrorEnvelope
 //	@Router			/api/v1/movements [get]
 func (h *Handler) List(c *gin.Context) {
 	coachID, ok := tenant.CoachIDFromContext(c)
@@ -120,9 +120,9 @@ func (h *Handler) List(c *gin.Context) {
 //	@Security		BearerAuth
 //	@Param			request	body		movementRequest	true	"Movement details"
 //	@Success		201		{object}	httpx.SuccessEnvelope{data=movementResponse}
-//	@Failure		400		{object}	httpx.ErrorEnvelope
-//	@Failure		401		{object}	httpx.ErrorEnvelope
-//	@Failure		500		{object}	httpx.ErrorEnvelope
+//	@Failure		400		{object}	httpx.ValidationErrorEnvelope
+//	@Failure		401		{object}	httpx.UnauthorizedEnvelope
+//	@Failure		500		{object}	httpx.InternalErrorEnvelope
 //	@Router			/api/v1/movements [post]
 func (h *Handler) Create(c *gin.Context) {
 	coachID, ok := tenant.CoachIDFromContext(c)
@@ -157,11 +157,11 @@ func (h *Handler) Create(c *gin.Context) {
 //	@Param			id		path		string			true	"Movement ID"	format(uuid)
 //	@Param			request	body		movementRequest	true	"Movement details"
 //	@Success		200		{object}	httpx.SuccessEnvelope{data=movementResponse}
-//	@Failure		400		{object}	httpx.ErrorEnvelope
-//	@Failure		401		{object}	httpx.ErrorEnvelope
-//	@Failure		403		{object}	httpx.ErrorEnvelope
-//	@Failure		404		{object}	httpx.ErrorEnvelope
-//	@Failure		500		{object}	httpx.ErrorEnvelope
+//	@Failure		400		{object}	httpx.ValidationErrorEnvelope
+//	@Failure		401		{object}	httpx.UnauthorizedEnvelope
+//	@Failure		403		{object}	httpx.ForbiddenEnvelope
+//	@Failure		404		{object}	httpx.NotFoundEnvelope
+//	@Failure		500		{object}	httpx.InternalErrorEnvelope
 //	@Router			/api/v1/movements/{id} [put]
 func (h *Handler) Update(c *gin.Context) {
 	coachID, ok := tenant.CoachIDFromContext(c)
@@ -198,11 +198,11 @@ func (h *Handler) Update(c *gin.Context) {
 //	@Produce		json
 //	@Security		BearerAuth
 //	@Param			id	path		string	true	"Movement ID"	format(uuid)
-//	@Success		200	{object}	httpx.SuccessEnvelope
-//	@Failure		401	{object}	httpx.ErrorEnvelope
-//	@Failure		403	{object}	httpx.ErrorEnvelope
-//	@Failure		404	{object}	httpx.ErrorEnvelope
-//	@Failure		500	{object}	httpx.ErrorEnvelope
+//	@Success		200	{object}	httpx.NoContentEnvelope
+//	@Failure		401	{object}	httpx.UnauthorizedEnvelope
+//	@Failure		403	{object}	httpx.ForbiddenEnvelope
+//	@Failure		404	{object}	httpx.NotFoundEnvelope
+//	@Failure		500	{object}	httpx.InternalErrorEnvelope
 //	@Router			/api/v1/movements/{id} [delete]
 func (h *Handler) Delete(c *gin.Context) {
 	coachID, ok := tenant.CoachIDFromContext(c)

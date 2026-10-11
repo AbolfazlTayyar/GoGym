@@ -195,9 +195,9 @@ func NewHandler(svc *Service) *Handler {
 //	@Security		BearerAuth
 //	@Param			id	path		string	true	"Athlete ID"	format(uuid)
 //	@Success		200	{object}	httpx.SuccessEnvelope{data=[]planSummaryResponse}
-//	@Failure		401	{object}	httpx.ErrorEnvelope
-//	@Failure		404	{object}	httpx.ErrorEnvelope
-//	@Failure		500	{object}	httpx.ErrorEnvelope
+//	@Failure		401	{object}	httpx.UnauthorizedEnvelope
+//	@Failure		404	{object}	httpx.NotFoundEnvelope
+//	@Failure		500	{object}	httpx.InternalErrorEnvelope
 //	@Router			/api/v1/athletes/{id}/plans [get]
 func (h *Handler) List(c *gin.Context) {
 	coachID, ok := tenant.CoachIDFromContext(c)
@@ -235,9 +235,9 @@ func (h *Handler) List(c *gin.Context) {
 //	@Security		BearerAuth
 //	@Param			id	path		string	true	"Plan ID"	format(uuid)
 //	@Success		200	{object}	httpx.SuccessEnvelope{data=planDetailResponse}
-//	@Failure		401	{object}	httpx.ErrorEnvelope
-//	@Failure		404	{object}	httpx.ErrorEnvelope
-//	@Failure		500	{object}	httpx.ErrorEnvelope
+//	@Failure		401	{object}	httpx.UnauthorizedEnvelope
+//	@Failure		404	{object}	httpx.NotFoundEnvelope
+//	@Failure		500	{object}	httpx.InternalErrorEnvelope
 //	@Router			/api/v1/plans/{id} [get]
 func (h *Handler) Get(c *gin.Context) {
 	coachID, ok := tenant.CoachIDFromContext(c)
@@ -270,10 +270,10 @@ func (h *Handler) Get(c *gin.Context) {
 //	@Security		BearerAuth
 //	@Param			request	body		createRequest	true	"Plan details"
 //	@Success		201		{object}	httpx.SuccessEnvelope{data=planDetailResponse}
-//	@Failure		400		{object}	httpx.ErrorEnvelope
-//	@Failure		401		{object}	httpx.ErrorEnvelope
-//	@Failure		404		{object}	httpx.ErrorEnvelope
-//	@Failure		500		{object}	httpx.ErrorEnvelope
+//	@Failure		400		{object}	httpx.ValidationErrorEnvelope
+//	@Failure		401		{object}	httpx.UnauthorizedEnvelope
+//	@Failure		404		{object}	httpx.NotFoundEnvelope
+//	@Failure		500		{object}	httpx.InternalErrorEnvelope
 //	@Router			/api/v1/plans [post]
 func (h *Handler) Create(c *gin.Context) {
 	coachID, ok := tenant.CoachIDFromContext(c)
@@ -308,10 +308,10 @@ func (h *Handler) Create(c *gin.Context) {
 //	@Param			id		path		string			true	"Plan ID"	format(uuid)
 //	@Param			request	body		addDayRequest	true	"Day details"
 //	@Success		201		{object}	httpx.SuccessEnvelope{data=dayResponse}
-//	@Failure		400		{object}	httpx.ErrorEnvelope
-//	@Failure		401		{object}	httpx.ErrorEnvelope
-//	@Failure		404		{object}	httpx.ErrorEnvelope
-//	@Failure		500		{object}	httpx.ErrorEnvelope
+//	@Failure		400		{object}	httpx.ValidationErrorEnvelope
+//	@Failure		401		{object}	httpx.UnauthorizedEnvelope
+//	@Failure		404		{object}	httpx.NotFoundEnvelope
+//	@Failure		500		{object}	httpx.InternalErrorEnvelope
 //	@Router			/api/v1/plans/{id}/days [post]
 func (h *Handler) AddDay(c *gin.Context) {
 	coachID, ok := tenant.CoachIDFromContext(c)
@@ -351,10 +351,10 @@ func (h *Handler) AddDay(c *gin.Context) {
 //	@Param			id		path		string			true	"Day ID"	format(uuid)
 //	@Param			request	body		addBlockRequest	true	"Block details"
 //	@Success		201		{object}	httpx.SuccessEnvelope{data=blockResponse}
-//	@Failure		400		{object}	httpx.ErrorEnvelope
-//	@Failure		401		{object}	httpx.ErrorEnvelope
-//	@Failure		404		{object}	httpx.ErrorEnvelope
-//	@Failure		500		{object}	httpx.ErrorEnvelope
+//	@Failure		400		{object}	httpx.ValidationErrorEnvelope
+//	@Failure		401		{object}	httpx.UnauthorizedEnvelope
+//	@Failure		404		{object}	httpx.NotFoundEnvelope
+//	@Failure		500		{object}	httpx.InternalErrorEnvelope
 //	@Router			/api/v1/days/{id}/blocks [post]
 func (h *Handler) AddBlock(c *gin.Context) {
 	coachID, ok := tenant.CoachIDFromContext(c)
@@ -394,10 +394,10 @@ func (h *Handler) AddBlock(c *gin.Context) {
 //	@Param			id		path		string					true	"Block ID"	format(uuid)
 //	@Param			request	body		[]addMovementRequest	true	"Movements to add, in one batch"
 //	@Success		201		{object}	httpx.SuccessEnvelope{data=[]blockMovementResponse}
-//	@Failure		400		{object}	httpx.ErrorEnvelope
-//	@Failure		401		{object}	httpx.ErrorEnvelope
-//	@Failure		404		{object}	httpx.ErrorEnvelope
-//	@Failure		500		{object}	httpx.ErrorEnvelope
+//	@Failure		400		{object}	httpx.ValidationErrorEnvelope
+//	@Failure		401		{object}	httpx.UnauthorizedEnvelope
+//	@Failure		404		{object}	httpx.NotFoundEnvelope
+//	@Failure		500		{object}	httpx.InternalErrorEnvelope
 //	@Router			/api/v1/blocks/{id}/movements [post]
 func (h *Handler) AddMovements(c *gin.Context) {
 	coachID, ok := tenant.CoachIDFromContext(c)

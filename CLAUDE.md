@@ -79,7 +79,7 @@ Answer an unexpected failure with `httpx.InternalError(c, err)`, not a hand-buil
 
 `/healthz` is the one deliberate exemption — it's an unversioned infra probe read by container healthchecks and uptime pingers that match on its exact bare `{"status":"ok"}` body, and the only place outside `internal/httpx` allowed to call `c.JSON`.
 
-Swagger annotations must show the real nested body, using the documentation-only types in `internal/httpx/swagger.go`: `@Success 200 {object} httpx.SuccessEnvelope{data=coachResponse}` for a payload, `@Failure 400 {object} httpx.ErrorEnvelope` for errors. Annotating the runtime `httpx.Envelope` directly instead renders every success example with a filled-in `error` object and every failure example with `"success": true` — a schema can't say "populated on failure, null on success". `TestEnvelopeDocsMatchRuntime` fails if the doc types drift from what `Envelope` marshals.
+Swagger annotations must show the real nested body, using the documentation-only types in `internal/httpx/swagger.go`: `@Success 200 {object} httpx.SuccessEnvelope{data=coachResponse}` for a payload, and for errors the per-code type matching what the handler sends (`httpx.ValidationErrorEnvelope` for 400, `httpx.UnauthorizedEnvelope` for 401, `httpx.NotFoundEnvelope` for 404, …). Annotating the runtime `httpx.Envelope` directly instead renders every success example with a filled-in `error` object and every failure example with `"success": true` — a schema can't say "populated on failure, null on success". `TestEnvelopeDocsMatchRuntime` fails if the doc types drift from what `Envelope` marshals; a new error code gets its own doc type plus a row in that test.
 
 ## Schema conventions
 
@@ -94,6 +94,8 @@ Keep a one-line prose summary above a handler's `@` annotation block. Without it
 `@BasePath` in `cmd/api/main.go` is `/` (root), not `/api/v1`, even though the API is versioned under `/api/v1`. Reason: `/healthz` is intentionally mounted outside the versioned group (unversioned infra probe), and Swagger 2.0's `basePath` is global — a `/api/v1` basePath made Swagger UI's "Try it out" call the wrong URL for it. Consequence: every handler's own `@Router` annotation must spell out its full path, e.g. `@Router /api/v1/coaches [post]` for versioned endpoints, `@Router /healthz [get]` for unversioned ones.
 
 Use typed response structs in `@Success`/`@Failure` annotations, never `map[string]string` or `gin.H{...}`. Swagger/OpenAPI 2.0 can't name keys in a free-form map, so Swagger UI renders those as generic `additionalProp1/2/3` placeholders instead of real field names.
+
+An untyped (`any`) or `map` field in a documented struct needs an example: `example:"key:value"` for maps, `extensions:"x-null-example"` for fields that are always null (`make swagger` turns the marker into `"example": null`). Without one, Swagger UI shows `"string"` or `additionalProp1/2/3`.
 
 Run `make swagger` (`swag init`) after adding or changing annotated handlers. The generated output in `docs/swagger/` is committed (the binary imports it for its side effect of registering the spec), so a stale run means stale docs shipped in the UI.
 
