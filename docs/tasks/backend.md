@@ -498,65 +498,6 @@ $ curl -s -X POST localhost:8080/api/v1/auth/signup -d '{}'
 
 ---
 
-### Coach auth hardening: phone verification & password reset **[A4]**
-
-⬜ **Not started**
-
-**Description:** The two flows missing from the auth task that turn into support tickets the first day someone who isn't you uses this. Split from the task above because OTP needs an SMS provider decision and its own schema, not because it's optional — both should land before anyone else signs up.
-
-**Prompt:**
-```
-Extend internal/coach with the two auth flows missing from the signup/login task.
-
-1. Phone verification (OTP). phone is both the login identity and a unique key, so an
-   unverified typo at signup creates an account nobody can log into, nobody can recover,
-   and whose uniqueness constraint now squats on the real number. Add a one-time-code
-   flow: issue a short numeric code on signup, verify it against a stored hash with a
-   short expiry and an attempt limit, and mark the coach verified.
-   - Pick the SMS provider deliberately and tell me the options before wiring one in —
-     this is market-specific (see the market assumption in docs/product-direction.md
-     section 5) and I may already have a preference.
-   - Put it behind an interface with a log-to-stdout implementation for local dev and
-     tests, so the suite never needs a real provider or network.
-   - Decide and tell me whether an unverified coach can log in at all or is only blocked
-     from some actions. Make the call, note it in a comment, flag it as an assumption.
-
-2. Password reset. There is no flow at all today — the only recovery path is a manual
-   UPDATE against the database. Build reset-request → code/token → set-new-password on
-   the same OTP machinery, with single-use tokens, a short expiry, and no response
-   difference between a known and an unknown phone number (don't leak which numbers are
-   registered).
-
-Both flows go through the /auth/* rate limiter from the previous task — verify that's
-actually applied, since these are the endpoints that cost real money per request when an
-SMS provider is wired in.
-
-Add swagger annotations to every new handler and rerun `make swagger`. If this needs new
-columns or a table (verification codes, reset tokens), it's a migration, and per CLAUDE.md
-docs/er-diagram.md updates in the same commit.
-```
-
-**Checkpoint:** Sign up with a phone number, confirm the code is logged by the dev SMS implementation, and verify it — a wrong code and an expired code both fail without verifying, and repeated wrong codes hit the attempt limit. Request a password reset for a registered number and complete it, then confirm the old password no longer works and the reset token can't be reused. Request a reset for an unregistered number and confirm the response is indistinguishable from the registered case. The full suite still passes with no network access.
-
-**Expected output:**
-```
-$ docker compose logs api | grep otp
-{"level":"info","msg":"dev sms: otp sent","phone":"09372144430","code":"483920"}
-
-$ curl -s -X POST localhost:8080/api/v1/auth/verify -d '{"phone":"09372144430","code":"000000"}'
-{"success":false,"data":null,"error":{"code":"invalid_code","message":"invalid or expired code"}}
-
-$ curl -s -X POST localhost:8080/api/v1/auth/verify -d '{"phone":"09372144430","code":"483920"}'
-{"success":true,"data":{"verified":true},"error":null}
-
-$ curl -s -X POST localhost:8080/api/v1/auth/password-reset/request -d '{"phone":"09120000000"}'
-{"success":true,"data":null,"error":null}     # identical for a registered number
-```
-
-**In short:** a typo'd phone can no longer lock an account forever, and a coach who forgets their password can get back in without you touching the database.
-
----
-
 ## Phase 1 — Core v1 features (backend API)
 
 > Every endpoint below returns the `internal/httpx` response envelope — `{success, data, error, meta}` — written through that package's helpers, never `c.JSON` directly. See the *API response envelope* task and CLAUDE.md's *API response conventions*.
@@ -983,3 +924,67 @@ $ docker compose logs --no-log-prefix api | grep cd1a1111-318a-40f8-8e63-ff1055a
 ```
 
 **In short:** when a coach reports an error, the id from that response leads straight to its log line and the real cause.
+
+---
+
+### Coach auth hardening: signup, phone verification & password reset
+
+⏸ **Deferred** — start when a second coach signs up.
+
+**Description:** The flows a second coach needs: self-service signup, phone verification, and password reset by SMS. This was an `[A4]` amendment. It moved here because its main payoff is stopping a stranger who signs up with a mistyped phone, and that can't happen while the only account is created with `cmd/coachctl` (see *Close public signup*). Its cost is real for one user: choosing an SMS provider, a new schema, a provider interface with a dev stub, attempt limits, and work so the API doesn't reveal which numbers are registered. Until then, `coachctl reset-password` is the recovery path.
+
+**Prompt:**
+```
+Bring back self-service signup and extend internal/coach with the two auth flows it needs.
+
+0. Signup. POST /api/v1/auth/signup was removed while there was one coach
+   (docs/adr/0025). Restore it on top of coach.Service.Create, which already validates
+   the phone and password, behind the /auth/* rate limiter, with swagger annotations.
+   Replace the test that asserts it 404s. Keep cmd/coachctl for support use.
+
+1. Phone verification (OTP). phone is both the login identity and a unique key, so an
+   unverified typo at signup creates an account nobody can log into, nobody can recover,
+   and whose uniqueness constraint now squats on the real number. Add a one-time-code
+   flow: issue a short numeric code on signup, verify it against a stored hash with a
+   short expiry and an attempt limit, and mark the coach verified.
+   - Pick the SMS provider deliberately and tell me the options before wiring one in —
+     this is market-specific (see the market assumption in docs/product-direction.md
+     section 5) and I may already have a preference.
+   - Put it behind an interface with a log-to-stdout implementation for local dev and
+     tests, so the suite never needs a real provider or network.
+   - Decide and tell me whether an unverified coach can log in at all or is only blocked
+     from some actions. Make the call, note it in a comment, flag it as an assumption.
+
+2. Password reset. Today the only recovery path is `coachctl reset-password`, run by
+   whoever has shell access to the server. Build reset-request → code/token →
+   set-new-password on the same OTP machinery, with single-use tokens, a short expiry,
+   and no response difference between a known and an unknown phone number (don't leak
+   which numbers are registered).
+
+All three go through the /auth/* rate limiter from the coach auth task — verify it's
+actually applied, since these are the endpoints that cost real money per request when an
+SMS provider is wired in.
+
+Add swagger annotations to every new handler and rerun `make swagger`. If this needs new
+columns or a table (verification codes, reset tokens), it's a migration, and per CLAUDE.md
+docs/er-diagram.md updates in the same commit.
+```
+
+**Checkpoint:** Sign up with a phone number, confirm the code is logged by the dev SMS implementation, and verify it — a wrong code and an expired code both fail without verifying, and repeated wrong codes hit the attempt limit. Request a password reset for a registered number and complete it, then confirm the old password no longer works and the reset token can't be reused. Request a reset for an unregistered number and confirm the response is indistinguishable from the registered case. The full suite still passes with no network access.
+
+**Expected output:**
+```
+$ docker compose logs api | grep otp
+{"level":"info","msg":"dev sms: otp sent","phone":"09372144430","code":"483920"}
+
+$ curl -s -X POST localhost:8080/api/v1/auth/verify -d '{"phone":"09372144430","code":"000000"}'
+{"success":false,"data":null,"error":{"code":"invalid_code","message":"invalid or expired code"}}
+
+$ curl -s -X POST localhost:8080/api/v1/auth/verify -d '{"phone":"09372144430","code":"483920"}'
+{"success":true,"data":{"verified":true},"error":null}
+
+$ curl -s -X POST localhost:8080/api/v1/auth/password-reset/request -d '{"phone":"09120000000"}'
+{"success":true,"data":null,"error":null}     # identical for a registered number
+```
+
+**In short:** a typo'd phone can no longer lock an account forever, and a coach who forgets their password can get back in without asking you to run a command.

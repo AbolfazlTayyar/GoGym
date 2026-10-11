@@ -109,7 +109,9 @@ These were the original gap list. The first five are now scheduled in [tasks/](t
 **Now covered by a task:**
 
 - **Password reset and phone verification.** Phone is both the login identity and a unique key;
-  without OTP you get typos you cannot fix and lockouts resolved by hand. → *Coach auth hardening*
+  without OTP you get typos you cannot fix and lockouts resolved by hand. → *Coach auth hardening*,
+  deferred until a second coach signs up. Until then, public signup is closed and accounts and
+  resets go through `cmd/coachctl`.
 - **Tenant isolation enforced per handler.** Repeating "scope by coach_id" in fifteen tasks means
   one forgotten `WHERE` is a cross-tenant leak; it belongs in one enforceable place. → *Coach auth*
 - **No backups and no tested restore.** Losing a coach's athlete history once ends the business.
