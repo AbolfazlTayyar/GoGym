@@ -1,3 +1,11 @@
+## Keep it simple (KISS)
+
+The app serves one coach with around 20–30 athletes. Follow KISS: build for that load, not for one we might have later. Write the simplest code that works and is clear to read. Don't add caching, queues, background workers, extra services, generic abstractions, config knobs, interfaces with one implementation, or "in case we need it" fields. Add them only when a real need shows up in the current task.
+
+There's one exception: something that is cheap to add now and expensive to add later. A schema column or key, a constraint, or an API shape that clients will depend on are examples. Retrofitting those means migrations, backfills or breaking changes, so add them now. Tenant scoping through `coach_id` (see Data access conventions) is one. A cache or an abstraction isn't, since you can add either later without changing anything else. When you use this exception, say what would be expensive to change later.
+
+If a task or prompt seems to call for more machinery than this load needs, say so and propose the simpler version before building it.
+
 ## Commit conventions
 
 Conventional Commits: `<type>: <short summary>`, imperative mood, no trailing period. One logical change per commit — don't bundle unrelated files.
