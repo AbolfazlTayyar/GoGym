@@ -4,7 +4,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/AbolfazlTayyar/gogym/internal/config"
+	"github.com/AbolfazlTayyar/gogym/internal/platform/config"
 )
 
 func main() {

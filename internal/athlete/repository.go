@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/AbolfazlTayyar/gogym/internal/search"
-	"github.com/AbolfazlTayyar/gogym/internal/tenant"
+	"github.com/AbolfazlTayyar/gogym/internal/platform/search"
+	"github.com/AbolfazlTayyar/gogym/internal/platform/tenant"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )

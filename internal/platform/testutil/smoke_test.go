@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	coachpkg "github.com/AbolfazlTayyar/gogym/internal/coach"
-	"github.com/AbolfazlTayyar/gogym/internal/testutil"
+	"github.com/AbolfazlTayyar/gogym/internal/platform/testutil"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 )

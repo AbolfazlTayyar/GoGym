@@ -76,7 +76,7 @@ func applyMigrations(t *testing.T, dsn string) {
 // ToSlash suffices on Windows too: golang-migrate parses "file://C:/..." as host "C:" plus a valid path.
 func migrationsSourceURL() string {
 	_, file, _, _ := runtime.Caller(0)
-	dir := filepath.Join(filepath.Dir(file), "..", "..", "migrations")
+	dir := filepath.Join(filepath.Dir(file), "..", "..", "..", "migrations")
 
 	return "file://" + filepath.ToSlash(dir)
 }

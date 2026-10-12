@@ -130,7 +130,7 @@ These were the original gap list. The first five are now scheduled in [tasks/](t
 ### 7. Who you sell to changes the schema
 
 > **Answered, 2026-09-20: not selling to gyms.** The product stays per-manager, so the org
-> layer below is not planned work. The single-helper hedge was still built — `internal/tenant`,
+> layer below is not planned work. The single-helper hedge was still built — `internal/platform/tenant`,
 > see [architecture.md](architecture.md) — but for leak-prevention, which stands on its own,
 > not as a step toward `org_id`. The reasoning is kept because the market may say otherwise
 > later; nothing should be designed around it in the meantime.

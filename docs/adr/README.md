@@ -31,3 +31,4 @@ One file per decision, [MADR](https://adr.github.io/madr/)-style. Process rules 
 | [0024](0024-trusted-proxies-explicit.md) | Forwarded client IPs are trusted only from configured proxies | 2026-10-10 | accepted |
 | [0025](0025-coach-accounts-by-cli.md) | Coach accounts are created by a CLI, not a public signup endpoint | 2026-10-11 | accepted |
 | [0026](0026-healthz-cached-not-hidden.md) | /healthz caches its database ping instead of hiding behind a secret path | 2026-10-11 | accepted |
+| [0027](0027-platform-package-for-infrastructure.md) | Shared infrastructure lives under internal/platform | 2026-10-12 | accepted |

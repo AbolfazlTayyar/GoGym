@@ -29,7 +29,7 @@ both on all interfaces for local dev. Only Caddy's 80/443 face the internet; a p
 file or bind them to 127.0.0.1 if you need them for SSH tunnels — say which.
 
 Define and document how migrations reach production — this app has no auto-migrate on
-container startup today (internal/db explicitly disables GORM AutoMigrate; migrations/
+container startup today (internal/platform/db explicitly disables GORM AutoMigrate; migrations/
 is the only source of truth, applied via `make migrate-up` wrapping golang-migrate CLI).
 Pick one deliberately and tell me why:
 - A manual step: SSH to the VPS, run `make migrate-up` (or the raw `migrate` binary)
@@ -39,7 +39,7 @@ Pick one deliberately and tell me why:
   a healthcheck-style gate, or a deploy script step) — safer against "forgot to migrate"
   but needs care that it never runs concurrently with a second deploy.
 
-Whichever you pick, the DSN must come from the same internal/config-driven env vars used
+Whichever you pick, the DSN must come from the same internal/platform/config-driven env vars used
 locally — no separate prod-only connection logic. Add a short runbook (a doc or a section
 in this file) covering: how to deploy a new image, how/when migrations run relative to
 that, and how to roll back a bad migration (down migration + previous image tag). The

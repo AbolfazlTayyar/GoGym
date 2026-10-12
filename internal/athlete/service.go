@@ -6,8 +6,8 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/AbolfazlTayyar/gogym/internal/httpx"
-	"github.com/AbolfazlTayyar/gogym/internal/validate"
+	"github.com/AbolfazlTayyar/gogym/internal/platform/httpx"
+	"github.com/AbolfazlTayyar/gogym/internal/platform/validate"
 	"github.com/google/uuid"
 )
 

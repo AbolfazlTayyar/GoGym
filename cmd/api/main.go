@@ -16,8 +16,8 @@ package main
 import (
 	"os"
 
-	"github.com/AbolfazlTayyar/gogym/internal/config"
-	"github.com/AbolfazlTayyar/gogym/internal/db"
+	"github.com/AbolfazlTayyar/gogym/internal/platform/config"
+	"github.com/AbolfazlTayyar/gogym/internal/platform/db"
 	"github.com/AbolfazlTayyar/gogym/internal/server"
 	"github.com/rs/zerolog"
 )

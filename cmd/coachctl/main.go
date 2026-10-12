@@ -12,8 +12,8 @@ import (
 	"strings"
 
 	"github.com/AbolfazlTayyar/gogym/internal/coach"
-	"github.com/AbolfazlTayyar/gogym/internal/config"
-	"github.com/AbolfazlTayyar/gogym/internal/db"
+	"github.com/AbolfazlTayyar/gogym/internal/platform/config"
+	"github.com/AbolfazlTayyar/gogym/internal/platform/db"
 )
 
 const usage = `usage:

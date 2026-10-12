@@ -10,7 +10,7 @@ higher wins.
 | [tasks/](tasks/README.md) | The build checklists — backend, deployment and frontend in separate files, one task per feature, each with a paste-ready prompt and a checkpoint. Tracks progress with ✅ / ⬜. | Constantly. This is the doc you work from. |
 | [spec.md](spec.md) | What v1 is and, just as importantly, what it is not. Users, entities, the six MVP features, out-of-scope list. | When scope changes. Rare on purpose. |
 | [er-diagram.md](er-diagram.md) | The schema. Hand-maintained, **not** generated. | In the **same commit** as any migration — see [CLAUDE.md](../CLAUDE.md). |
-| [architecture.md](architecture.md) | The module layout new feature modules should follow, how they're wired into `internal/server`, and the tenant-isolation pattern (`internal/tenant`). | When a new module's shape or wiring deviates from `internal/coach`'s precedent, or the tenant-scoping decision changes. |
+| [architecture.md](architecture.md) | The module layout new feature modules should follow, how they're wired into `internal/server`, and the tenant-isolation pattern (`internal/platform/tenant`), and which packages belong in `internal/platform`. | When a new module's shape or wiring deviates from `internal/coach`'s precedent, or the tenant-scoping decision changes. |
 | [adr/](adr/README.md) | Architecture Decision Records — one file per decision, with the options that were rejected and why. | When a task makes a decision with real alternatives — see [CLAUDE.md](../CLAUDE.md#architecture-decision-records). |
 
 ## Product thinking

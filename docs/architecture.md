@@ -4,6 +4,21 @@ How the codebase is shaped, and the precedent later feature modules should follo
 documents decisions already made in code — if it and the code disagree, the code wins; fix
 this doc.
 
+## Package layout
+
+```
+internal/
+  athlete/ coach/ measurement/ movement/ plan/   feature modules
+  server/                                         wires the features together
+  platform/                                       shared infrastructure
+    config/ db/ httpx/ search/ tenant/ testutil/ validate/
+```
+
+Features sit directly under `internal/`. Code that features share and that knows no feature goes
+in `internal/platform/`. **A `platform` package never imports a feature package.** That rule is
+what keeps `platform/` from becoming a miscellaneous folder. `server` imports every feature to
+construct it, so it stays out of `platform/`. See [ADR 0027](adr/0027-platform-package-for-infrastructure.md).
+
 ## Module layout
 
 Each feature lives in its own `internal/<module>` package, split by responsibility:
@@ -57,7 +72,7 @@ dependency graph that the inline wiring makes visible.
 
 ## Tenant isolation
 
-Every coach-owned table carries `coach_id`, and `internal/tenant` is the single place that
+Every coach-owned table carries `coach_id`, and `internal/platform/tenant` is the single place that
 scoping decision is made. The reason is leak-prevention, not future-proofing: a rule enforced
 by discipline across a dozen handlers is one forgotten `WHERE` away from serving one coach's
 athletes to another.
@@ -89,7 +104,7 @@ athletes to another.
 
 ## Response envelope
 
-Every `/api/v1` body goes through the explicit helpers in `internal/httpx` (shape and usage in
+Every `/api/v1` body goes through the explicit helpers in `internal/platform/httpx` (shape and usage in
 [CLAUDE.md](../CLAUDE.md#api-response-conventions)). A response-rewriting middleware that
 wrapped whatever a handler wrote was considered and rejected:
 

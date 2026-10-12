@@ -3,7 +3,7 @@ package validate_test
 import (
 	"testing"
 
-	"github.com/AbolfazlTayyar/gogym/internal/validate"
+	"github.com/AbolfazlTayyar/gogym/internal/platform/validate"
 	"github.com/stretchr/testify/assert"
 )
 

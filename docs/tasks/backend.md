@@ -885,7 +885,7 @@ docs/tasks/README.md first; whether the frontend shares the API's origin changes
 CORS and CSRF steps below.
 
 - Login sets the JWT as a cookie: HttpOnly, Secure (relaxed only in the dev environment
-  from internal/config, since local dev is plain http), SameSite=Lax or Strict (pick and
+  from internal/platform/config, since local dev is plain http), SameSite=Lax or Strict (pick and
   say why), Path=/api/v1, Max-Age equal to JWT_EXPIRY. Decide whether the token also stays
   in the response body. Keeping it there means a page script can read it again.
 - AuthMiddleware accepts the cookie, and still accepts the Bearer header so Swagger UI's

@@ -69,7 +69,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.SuccessEnvelope"
+                                    "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.SuccessEnvelope"
                                 },
                                 {
                                     "type": "object",
@@ -91,19 +91,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ValidationErrorEnvelope"
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.ValidationErrorEnvelope"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.UnauthorizedEnvelope"
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.UnauthorizedEnvelope"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.InternalErrorEnvelope"
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.InternalErrorEnvelope"
                         }
                     }
                 }
@@ -142,7 +142,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.SuccessEnvelope"
+                                    "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.SuccessEnvelope"
                                 },
                                 {
                                     "type": "object",
@@ -158,19 +158,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ValidationErrorEnvelope"
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.ValidationErrorEnvelope"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.UnauthorizedEnvelope"
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.UnauthorizedEnvelope"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.InternalErrorEnvelope"
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.InternalErrorEnvelope"
                         }
                     }
                 }
@@ -207,7 +207,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.SuccessEnvelope"
+                                    "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.SuccessEnvelope"
                                 },
                                 {
                                     "type": "object",
@@ -223,19 +223,19 @@ const docTemplate = `{
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.UnauthorizedEnvelope"
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.UnauthorizedEnvelope"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.NotFoundEnvelope"
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.NotFoundEnvelope"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.InternalErrorEnvelope"
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.InternalErrorEnvelope"
                         }
                     }
                 }
@@ -272,7 +272,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.SuccessEnvelope"
+                                    "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.SuccessEnvelope"
                                 },
                                 {
                                     "type": "object",
@@ -291,19 +291,19 @@ const docTemplate = `{
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.UnauthorizedEnvelope"
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.UnauthorizedEnvelope"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.NotFoundEnvelope"
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.NotFoundEnvelope"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.InternalErrorEnvelope"
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.InternalErrorEnvelope"
                         }
                     }
                 }
@@ -350,7 +350,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.SuccessEnvelope"
+                                    "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.SuccessEnvelope"
                                 },
                                 {
                                     "type": "object",
@@ -366,25 +366,25 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ValidationErrorEnvelope"
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.ValidationErrorEnvelope"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.UnauthorizedEnvelope"
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.UnauthorizedEnvelope"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.NotFoundEnvelope"
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.NotFoundEnvelope"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.InternalErrorEnvelope"
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.InternalErrorEnvelope"
                         }
                     }
                 }
@@ -421,7 +421,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.SuccessEnvelope"
+                                    "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.SuccessEnvelope"
                                 },
                                 {
                                     "type": "object",
@@ -440,19 +440,19 @@ const docTemplate = `{
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.UnauthorizedEnvelope"
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.UnauthorizedEnvelope"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.NotFoundEnvelope"
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.NotFoundEnvelope"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.InternalErrorEnvelope"
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.InternalErrorEnvelope"
                         }
                     }
                 }
@@ -488,7 +488,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.SuccessEnvelope"
+                                    "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.SuccessEnvelope"
                                 },
                                 {
                                     "type": "object",
@@ -504,25 +504,25 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ValidationErrorEnvelope"
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.ValidationErrorEnvelope"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.InvalidCredentialsEnvelope"
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.InvalidCredentialsEnvelope"
                         }
                     },
                     "429": {
                         "description": "Too Many Requests",
                         "schema": {
-                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.RateLimitedEnvelope"
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.RateLimitedEnvelope"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.InternalErrorEnvelope"
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.InternalErrorEnvelope"
                         }
                     }
                 }
@@ -574,7 +574,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.SuccessEnvelope"
+                                    "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.SuccessEnvelope"
                                 },
                                 {
                                     "type": "object",
@@ -593,25 +593,25 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ValidationErrorEnvelope"
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.ValidationErrorEnvelope"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.UnauthorizedEnvelope"
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.UnauthorizedEnvelope"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.NotFoundEnvelope"
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.NotFoundEnvelope"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.InternalErrorEnvelope"
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.InternalErrorEnvelope"
                         }
                     }
                 }
@@ -638,7 +638,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.SuccessEnvelope"
+                                    "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.SuccessEnvelope"
                                 },
                                 {
                                     "type": "object",
@@ -654,19 +654,19 @@ const docTemplate = `{
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.UnauthorizedEnvelope"
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.UnauthorizedEnvelope"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.NotFoundEnvelope"
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.NotFoundEnvelope"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.InternalErrorEnvelope"
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.InternalErrorEnvelope"
                         }
                     }
                 }
@@ -715,7 +715,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.SuccessEnvelope"
+                                    "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.SuccessEnvelope"
                                 },
                                 {
                                     "type": "object",
@@ -731,25 +731,25 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ValidationErrorEnvelope"
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.ValidationErrorEnvelope"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.UnauthorizedEnvelope"
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.UnauthorizedEnvelope"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.NotFoundEnvelope"
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.NotFoundEnvelope"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.InternalErrorEnvelope"
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.InternalErrorEnvelope"
                         }
                     }
                 }
@@ -815,7 +815,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.SuccessEnvelope"
+                                    "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.SuccessEnvelope"
                                 },
                                 {
                                     "type": "object",
@@ -834,19 +834,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ValidationErrorEnvelope"
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.ValidationErrorEnvelope"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.UnauthorizedEnvelope"
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.UnauthorizedEnvelope"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.InternalErrorEnvelope"
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.InternalErrorEnvelope"
                         }
                     }
                 }
@@ -885,7 +885,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.SuccessEnvelope"
+                                    "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.SuccessEnvelope"
                                 },
                                 {
                                     "type": "object",
@@ -901,19 +901,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ValidationErrorEnvelope"
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.ValidationErrorEnvelope"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.UnauthorizedEnvelope"
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.UnauthorizedEnvelope"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.InternalErrorEnvelope"
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.InternalErrorEnvelope"
                         }
                     }
                 }
@@ -962,7 +962,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.SuccessEnvelope"
+                                    "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.SuccessEnvelope"
                                 },
                                 {
                                     "type": "object",
@@ -978,31 +978,31 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ValidationErrorEnvelope"
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.ValidationErrorEnvelope"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.UnauthorizedEnvelope"
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.UnauthorizedEnvelope"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ForbiddenEnvelope"
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.ForbiddenEnvelope"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.NotFoundEnvelope"
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.NotFoundEnvelope"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.InternalErrorEnvelope"
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.InternalErrorEnvelope"
                         }
                     }
                 }
@@ -1035,31 +1035,31 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.NoContentEnvelope"
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.NoContentEnvelope"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.UnauthorizedEnvelope"
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.UnauthorizedEnvelope"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ForbiddenEnvelope"
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.ForbiddenEnvelope"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.NotFoundEnvelope"
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.NotFoundEnvelope"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.InternalErrorEnvelope"
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.InternalErrorEnvelope"
                         }
                     }
                 }
@@ -1100,7 +1100,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.SuccessEnvelope"
+                                    "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.SuccessEnvelope"
                                 },
                                 {
                                     "type": "object",
@@ -1116,25 +1116,25 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ValidationErrorEnvelope"
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.ValidationErrorEnvelope"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.UnauthorizedEnvelope"
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.UnauthorizedEnvelope"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.NotFoundEnvelope"
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.NotFoundEnvelope"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.InternalErrorEnvelope"
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.InternalErrorEnvelope"
                         }
                     }
                 }
@@ -1171,7 +1171,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.SuccessEnvelope"
+                                    "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.SuccessEnvelope"
                                 },
                                 {
                                     "type": "object",
@@ -1187,19 +1187,19 @@ const docTemplate = `{
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.UnauthorizedEnvelope"
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.UnauthorizedEnvelope"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.NotFoundEnvelope"
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.NotFoundEnvelope"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.InternalErrorEnvelope"
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.InternalErrorEnvelope"
                         }
                     }
                 }
@@ -1248,7 +1248,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.SuccessEnvelope"
+                                    "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.SuccessEnvelope"
                                 },
                                 {
                                     "type": "object",
@@ -1264,25 +1264,25 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ValidationErrorEnvelope"
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.ValidationErrorEnvelope"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.UnauthorizedEnvelope"
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.UnauthorizedEnvelope"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.NotFoundEnvelope"
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.NotFoundEnvelope"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.InternalErrorEnvelope"
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.InternalErrorEnvelope"
                         }
                     }
                 }
@@ -1316,7 +1316,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "github_com_AbolfazlTayyar_gogym_internal_httpx.ForbiddenEnvelope": {
+        "github_com_AbolfazlTayyar_gogym_internal_platform_httpx.ForbiddenEnvelope": {
             "type": "object",
             "properties": {
                 "data": {
@@ -1341,7 +1341,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_AbolfazlTayyar_gogym_internal_httpx.InternalErrorEnvelope": {
+        "github_com_AbolfazlTayyar_gogym_internal_platform_httpx.InternalErrorEnvelope": {
             "type": "object",
             "properties": {
                 "data": {
@@ -1366,7 +1366,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_AbolfazlTayyar_gogym_internal_httpx.InvalidCredentialsEnvelope": {
+        "github_com_AbolfazlTayyar_gogym_internal_platform_httpx.InvalidCredentialsEnvelope": {
             "type": "object",
             "properties": {
                 "data": {
@@ -1391,7 +1391,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_AbolfazlTayyar_gogym_internal_httpx.NoContentEnvelope": {
+        "github_com_AbolfazlTayyar_gogym_internal_platform_httpx.NoContentEnvelope": {
             "type": "object",
             "properties": {
                 "data": {
@@ -1406,7 +1406,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_AbolfazlTayyar_gogym_internal_httpx.NotFoundEnvelope": {
+        "github_com_AbolfazlTayyar_gogym_internal_platform_httpx.NotFoundEnvelope": {
             "type": "object",
             "properties": {
                 "data": {
@@ -1431,7 +1431,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_AbolfazlTayyar_gogym_internal_httpx.RateLimitedEnvelope": {
+        "github_com_AbolfazlTayyar_gogym_internal_platform_httpx.RateLimitedEnvelope": {
             "type": "object",
             "properties": {
                 "data": {
@@ -1456,7 +1456,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_AbolfazlTayyar_gogym_internal_httpx.SuccessEnvelope": {
+        "github_com_AbolfazlTayyar_gogym_internal_platform_httpx.SuccessEnvelope": {
             "type": "object",
             "properties": {
                 "data": {},
@@ -1469,7 +1469,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_AbolfazlTayyar_gogym_internal_httpx.UnauthorizedEnvelope": {
+        "github_com_AbolfazlTayyar_gogym_internal_platform_httpx.UnauthorizedEnvelope": {
             "type": "object",
             "properties": {
                 "data": {
@@ -1494,7 +1494,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_AbolfazlTayyar_gogym_internal_httpx.ValidationErrorEnvelope": {
+        "github_com_AbolfazlTayyar_gogym_internal_platform_httpx.ValidationErrorEnvelope": {
             "type": "object",
             "properties": {
                 "data": {

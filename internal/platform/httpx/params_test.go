@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/AbolfazlTayyar/gogym/internal/httpx"
+	"github.com/AbolfazlTayyar/gogym/internal/platform/httpx"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"

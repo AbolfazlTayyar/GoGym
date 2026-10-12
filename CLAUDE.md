@@ -44,6 +44,8 @@ When a literal (string key, magic number, etc.) is used in more than one place, 
 
 Comments explain why or warn about a non-obvious constraint, in one line where possible; don't restate the code or reference docs/specs/migrations. Package comments are one sentence. Exported identifiers get a doc comment only when the name isn't self-explanatory.
 
+Feature modules live directly under `internal/`; shared infrastructure lives under `internal/platform/` and never imports a feature package — see [docs/architecture.md](docs/architecture.md#package-layout).
+
 When wiring a new module into `internal/server/server.go`, check whether the wiring has hit one of the growth triggers in [docs/architecture.md](docs/architecture.md#when-the-wiring-outgrows-servergo); if so, raise the restructure instead of adding another block.
 
 ## CI conventions
@@ -52,7 +54,7 @@ Pin tool/action versions in `.github/workflows/*.yml` (e.g. `golangci-lint-actio
 
 ## Data access conventions
 
-Tenant-owned queries (any table with a `coach_id` column) must go through `internal/tenant.Scope(db, coachID)`, never a hand-written `db.Where("coach_id = ?", ...)`. It's the single enforcement point for tenant isolation — see [docs/architecture.md](docs/architecture.md) for why and for the 404-not-403 convention that goes with it.
+Tenant-owned queries (any table with a `coach_id` column) must go through `internal/platform/tenant.Scope(db, coachID)`, never a hand-written `db.Where("coach_id = ?", ...)`. It's the single enforcement point for tenant isolation — see [docs/architecture.md](docs/architecture.md) for why and for the 404-not-403 convention that goes with it.
 
 Tables with universal rows (`movement`, where `coach_id IS NULL`) are read through `tenant.ScopeWithUniversal(db, coachID)`. Updates and deletes still pick their row through `tenant.Scope`, so a coach can never modify a universal row. Such a write answers 403 `forbidden` (the coach can already see the row, so nothing leaks); another coach's row stays 404 — see [ADR 0021](docs/adr/0021-universal-rows-forbidden.md).
 
@@ -60,11 +62,11 @@ Tables without a `coach_id` (measurement, and later plan/day/block) prove owners
 
 There is no signup endpoint. Integration tests create coaches through `coach.Service.Create`, then log in over HTTP for a token.
 
-GORM is opened with `TranslateError: true` (`internal/db`, `internal/testutil`) so repositories can check portable errors like `errors.Is(err, gorm.ErrDuplicatedKey)` instead of parsing Postgres-specific error codes. Keep using the portable sentinels — without this config the driver-specific check would silently never match.
+GORM is opened with `TranslateError: true` (`internal/platform/db`, `internal/platform/testutil`) so repositories can check portable errors like `errors.Is(err, gorm.ErrDuplicatedKey)` instead of parsing Postgres-specific error codes. Keep using the portable sentinels — without this config the driver-specific check would silently never match.
 
 ## API response conventions
 
-Every `/api/v1` response body — success or failure — is the envelope defined in `internal/httpx`:
+Every `/api/v1` response body — success or failure — is the envelope defined in `internal/platform/httpx`:
 
 ```
 {"success": true,  "data": {...}|[...]|null, "error": null, "meta": {...}}
@@ -77,9 +79,9 @@ Handlers write it through the `httpx` helpers (`OK`, `OKWithMeta`, `Created`, `N
 
 Answer an unexpected failure with `httpx.InternalError(c, err)`, not a hand-built 500: it sends the client only the generic message and attaches `err` to the request so the request log records the cause at error level. Never put `err.Error()` in a response body — driver and internal errors name hosts, tables and queries.
 
-`/healthz` is the one deliberate exemption — it's an unversioned infra probe read by container healthchecks and uptime pingers that match on its exact bare `{"status":"ok"}` body, and the only place outside `internal/httpx` allowed to call `c.JSON`.
+`/healthz` is the one deliberate exemption — it's an unversioned infra probe read by container healthchecks and uptime pingers that match on its exact bare `{"status":"ok"}` body, and the only place outside `internal/platform/httpx` allowed to call `c.JSON`.
 
-Swagger annotations must show the real nested body, using the documentation-only types in `internal/httpx/swagger.go`: `@Success 200 {object} httpx.SuccessEnvelope{data=coachResponse}` for a payload, and for errors the per-code type matching what the handler sends (`httpx.ValidationErrorEnvelope` for 400, `httpx.UnauthorizedEnvelope` for 401, `httpx.NotFoundEnvelope` for 404, …). Annotating the runtime `httpx.Envelope` directly instead renders every success example with a filled-in `error` object and every failure example with `"success": true` — a schema can't say "populated on failure, null on success". `TestEnvelopeDocsMatchRuntime` fails if the doc types drift from what `Envelope` marshals; a new error code gets its own doc type plus a row in that test.
+Swagger annotations must show the real nested body, using the documentation-only types in `internal/platform/httpx/swagger.go`: `@Success 200 {object} httpx.SuccessEnvelope{data=coachResponse}` for a payload, and for errors the per-code type matching what the handler sends (`httpx.ValidationErrorEnvelope` for 400, `httpx.UnauthorizedEnvelope` for 401, `httpx.NotFoundEnvelope` for 404, …). Annotating the runtime `httpx.Envelope` directly instead renders every success example with a filled-in `error` object and every failure example with `"success": true` — a schema can't say "populated on failure, null on success". `TestEnvelopeDocsMatchRuntime` fails if the doc types drift from what `Envelope` marshals; a new error code gets its own doc type plus a row in that test.
 
 ## Schema conventions
 
@@ -99,4 +101,4 @@ An untyped (`any`) or `map` field in a documented struct needs an example: `exam
 
 Run `make swagger` (`swag init`) after adding or changing annotated handlers. The generated output in `docs/swagger/` is committed (the binary imports it for its side effect of registering the spec), so a stale run means stale docs shipped in the UI.
 
-The `/swagger/*any` route is only mounted when `internal/config` reports the dev environment — never expose interactive API docs in a prod build by default.
+The `/swagger/*any` route is only mounted when `internal/platform/config` reports the dev environment — never expose interactive API docs in a prod build by default.

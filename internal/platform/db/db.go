@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/AbolfazlTayyar/gogym/internal/config"
+	"github.com/AbolfazlTayyar/gogym/internal/platform/config"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"

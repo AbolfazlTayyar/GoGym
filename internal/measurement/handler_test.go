@@ -8,8 +8,8 @@ import (
 	"testing"
 
 	"github.com/AbolfazlTayyar/gogym/internal/athlete"
-	"github.com/AbolfazlTayyar/gogym/internal/httpx"
-	"github.com/AbolfazlTayyar/gogym/internal/tenant"
+	"github.com/AbolfazlTayyar/gogym/internal/platform/httpx"
+	"github.com/AbolfazlTayyar/gogym/internal/platform/tenant"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"

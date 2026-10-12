@@ -12,9 +12,9 @@ import (
 
 	"github.com/AbolfazlTayyar/gogym/internal/athlete"
 	"github.com/AbolfazlTayyar/gogym/internal/coach"
-	"github.com/AbolfazlTayyar/gogym/internal/httpx"
 	"github.com/AbolfazlTayyar/gogym/internal/measurement"
-	"github.com/AbolfazlTayyar/gogym/internal/testutil"
+	"github.com/AbolfazlTayyar/gogym/internal/platform/httpx"
+	"github.com/AbolfazlTayyar/gogym/internal/platform/testutil"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"

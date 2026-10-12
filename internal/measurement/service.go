@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/AbolfazlTayyar/gogym/internal/athlete"
-	"github.com/AbolfazlTayyar/gogym/internal/httpx"
+	"github.com/AbolfazlTayyar/gogym/internal/platform/httpx"
 	"github.com/google/uuid"
 )
 

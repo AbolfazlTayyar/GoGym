@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"github.com/AbolfazlTayyar/gogym/internal/coach"
-	"github.com/AbolfazlTayyar/gogym/internal/httpx"
-	"github.com/AbolfazlTayyar/gogym/internal/testutil"
+	"github.com/AbolfazlTayyar/gogym/internal/platform/httpx"
+	"github.com/AbolfazlTayyar/gogym/internal/platform/testutil"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

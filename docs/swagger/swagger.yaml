@@ -1,6 +1,6 @@
 basePath: /
 definitions:
-  github_com_AbolfazlTayyar_gogym_internal_httpx.ForbiddenEnvelope:
+  github_com_AbolfazlTayyar_gogym_internal_platform_httpx.ForbiddenEnvelope:
     properties:
       data:
         example: null
@@ -17,7 +17,7 @@ definitions:
         example: false
         type: boolean
     type: object
-  github_com_AbolfazlTayyar_gogym_internal_httpx.InternalErrorEnvelope:
+  github_com_AbolfazlTayyar_gogym_internal_platform_httpx.InternalErrorEnvelope:
     properties:
       data:
         example: null
@@ -34,7 +34,7 @@ definitions:
         example: false
         type: boolean
     type: object
-  github_com_AbolfazlTayyar_gogym_internal_httpx.InvalidCredentialsEnvelope:
+  github_com_AbolfazlTayyar_gogym_internal_platform_httpx.InvalidCredentialsEnvelope:
     properties:
       data:
         example: null
@@ -51,7 +51,7 @@ definitions:
         example: false
         type: boolean
     type: object
-  github_com_AbolfazlTayyar_gogym_internal_httpx.NoContentEnvelope:
+  github_com_AbolfazlTayyar_gogym_internal_platform_httpx.NoContentEnvelope:
     properties:
       data:
         example: null
@@ -61,7 +61,7 @@ definitions:
         example: true
         type: boolean
     type: object
-  github_com_AbolfazlTayyar_gogym_internal_httpx.NotFoundEnvelope:
+  github_com_AbolfazlTayyar_gogym_internal_platform_httpx.NotFoundEnvelope:
     properties:
       data:
         example: null
@@ -78,7 +78,7 @@ definitions:
         example: false
         type: boolean
     type: object
-  github_com_AbolfazlTayyar_gogym_internal_httpx.RateLimitedEnvelope:
+  github_com_AbolfazlTayyar_gogym_internal_platform_httpx.RateLimitedEnvelope:
     properties:
       data:
         example: null
@@ -95,7 +95,7 @@ definitions:
         example: false
         type: boolean
     type: object
-  github_com_AbolfazlTayyar_gogym_internal_httpx.SuccessEnvelope:
+  github_com_AbolfazlTayyar_gogym_internal_platform_httpx.SuccessEnvelope:
     properties:
       data: {}
       error:
@@ -104,7 +104,7 @@ definitions:
         example: true
         type: boolean
     type: object
-  github_com_AbolfazlTayyar_gogym_internal_httpx.UnauthorizedEnvelope:
+  github_com_AbolfazlTayyar_gogym_internal_platform_httpx.UnauthorizedEnvelope:
     properties:
       data:
         example: null
@@ -121,7 +121,7 @@ definitions:
         example: false
         type: boolean
     type: object
-  github_com_AbolfazlTayyar_gogym_internal_httpx.ValidationErrorEnvelope:
+  github_com_AbolfazlTayyar_gogym_internal_platform_httpx.ValidationErrorEnvelope:
     properties:
       data:
         example: null
@@ -630,7 +630,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.SuccessEnvelope'
+            - $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.SuccessEnvelope'
             - properties:
                 data:
                   items:
@@ -642,15 +642,15 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ValidationErrorEnvelope'
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.ValidationErrorEnvelope'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.UnauthorizedEnvelope'
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.UnauthorizedEnvelope'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.InternalErrorEnvelope'
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.InternalErrorEnvelope'
       security:
       - BearerAuth: []
       summary: List athletes
@@ -676,7 +676,7 @@ paths:
           description: Created
           schema:
             allOf:
-            - $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.SuccessEnvelope'
+            - $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.SuccessEnvelope'
             - properties:
                 data:
                   $ref: '#/definitions/internal_athlete.athleteResponse'
@@ -684,15 +684,15 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ValidationErrorEnvelope'
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.ValidationErrorEnvelope'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.UnauthorizedEnvelope'
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.UnauthorizedEnvelope'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.InternalErrorEnvelope'
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.InternalErrorEnvelope'
       security:
       - BearerAuth: []
       summary: Create an athlete
@@ -716,7 +716,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.SuccessEnvelope'
+            - $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.SuccessEnvelope'
             - properties:
                 data:
                   $ref: '#/definitions/internal_athlete.athleteResponse'
@@ -724,15 +724,15 @@ paths:
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.UnauthorizedEnvelope'
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.UnauthorizedEnvelope'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.NotFoundEnvelope'
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.NotFoundEnvelope'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.InternalErrorEnvelope'
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.InternalErrorEnvelope'
       security:
       - BearerAuth: []
       summary: Get an athlete
@@ -758,7 +758,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.SuccessEnvelope'
+            - $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.SuccessEnvelope'
             - properties:
                 data:
                   items:
@@ -768,15 +768,15 @@ paths:
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.UnauthorizedEnvelope'
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.UnauthorizedEnvelope'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.NotFoundEnvelope'
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.NotFoundEnvelope'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.InternalErrorEnvelope'
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.InternalErrorEnvelope'
       security:
       - BearerAuth: []
       summary: List measurements
@@ -809,7 +809,7 @@ paths:
           description: Created
           schema:
             allOf:
-            - $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.SuccessEnvelope'
+            - $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.SuccessEnvelope'
             - properties:
                 data:
                   $ref: '#/definitions/internal_measurement.measurementResponse'
@@ -817,19 +817,19 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ValidationErrorEnvelope'
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.ValidationErrorEnvelope'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.UnauthorizedEnvelope'
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.UnauthorizedEnvelope'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.NotFoundEnvelope'
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.NotFoundEnvelope'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.InternalErrorEnvelope'
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.InternalErrorEnvelope'
       security:
       - BearerAuth: []
       summary: Add a measurement
@@ -857,7 +857,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.SuccessEnvelope'
+            - $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.SuccessEnvelope'
             - properties:
                 data:
                   items:
@@ -867,15 +867,15 @@ paths:
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.UnauthorizedEnvelope'
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.UnauthorizedEnvelope'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.NotFoundEnvelope'
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.NotFoundEnvelope'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.InternalErrorEnvelope'
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.InternalErrorEnvelope'
       security:
       - BearerAuth: []
       summary: List an athlete's plans
@@ -901,7 +901,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.SuccessEnvelope'
+            - $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.SuccessEnvelope'
             - properties:
                 data:
                   $ref: '#/definitions/internal_coach.loginResponse'
@@ -909,19 +909,19 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ValidationErrorEnvelope'
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.ValidationErrorEnvelope'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.InvalidCredentialsEnvelope'
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.InvalidCredentialsEnvelope'
         "429":
           description: Too Many Requests
           schema:
-            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.RateLimitedEnvelope'
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.RateLimitedEnvelope'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.InternalErrorEnvelope'
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.InternalErrorEnvelope'
       summary: Log in a coach
       tags:
       - auth
@@ -961,7 +961,7 @@ paths:
           description: Created
           schema:
             allOf:
-            - $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.SuccessEnvelope'
+            - $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.SuccessEnvelope'
             - properties:
                 data:
                   items:
@@ -971,19 +971,19 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ValidationErrorEnvelope'
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.ValidationErrorEnvelope'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.UnauthorizedEnvelope'
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.UnauthorizedEnvelope'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.NotFoundEnvelope'
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.NotFoundEnvelope'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.InternalErrorEnvelope'
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.InternalErrorEnvelope'
       security:
       - BearerAuth: []
       summary: Add movements to a block
@@ -999,7 +999,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.SuccessEnvelope'
+            - $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.SuccessEnvelope'
             - properties:
                 data:
                   $ref: '#/definitions/internal_coach.coachResponse'
@@ -1007,15 +1007,15 @@ paths:
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.UnauthorizedEnvelope'
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.UnauthorizedEnvelope'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.NotFoundEnvelope'
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.NotFoundEnvelope'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.InternalErrorEnvelope'
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.InternalErrorEnvelope'
       security:
       - BearerAuth: []
       summary: Get the authenticated coach
@@ -1050,7 +1050,7 @@ paths:
           description: Created
           schema:
             allOf:
-            - $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.SuccessEnvelope'
+            - $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.SuccessEnvelope'
             - properties:
                 data:
                   $ref: '#/definitions/internal_plan.blockResponse'
@@ -1058,19 +1058,19 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ValidationErrorEnvelope'
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.ValidationErrorEnvelope'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.UnauthorizedEnvelope'
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.UnauthorizedEnvelope'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.NotFoundEnvelope'
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.NotFoundEnvelope'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.InternalErrorEnvelope'
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.InternalErrorEnvelope'
       security:
       - BearerAuth: []
       summary: Add a block to a day
@@ -1119,7 +1119,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.SuccessEnvelope'
+            - $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.SuccessEnvelope'
             - properties:
                 data:
                   items:
@@ -1129,15 +1129,15 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ValidationErrorEnvelope'
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.ValidationErrorEnvelope'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.UnauthorizedEnvelope'
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.UnauthorizedEnvelope'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.InternalErrorEnvelope'
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.InternalErrorEnvelope'
       security:
       - BearerAuth: []
       summary: List movements
@@ -1165,7 +1165,7 @@ paths:
           description: Created
           schema:
             allOf:
-            - $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.SuccessEnvelope'
+            - $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.SuccessEnvelope'
             - properties:
                 data:
                   $ref: '#/definitions/internal_movement.movementResponse'
@@ -1173,15 +1173,15 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ValidationErrorEnvelope'
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.ValidationErrorEnvelope'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.UnauthorizedEnvelope'
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.UnauthorizedEnvelope'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.InternalErrorEnvelope'
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.InternalErrorEnvelope'
       security:
       - BearerAuth: []
       summary: Create a movement
@@ -1207,23 +1207,23 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.NoContentEnvelope'
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.NoContentEnvelope'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.UnauthorizedEnvelope'
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.UnauthorizedEnvelope'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ForbiddenEnvelope'
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.ForbiddenEnvelope'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.NotFoundEnvelope'
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.NotFoundEnvelope'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.InternalErrorEnvelope'
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.InternalErrorEnvelope'
       security:
       - BearerAuth: []
       summary: Delete a movement
@@ -1257,7 +1257,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.SuccessEnvelope'
+            - $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.SuccessEnvelope'
             - properties:
                 data:
                   $ref: '#/definitions/internal_movement.movementResponse'
@@ -1265,23 +1265,23 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ValidationErrorEnvelope'
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.ValidationErrorEnvelope'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.UnauthorizedEnvelope'
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.UnauthorizedEnvelope'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ForbiddenEnvelope'
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.ForbiddenEnvelope'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.NotFoundEnvelope'
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.NotFoundEnvelope'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.InternalErrorEnvelope'
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.InternalErrorEnvelope'
       security:
       - BearerAuth: []
       summary: Update a movement
@@ -1310,7 +1310,7 @@ paths:
           description: Created
           schema:
             allOf:
-            - $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.SuccessEnvelope'
+            - $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.SuccessEnvelope'
             - properties:
                 data:
                   $ref: '#/definitions/internal_plan.planDetailResponse'
@@ -1318,19 +1318,19 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ValidationErrorEnvelope'
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.ValidationErrorEnvelope'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.UnauthorizedEnvelope'
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.UnauthorizedEnvelope'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.NotFoundEnvelope'
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.NotFoundEnvelope'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.InternalErrorEnvelope'
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.InternalErrorEnvelope'
       security:
       - BearerAuth: []
       summary: Create a plan
@@ -1359,7 +1359,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.SuccessEnvelope'
+            - $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.SuccessEnvelope'
             - properties:
                 data:
                   $ref: '#/definitions/internal_plan.planDetailResponse'
@@ -1367,15 +1367,15 @@ paths:
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.UnauthorizedEnvelope'
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.UnauthorizedEnvelope'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.NotFoundEnvelope'
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.NotFoundEnvelope'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.InternalErrorEnvelope'
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.InternalErrorEnvelope'
       security:
       - BearerAuth: []
       summary: Get a plan with its days, blocks and movements
@@ -1410,7 +1410,7 @@ paths:
           description: Created
           schema:
             allOf:
-            - $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.SuccessEnvelope'
+            - $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.SuccessEnvelope'
             - properties:
                 data:
                   $ref: '#/definitions/internal_plan.dayResponse'
@@ -1418,19 +1418,19 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.ValidationErrorEnvelope'
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.ValidationErrorEnvelope'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.UnauthorizedEnvelope'
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.UnauthorizedEnvelope'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.NotFoundEnvelope'
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.NotFoundEnvelope'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.InternalErrorEnvelope'
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.InternalErrorEnvelope'
       security:
       - BearerAuth: []
       summary: Add a day to a plan

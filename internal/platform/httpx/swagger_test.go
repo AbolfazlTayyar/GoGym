@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/AbolfazlTayyar/gogym/internal/httpx"
+	"github.com/AbolfazlTayyar/gogym/internal/platform/httpx"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

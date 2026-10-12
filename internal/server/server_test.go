@@ -6,7 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/AbolfazlTayyar/gogym/internal/config"
+	"github.com/AbolfazlTayyar/gogym/internal/platform/config"
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
