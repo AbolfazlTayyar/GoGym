@@ -44,8 +44,7 @@ func newTestRouter(t *testing.T) (*gin.Engine, *gorm.DB) {
 
 	db := testutil.NewDB(t)
 
-	coachRepo := coach.NewRepository(db)
-	coachSvc := coach.NewService(coachRepo, "test-secret", time.Hour)
+	coachSvc := coach.NewService(coach.NewRepository(db), "test-secret", time.Hour)
 	athleteSvc := athlete.NewService(athlete.NewRepository(db))
 
 	gin.SetMode(gin.TestMode)
@@ -55,7 +54,7 @@ func newTestRouter(t *testing.T) (*gin.Engine, *gorm.DB) {
 	protected := v1.Group("")
 	protected.Use(coach.AuthMiddleware(coachSvc))
 
-	coach.RegisterRoutes(v1, protected, coach.NewHandler(coachSvc, coachRepo))
+	coach.RegisterRoutes(v1, protected, coach.NewHandler(coachSvc))
 	movementSvc := movement.NewService(movement.NewRepository(db))
 
 	movement.RegisterRoutes(protected, movement.NewHandler(movementSvc))

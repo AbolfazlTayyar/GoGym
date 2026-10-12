@@ -55,9 +55,8 @@ func New(cfg config.Config, gormDB *gorm.DB, log zerolog.Logger) (*gin.Engine, e
 		router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	}
 
-	coachRepo := coach.NewRepository(gormDB)
-	coachSvc := coach.NewService(coachRepo, cfg.JWTSecret, cfg.JWTExpiry)
-	coachHandler := coach.NewHandler(coachSvc, coachRepo)
+	coachSvc := coach.NewService(coach.NewRepository(gormDB), cfg.JWTSecret, cfg.JWTExpiry)
+	coachHandler := coach.NewHandler(coachSvc)
 
 	v1 := router.Group(APIV1Prefix)
 	protected := v1.Group("")

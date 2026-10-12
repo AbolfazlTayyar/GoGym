@@ -16,9 +16,8 @@ import (
 
 // newHandlerTestRouter uses a nil *gorm.DB on purpose: a test that reaches the database panics.
 func newHandlerTestRouter() *gin.Engine {
-	repo := NewRepository(nil)
-	svc := NewService(repo, "test-secret", time.Hour)
-	handler := NewHandler(svc, repo)
+	svc := NewService(NewRepository(nil), "test-secret", time.Hour)
+	handler := NewHandler(svc)
 
 	gin.SetMode(gin.TestMode)
 	router := gin.New()

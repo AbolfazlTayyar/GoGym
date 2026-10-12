@@ -26,9 +26,8 @@ func newTestRouter(t *testing.T) (*gin.Engine, *coach.Service) {
 }
 
 func newTestRouterWithDB(db *gorm.DB) (*gin.Engine, *coach.Service) {
-	repo := coach.NewRepository(db)
-	svc := coach.NewService(repo, "test-secret", time.Hour)
-	handler := coach.NewHandler(svc, repo)
+	svc := coach.NewService(coach.NewRepository(db), "test-secret", time.Hour)
+	handler := coach.NewHandler(svc)
 
 	gin.SetMode(gin.TestMode)
 	router := gin.New()

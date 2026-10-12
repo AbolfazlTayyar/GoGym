@@ -63,6 +63,10 @@ func (s *Service) Create(ctx context.Context, input CreateInput) (*Coach, error)
 	return c, nil
 }
 
+func (s *Service) Get(ctx context.Context, id uuid.UUID) (*Coach, error) {
+	return s.repo.FindByID(ctx, id)
+}
+
 // ResetPassword doesn't end existing sessions: tokens already issued stay valid until they expire.
 func (s *Service) ResetPassword(ctx context.Context, phone, password string) error {
 	hash, err := newPasswordHash(password)

@@ -37,15 +37,13 @@ type loginResponse struct {
 
 type Handler struct {
 	svc          *Service
-	repo         *Repository
 	ipLimiter    *rateLimiter
 	phoneLimiter *rateLimiter
 }
 
-func NewHandler(svc *Service, repo *Repository) *Handler {
+func NewHandler(svc *Service) *Handler {
 	return &Handler{
 		svc:          svc,
-		repo:         repo,
 		ipLimiter:    newRateLimiter(authRateLimitMax, authRateLimitWindow),
 		phoneLimiter: newRateLimiter(authRateLimitMax, authRateLimitWindow),
 	}
@@ -121,7 +119,7 @@ func (h *Handler) Me(c *gin.Context) {
 		return
 	}
 
-	found, err := h.repo.FindByID(c.Request.Context(), coachID)
+	found, err := h.svc.Get(c.Request.Context(), coachID)
 	if err != nil {
 		if errors.Is(err, ErrNotFound) {
 			httpx.Error(c, http.StatusNotFound, httpx.CodeNotFound, httpx.MsgNotFound)

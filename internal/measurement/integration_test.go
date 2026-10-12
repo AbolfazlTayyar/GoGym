@@ -28,8 +28,7 @@ func newTestRouter(t *testing.T) (*gin.Engine, *gorm.DB) {
 
 	db := testutil.NewDB(t)
 
-	coachRepo := coach.NewRepository(db)
-	coachSvc := coach.NewService(coachRepo, "test-secret", time.Hour)
+	coachSvc := coach.NewService(coach.NewRepository(db), "test-secret", time.Hour)
 	athleteSvc := athlete.NewService(athlete.NewRepository(db))
 	measurementSvc := measurement.NewService(measurement.NewRepository(db), athleteSvc)
 
@@ -40,7 +39,7 @@ func newTestRouter(t *testing.T) (*gin.Engine, *gorm.DB) {
 	protected := v1.Group("")
 	protected.Use(coach.AuthMiddleware(coachSvc))
 
-	coach.RegisterRoutes(v1, protected, coach.NewHandler(coachSvc, coachRepo))
+	coach.RegisterRoutes(v1, protected, coach.NewHandler(coachSvc))
 	athlete.RegisterRoutes(protected, athlete.NewHandler(athleteSvc))
 	measurement.RegisterRoutes(protected, measurement.NewHandler(measurementSvc))
 

@@ -42,7 +42,7 @@ pattern, per module:
 ```go
 repo := <module>.NewRepository(gormDB)
 svc := <module>.NewService(repo, ...)
-handler := <module>.NewHandler(svc, repo)
+handler := <module>.NewHandler(svc)
 <module>.RegisterRoutes(v1, protected, handler)
 ```
 
