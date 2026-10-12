@@ -76,6 +76,7 @@ func (h *Handler) rateLimited(c *gin.Context, phone string) bool {
 // @Failure		400		{object}	httpx.ValidationErrorEnvelope
 // @Failure		401		{object}	httpx.InvalidCredentialsEnvelope
 // @Failure		429		{object}	httpx.RateLimitedEnvelope
+// @Failure		500		{object}	httpx.InternalErrorEnvelope
 // @Router			/api/v1/auth/login [post]
 func (h *Handler) Login(c *gin.Context) {
 	var req loginRequest
@@ -90,7 +91,11 @@ func (h *Handler) Login(c *gin.Context) {
 
 	token, err := h.svc.Login(c.Request.Context(), req.Phone, req.Password)
 	if err != nil {
-		httpx.Error(c, http.StatusUnauthorized, httpx.CodeInvalidCredentials, httpx.MsgInvalidCredentials)
+		if errors.Is(err, ErrInvalidCredentials) {
+			httpx.Error(c, http.StatusUnauthorized, httpx.CodeInvalidCredentials, httpx.MsgInvalidCredentials)
+			return
+		}
+		httpx.InternalError(c, err)
 		return
 	}
 

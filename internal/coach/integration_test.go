@@ -15,14 +15,17 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"gorm.io/gorm"
 )
 
 // newTestRouter also returns the service, since coaches are created through it rather than over HTTP.
 func newTestRouter(t *testing.T) (*gin.Engine, *coach.Service) {
 	t.Helper()
 
-	db := testutil.NewDB(t)
+	return newTestRouterWithDB(testutil.NewDB(t))
+}
 
+func newTestRouterWithDB(db *gorm.DB) (*gin.Engine, *coach.Service) {
 	repo := coach.NewRepository(db)
 	svc := coach.NewService(repo, "test-secret", time.Hour)
 	handler := coach.NewHandler(svc, repo)
@@ -170,6 +173,34 @@ func TestLogin_WrongPassword(t *testing.T) {
 	})
 
 	decodeError(t, loginRec, http.StatusUnauthorized, httpx.CodeInvalidCredentials)
+}
+
+func TestLogin_UnknownPhone(t *testing.T) {
+	router, _ := newTestRouter(t)
+
+	loginRec := postJSON(t, router, "/api/v1/auth/login", map[string]string{
+		"phone":    testPhone,
+		"password": testPassword,
+	})
+
+	decodeError(t, loginRec, http.StatusUnauthorized, httpx.CodeInvalidCredentials)
+}
+
+func TestLogin_DatabaseFailureIsInternalError(t *testing.T) {
+	db := testutil.NewDB(t)
+	router, _ := newTestRouterWithDB(db)
+
+	sqlDB, err := db.DB()
+	require.NoError(t, err)
+	require.NoError(t, sqlDB.Close())
+
+	loginRec := postJSON(t, router, "/api/v1/auth/login", map[string]string{
+		"phone":    testPhone,
+		"password": testPassword,
+	})
+
+	decodeError(t, loginRec, http.StatusInternalServerError, httpx.CodeInternalError)
+	assert.NotContains(t, loginRec.Body.String(), "closed", "driver errors stay out of the response")
 }
 
 func TestCreate_DuplicatePhone(t *testing.T) {

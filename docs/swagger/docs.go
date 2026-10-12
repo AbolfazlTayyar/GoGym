@@ -518,6 +518,12 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.RateLimitedEnvelope"
                         }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_httpx.InternalErrorEnvelope"
+                        }
                     }
                 }
             }
