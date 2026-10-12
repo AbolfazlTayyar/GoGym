@@ -45,7 +45,9 @@ in this file) covering: how to deploy a new image, how/when migrations run relat
 that, and how to roll back a bad migration (down migration + previous image tag). The
 runbook also covers creating the first coach and resetting a password with
 `docker compose exec -T api coachctl ...`, since the API has no signup endpoint
-(docs/adr/0025).
+(docs/adr/0025), and how to log out every session at once (a stolen token or a lost
+phone): set a new JWT_SECRET in the VPS .env and restart the api container. Changing the
+password with coachctl alone doesn't do it; tokens issued before stay valid until expiry.
 
 Per docs/archive/prestart-roadmap.md step 10, this is also the natural point to wire basic
 CD (a GitHub Actions job that builds and pushes the image, then SSHs to the VPS to pull
@@ -53,7 +55,7 @@ and restart — no need for anything fancier yet) — call out explicitly if you
 that to a separate task instead of doing it here.
 ```
 
-**Checkpoint:** A real migration (start with the existing `000001`/`000002` files) has actually been applied against the VPS's Postgres, not just described — confirm via `\dt`/`\d athlete` over SSH. Deploying a trivial code change (e.g. a log line) end-to-end once, following only the written runbook, succeeds without undocumented manual steps. Rolling back one migration via the down file has been exercised at least once, not just assumed to work. A request from your own machine logs your real public IP as `client_ip` (not Caddy's), and the same request with `-H "X-Forwarded-For: 1.2.3.4"` still logs your real IP. From outside the VPS, ports 8080 and 5432 can't be reached.
+**Checkpoint:** A real migration (start with the existing `000001`/`000002` files) has actually been applied against the VPS's Postgres, not just described — confirm via `\dt`/`\d athlete` over SSH. Deploying a trivial code change (e.g. a log line) end-to-end once, following only the written runbook, succeeds without undocumented manual steps. Rolling back one migration via the down file has been exercised at least once, not just assumed to work. A request from your own machine logs your real public IP as `client_ip` (not Caddy's), and the same request with `-H "X-Forwarded-For: 1.2.3.4"` still logs your real IP. From outside the VPS, ports 8080 and 5432 can't be reached. Following the runbook's log-out-everyone step makes a token issued before it get 401.
 
 **Expected output:**
 ```
