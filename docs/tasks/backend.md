@@ -852,6 +852,10 @@ specifically in light of:
   response)
 - my stated goals in docs/archive/prestart-roadmap.md (deepen Go vs. broaden into a standard
   two-sided stack)
+- the auth token is already decided: the browser keeps it in an httpOnly cookie, never
+  localStorage, so script injection can't read it (see *Browser auth via httpOnly cookie*
+  below). Say whether the frontend would be served from the API's origin, since that
+  decides how much CORS and CSRF work that task has.
 Don't implement anything yet — just help me decide, then once I confirm, write the
 frontend task list into docs/tasks/frontend.md.
 ```
@@ -865,6 +869,45 @@ docs/tasks/frontend.md holds the task list, in the same task format, with no fro
 ```
 
 **In short:** the frontend choice is made and written down, and there's a task list for building the screens.
+
+---
+
+### Browser auth via httpOnly cookie
+
+⬜ **Not started** — after *Frontend stack decision*, before the first frontend screen calls the API.
+
+**Description:** Login returns the JWT in the response body, and `AuthMiddleware` reads only the `Authorization: Bearer` header. A browser client would have to keep that token somewhere JavaScript can read, such as localStorage, where any injected script can steal it. With the token in an httpOnly cookie, the browser sends it automatically and scripts can't read it. Do this before the frontend exists, so the frontend is never built against a body token that would have to be taken out later.
+
+**Prompt:**
+```
+Move browser auth to an httpOnly cookie. Read the Frontend stack decision in
+docs/tasks/README.md first; whether the frontend shares the API's origin changes the
+CORS and CSRF steps below.
+
+- Login sets the JWT as a cookie: HttpOnly, Secure (relaxed only in the dev environment
+  from internal/config, since local dev is plain http), SameSite=Lax or Strict (pick and
+  say why), Path=/api/v1, Max-Age equal to JWT_EXPIRY. Decide whether the token also stays
+  in the response body. Keeping it there means a page script can read it again.
+- AuthMiddleware accepts the cookie, and still accepts the Bearer header so Swagger UI's
+  "Authorize", curl and future non-browser clients keep working.
+- Add POST /api/v1/auth/logout, which clears the cookie. JavaScript can't remove an
+  httpOnly cookie itself.
+- CORS: cookies need AllowCredentials, and that can't be combined with AllowAllOrigins.
+  Replace the TODO in internal/server/server.go with an explicit origin list from config.
+  If the frontend is served from the API's origin, say so; then CORS may not be needed.
+- CSRF: say whether SameSite alone is enough for this deployment, or whether a token is
+  needed, for example because the frontend is on a different site.
+
+Record the decision as the next ADR (cookie vs localStorage, and what still uses the
+Bearer header). Swagger annotations for logout and the changed login, then `make swagger`.
+Integration tests: login sets a cookie with the expected attributes, a protected route
+accepts the cookie alone, logout clears it, and a cross-origin request from an origin
+that isn't allowed doesn't get credentialed CORS headers.
+```
+
+**Checkpoint:** In browser devtools, after login the cookie shows HttpOnly, Secure (outside dev) and the chosen SameSite, and `document.cookie` doesn't contain it. A protected route works with only the cookie, and with only the Bearer header. After logout the same route returns 401. `curl -H "Origin: https://evil.example"` gets no `Access-Control-Allow-Credentials`.
+
+**In short:** the browser holds the login token where page scripts can't read it, and the API still accepts the header for tools.
 
 ---
 
@@ -961,7 +1004,13 @@ Bring back self-service signup and extend internal/coach with the two auth flows
    and no response difference between a known and an unknown phone number (don't leak
    which numbers are registered).
 
-All three go through the /auth/* rate limiter from the coach auth task — verify it's
+3. Reset logs out old sessions. Today a reset leaves every issued token valid until it
+   expires. Store password_changed_at on coach (set by Create and both reset paths,
+   coachctl included) and have AuthMiddleware reject a token whose iat is earlier. Don't
+   add refresh tokens here; they're only worth it if the frontend needs sessions longer
+   than JWT_EXPIRY can reasonably be.
+
+All three endpoints go through the /auth/* rate limiter from the coach auth task — verify it's
 actually applied, since these are the endpoints that cost real money per request when an
 SMS provider is wired in.
 
@@ -970,7 +1019,7 @@ columns or a table (verification codes, reset tokens), it's a migration, and per
 docs/er-diagram.md updates in the same commit.
 ```
 
-**Checkpoint:** Sign up with a phone number, confirm the code is logged by the dev SMS implementation, and verify it — a wrong code and an expired code both fail without verifying, and repeated wrong codes hit the attempt limit. Request a password reset for a registered number and complete it, then confirm the old password no longer works and the reset token can't be reused. Request a reset for an unregistered number and confirm the response is indistinguishable from the registered case. The full suite still passes with no network access.
+**Checkpoint:** Sign up with a phone number, confirm the code is logged by the dev SMS implementation, and verify it — a wrong code and an expired code both fail without verifying, and repeated wrong codes hit the attempt limit. Request a password reset for a registered number and complete it, then confirm the old password no longer works, the reset token can't be reused, and a JWT issued before the reset now gets 401. Request a reset for an unregistered number and confirm the response is indistinguishable from the registered case. The full suite still passes with no network access.
 
 **Expected output:**
 ```
