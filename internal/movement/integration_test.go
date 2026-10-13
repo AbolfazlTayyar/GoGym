@@ -8,7 +8,9 @@ import (
 	"maps"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"slices"
+	"strings"
 	"testing"
 	"time"
 
@@ -31,12 +33,10 @@ const movementsPath = "/api/v1/movements"
 // seededBackSquat is one of the universal movements the seed migration inserts.
 const (
 	seededBackSquat     = "e3935578-9941-45f9-b273-4ce0086cb0b8"
-	seededBackSquatName = "Back squat"
+	seededBackSquatName = "اسکات هالتر"
 )
 
 const seededCount = 20
-
-const legs = "legs"
 
 // newTestRouter wires plan too, so a test can check what a deleted movement does to a plan that uses it.
 func newTestRouter(t *testing.T) (*gin.Engine, *gorm.DB) {
@@ -69,8 +69,6 @@ type movementResponse struct {
 	Name        string  `json:"name"`
 	Category    *string `json:"category"`
 	Description *string `json:"description"`
-	MuscleGroup *string `json:"muscle_group"`
-	Equipment   *string `json:"equipment"`
 	MediaURL    *string `json:"media_url"`
 }
 
@@ -205,7 +203,7 @@ func TestList_UniversalMovementsInEveryCoachsList(t *testing.T) {
 		})
 	}
 
-	own := createMovement(t, router, coachA.token, `{"name":"Goblet squat","muscle_group":"legs","equipment":"kettlebell"}`)
+	own := createMovement(t, router, coachA.token, `{"name":"Goblet squat","category":"strength"}`)
 
 	t.Run("a coach's own movement joins their list", func(t *testing.T) {
 		listed := listMovements(t, router, coachA.token, "")
@@ -222,73 +220,39 @@ func TestList_UniversalMovementsInEveryCoachsList(t *testing.T) {
 	})
 }
 
-func TestList_SeededLibraryFillsEveryFilter(t *testing.T) {
-	router, db := newTestRouter(t)
-	c := createCoach(t, router, db, "09121000003")
+func TestList_SeededRowsHaveCategoryAndNoMedia(t *testing.T) {
+	_, db := newTestRouter(t)
 
 	var incomplete int64
 	require.NoError(t, db.Model(&movement.Movement{}).
-		Where("coach_id IS NULL AND (muscle_group IS NULL OR equipment IS NULL OR category IS NULL OR media_url IS NOT NULL)").
+		Where("coach_id IS NULL AND (category IS NULL OR media_url IS NOT NULL)").
 		Count(&incomplete).Error)
-	assert.Zero(t, incomplete, "seeded rows have muscle group, equipment and category, and no media yet")
-
-	filters := map[string][]string{
-		"muscle_group": {"chest", "back", "shoulders", "arms", "legs", "core", "full_body"},
-		"equipment":    {"bodyweight", "barbell", "dumbbell", "kettlebell", "machine", "cable", "band", "other"},
-	}
-	for param, values := range filters {
-		for _, value := range values {
-			t.Run(param+"="+value, func(t *testing.T) {
-				listed := listMovements(t, router, c.token, "?"+param+"="+value)
-
-				require.NotEmpty(t, listed, "a fresh account's filter must not come back empty")
-				for _, m := range listed {
-					got := m.MuscleGroup
-					if param == "equipment" {
-						got = m.Equipment
-					}
-					require.NotNil(t, got)
-					assert.Equal(t, value, *got, m.Name)
-				}
-			})
-		}
-	}
+	assert.Zero(t, incomplete, "seeded rows have a category, and no media yet")
 }
 
-func TestList_FiltersAndSearch(t *testing.T) {
+func TestList_Search(t *testing.T) {
 	router, db := newTestRouter(t)
 
 	c := createCoach(t, router, db, "09121000004")
-	createMovement(t, router, c.token, `{"name":"Goblet squat","muscle_group":"legs","equipment":"kettlebell"}`)
+	createMovement(t, router, c.token, `{"name":"اسکات جلو","category":"قدرتی"}`)
+	createMovement(t, router, c.token, `{"name":"Goblet squat","category":"strength"}`)
 	createMovement(t, router, c.token, `{"name":"100% effort sprint","category":"cardio"}`)
 
 	for name, tc := range map[string]struct {
 		query string
 		want  []string
 	}{
-		"muscle group and equipment combine with AND": {
-			query: "?muscle_group=legs&equipment=barbell",
-			want:  []string{seededBackSquatName, "Romanian deadlift"},
+		"search is partial, across own and universal": {
+			query: "?q=" + url.QueryEscape("اسکات"),
+			want:  []string{"اسکات با وزن بدن", "اسکات جلو", seededBackSquatName},
 		},
-		"a coach's own movement is filtered like a seeded one": {
-			query: "?equipment=kettlebell",
-			want:  []string{"Goblet squat", "Kettlebell swing"},
-		},
-		"search is case-insensitive and partial, across own and universal": {
+		"search is case-insensitive": {
 			query: "?q=SQUAT",
-			want:  []string{seededBackSquatName, "Bodyweight squat", "Goblet squat"},
-		},
-		"search combines with filters": {
-			query: "?q=squat&equipment=bodyweight",
-			want:  []string{"Bodyweight squat"},
+			want:  []string{"Goblet squat"},
 		},
 		"a percent sign matches literally": {
 			query: "?q=0%25",
 			want:  []string{"100% effort sprint"},
-		},
-		"filter values are matched case-insensitively": {
-			query: "?muscle_group=CORE",
-			want:  []string{"Plank"},
 		},
 		"no match is an empty list": {
 			query: "?q=zercher",
@@ -299,11 +263,6 @@ func TestList_FiltersAndSearch(t *testing.T) {
 			assert.Equal(t, tc.want, names(listMovements(t, router, c.token, tc.query)), "ordered by name")
 		})
 	}
-
-	t.Run("an unknown filter value is a 400, not an empty list", func(t *testing.T) {
-		requireErrorCode(t, do(t, router, http.MethodGet, movementsPath+"?muscle_group=quads", c.token, ""),
-			http.StatusBadRequest, httpx.CodeValidationFailed)
-	})
 }
 
 func TestCreate(t *testing.T) {
@@ -313,12 +272,11 @@ func TestCreate(t *testing.T) {
 	other := createCoach(t, router, db, "09121000006")
 
 	t.Run("owner comes from the token, never the body", func(t *testing.T) {
-		body := fmt.Sprintf(`{"name":"Bulgarian split squat","category":"strength","muscle_group":"Legs","equipment":"dumbbell","coach_id":%q}`, other.id)
+		body := fmt.Sprintf(`{"name":"Bulgarian split squat","category":"strength","coach_id":%q}`, other.id)
 		created := createMovement(t, router, c.token, body)
 
 		require.NotNil(t, created.CoachID)
 		assert.Equal(t, c.id, *created.CoachID)
-		assert.Equal(t, legs, *created.MuscleGroup, "stored lowercase")
 		assert.Nil(t, created.MediaURL)
 
 		stored := findMovement(t, db, created.ID)
@@ -327,12 +285,12 @@ func TestCreate(t *testing.T) {
 	})
 
 	t.Run("bad input reports every field", func(t *testing.T) {
-		env := decodeEnvelope(t, do(t, router, http.MethodPost, movementsPath, c.token, `{"muscle_group":"quads","equipment":"sled"}`),
-			http.StatusBadRequest)
+		body := fmt.Sprintf(`{"category":%q,"description":%q}`, strings.Repeat("a", 51), strings.Repeat("a", 2001))
+		env := decodeEnvelope(t, do(t, router, http.MethodPost, movementsPath, c.token, body), http.StatusBadRequest)
 
 		require.NotNil(t, env.Error)
 		assert.Equal(t, httpx.CodeValidationFailed, env.Error.Code)
-		assert.Equal(t, []string{"equipment", "muscle_group", "name"}, slices.Sorted(maps.Keys(env.Error.Fields)))
+		assert.Equal(t, []string{"category", "description", "name"}, slices.Sorted(maps.Keys(env.Error.Fields)))
 	})
 }
 
@@ -340,28 +298,28 @@ func TestUpdateAndDelete_OwnMovement(t *testing.T) {
 	router, db := newTestRouter(t)
 	c := createCoach(t, router, db, "09121000007")
 
-	created := createMovement(t, router, c.token, `{"name":"Goblet squat","category":"strength","description":"Hold at the chest","muscle_group":"legs","equipment":"kettlebell"}`)
+	created := createMovement(t, router, c.token, `{"name":"Goblet squat","category":"strength","description":"Hold at the chest"}`)
 	path := movementsPath + "/" + created.ID
 
 	mediaURL := "https://example.com/goblet.mp4"
 	require.NoError(t, db.Model(&movement.Movement{}).Where("id = ?", created.ID).Update("media_url", mediaURL).Error)
 
 	t.Run("update replaces every editable field", func(t *testing.T) {
-		env := decodeEnvelope(t, do(t, router, http.MethodPut, path, c.token, `{"name":"Goblet box squat","muscle_group":"legs","equipment":"dumbbell"}`),
+		env := decodeEnvelope(t, do(t, router, http.MethodPut, path, c.token, `{"name":"Goblet box squat","category":"warmup"}`),
 			http.StatusOK)
 
 		var updated movementResponse
 		require.NoError(t, json.Unmarshal(env.Data, &updated))
 		assert.Equal(t, "Goblet box squat", updated.Name)
-		assert.Equal(t, "dumbbell", *updated.Equipment)
-		assert.Nil(t, updated.Category, "an omitted optional field is cleared")
-		assert.Nil(t, updated.Description)
+		assert.Equal(t, "warmup", *updated.Category)
+		assert.Nil(t, updated.Description, "an omitted optional field is cleared")
 		require.NotNil(t, updated.MediaURL, "media_url isn't editable here, so it's kept")
 		assert.Equal(t, mediaURL, *updated.MediaURL)
 
 		stored := findMovement(t, db, created.ID)
 		assert.Equal(t, "Goblet box squat", stored.Name)
-		assert.Nil(t, stored.Category)
+		assert.Equal(t, "warmup", *stored.Category)
+		assert.Nil(t, stored.Description)
 		assert.True(t, stored.UpdatedAt.After(stored.CreatedAt), "updated_at moves on an edit")
 	})
 

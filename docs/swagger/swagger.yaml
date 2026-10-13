@@ -320,29 +320,6 @@ definitions:
       description:
         example: Rear foot on a bench
         type: string
-      equipment:
-        enum:
-        - bodyweight
-        - barbell
-        - dumbbell
-        - kettlebell
-        - machine
-        - cable
-        - band
-        - other
-        example: dumbbell
-        type: string
-      muscle_group:
-        enum:
-        - chest
-        - back
-        - shoulders
-        - arms
-        - legs
-        - core
-        - full_body
-        example: legs
-        type: string
       name:
         example: Bulgarian split squat
         type: string
@@ -350,7 +327,7 @@ definitions:
   internal_movement.movementResponse:
     properties:
       category:
-        example: strength
+        example: قدرتی
         type: string
       coach_id:
         example: 3f0b1c6e-2a1d-4f7b-9c3e-6d5a4b3c2d1e
@@ -359,19 +336,7 @@ definitions:
         example: "2026-10-08T09:30:00Z"
         type: string
       description:
-        example: High bar, below parallel
-        type: string
-      equipment:
-        enum:
-        - bodyweight
-        - barbell
-        - dumbbell
-        - kettlebell
-        - machine
-        - cable
-        - band
-        - other
-        example: barbell
+        example: هالتر روی کول، تا زیر موازی
         type: string
       id:
         example: e3935578-9941-45f9-b273-4ce0086cb0b8
@@ -379,19 +344,8 @@ definitions:
       media_url:
         example: https://example.com/back-squat.mp4
         type: string
-      muscle_group:
-        enum:
-        - chest
-        - back
-        - shoulders
-        - arms
-        - legs
-        - core
-        - full_body
-        example: legs
-        type: string
       name:
-        example: Back squat
+        example: اسکات هالتر
         type: string
       updated_at:
         example: "2026-10-08T09:30:00Z"
@@ -1080,37 +1034,11 @@ paths:
     get:
       description: Lists the authenticated coach's own movements together with the
         universal, system-seeded ones, ordered by name. A universal movement has a
-        null coach_id and is read-only. Filters combine with AND; an unknown muscle_group
-        or equipment value is a 400, not an empty list. Not paginated.
+        null coach_id and is read-only. Not paginated.
       parameters:
       - description: Case-insensitive partial match on name
         in: query
         name: q
-        type: string
-      - description: Only movements for this primary muscle group
-        enum:
-        - chest
-        - back
-        - shoulders
-        - arms
-        - legs
-        - core
-        - full_body
-        in: query
-        name: muscle_group
-        type: string
-      - description: Only movements using this equipment
-        enum:
-        - bodyweight
-        - barbell
-        - dumbbell
-        - kettlebell
-        - machine
-        - cable
-        - band
-        - other
-        in: query
-        name: equipment
         type: string
       produces:
       - application/json
@@ -1126,10 +1054,6 @@ paths:
                     $ref: '#/definitions/internal_movement.movementResponse'
                   type: array
               type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.ValidationErrorEnvelope'
         "401":
           description: Unauthorized
           schema:
@@ -1148,9 +1072,8 @@ paths:
       - application/json
       description: Adds a movement owned by the authenticated coach. The owner comes
         from the bearer token — a coach_id in the body is ignored. name is required
-        (at most 100 characters); category (at most 50), description (at most 2000),
-        muscle_group and equipment are optional. muscle_group and equipment are matched
-        case-insensitively and stored lowercase.
+        (at most 100 characters); category (at most 50) and description (at most 2000)
+        are optional.
       parameters:
       - description: Movement details
         in: body

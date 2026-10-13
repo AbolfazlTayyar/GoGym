@@ -1,6 +1,6 @@
 # 0020 — Movement muscle group and equipment are closed vocabularies
 
-- Status: accepted
+- Status: superseded by [0028](0028-drop-movement-filters.md)
 - Date: 2026-10-08
 - Deciders: Abolfazl Tayyar
 

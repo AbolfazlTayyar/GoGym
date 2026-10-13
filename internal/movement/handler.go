@@ -21,11 +21,9 @@ const msgUniversalReadOnly = "universal movements can't be edited or deleted"
 type movementResponse struct {
 	ID          string  `json:"id" example:"e3935578-9941-45f9-b273-4ce0086cb0b8"`
 	CoachID     *string `json:"coach_id" example:"3f0b1c6e-2a1d-4f7b-9c3e-6d5a4b3c2d1e"`
-	Name        string  `json:"name" example:"Back squat"`
-	Category    *string `json:"category" example:"strength"`
-	Description *string `json:"description" example:"High bar, below parallel"`
-	MuscleGroup *string `json:"muscle_group" example:"legs" enums:"chest,back,shoulders,arms,legs,core,full_body"`
-	Equipment   *string `json:"equipment" example:"barbell" enums:"bodyweight,barbell,dumbbell,kettlebell,machine,cable,band,other"`
+	Name        string  `json:"name" example:"اسکات هالتر"`
+	Category    *string `json:"category" example:"قدرتی"`
+	Description *string `json:"description" example:"هالتر روی کول، تا زیر موازی"`
 	MediaURL    *string `json:"media_url" example:"https://example.com/back-squat.mp4"`
 	CreatedAt   string  `json:"created_at" example:"2026-10-08T09:30:00Z"`
 	UpdatedAt   string  `json:"updated_at" example:"2026-10-08T09:30:00Z"`
@@ -44,8 +42,6 @@ func newMovementResponse(m *Movement) movementResponse {
 		Name:        m.Name,
 		Category:    m.Category,
 		Description: m.Description,
-		MuscleGroup: m.MuscleGroup,
-		Equipment:   m.Equipment,
 		MediaURL:    m.MediaURL,
 		CreatedAt:   m.CreatedAt.Format(time.RFC3339),
 		UpdatedAt:   m.UpdatedAt.Format(time.RFC3339),
@@ -58,8 +54,6 @@ type movementRequest struct {
 	Name        string  `json:"name" example:"Bulgarian split squat"`
 	Category    *string `json:"category" example:"strength"`
 	Description *string `json:"description" example:"Rear foot on a bench"`
-	MuscleGroup *string `json:"muscle_group" example:"legs" enums:"chest,back,shoulders,arms,legs,core,full_body"`
-	Equipment   *string `json:"equipment" example:"dumbbell" enums:"bodyweight,barbell,dumbbell,kettlebell,machine,cable,band,other"`
 }
 
 type Handler struct {
@@ -73,17 +67,14 @@ func NewHandler(svc *Service) *Handler {
 // List returns the movements the coach can pick from: their own and the universal ones.
 //
 //	@Summary		List movements
-//	@Description	Lists the authenticated coach's own movements together with the universal, system-seeded ones, ordered by name. A universal movement has a null coach_id and is read-only. Filters combine with AND; an unknown muscle_group or equipment value is a 400, not an empty list. Not paginated.
+//	@Description	Lists the authenticated coach's own movements together with the universal, system-seeded ones, ordered by name. A universal movement has a null coach_id and is read-only. Not paginated.
 //	@Tags			movements
 //	@Produce		json
 //	@Security		BearerAuth
-//	@Param			q				query		string	false	"Case-insensitive partial match on name"
-//	@Param			muscle_group	query		string	false	"Only movements for this primary muscle group"	Enums(chest, back, shoulders, arms, legs, core, full_body)
-//	@Param			equipment		query		string	false	"Only movements using this equipment"			Enums(bodyweight, barbell, dumbbell, kettlebell, machine, cable, band, other)
-//	@Success		200				{object}	httpx.SuccessEnvelope{data=[]movementResponse}
-//	@Failure		400				{object}	httpx.ValidationErrorEnvelope
-//	@Failure		401				{object}	httpx.UnauthorizedEnvelope
-//	@Failure		500				{object}	httpx.InternalErrorEnvelope
+//	@Param			q	query		string	false	"Case-insensitive partial match on name"
+//	@Success		200	{object}	httpx.SuccessEnvelope{data=[]movementResponse}
+//	@Failure		401	{object}	httpx.UnauthorizedEnvelope
+//	@Failure		500	{object}	httpx.InternalErrorEnvelope
 //	@Router			/api/v1/movements [get]
 func (h *Handler) List(c *gin.Context) {
 	coachID, ok := tenant.CoachIDFromContext(c)
@@ -92,11 +83,7 @@ func (h *Handler) List(c *gin.Context) {
 		return
 	}
 
-	movements, err := h.svc.List(c.Request.Context(), coachID, ListOptions{
-		Query:       c.Query(paramQuery),
-		MuscleGroup: c.Query(fieldMuscleGroup),
-		Equipment:   c.Query(fieldEquipment),
-	})
+	movements, err := h.svc.List(c.Request.Context(), coachID, c.Query(paramQuery))
 	if err != nil {
 		writeServiceError(c, err)
 		return
@@ -113,7 +100,7 @@ func (h *Handler) List(c *gin.Context) {
 // Create adds a movement to the authenticated coach's own library.
 //
 //	@Summary		Create a movement
-//	@Description	Adds a movement owned by the authenticated coach. The owner comes from the bearer token — a coach_id in the body is ignored. name is required (at most 100 characters); category (at most 50), description (at most 2000), muscle_group and equipment are optional. muscle_group and equipment are matched case-insensitively and stored lowercase.
+//	@Description	Adds a movement owned by the authenticated coach. The owner comes from the bearer token — a coach_id in the body is ignored. name is required (at most 100 characters); category (at most 50) and description (at most 2000) are optional.
 //	@Tags			movements
 //	@Accept			json
 //	@Produce		json

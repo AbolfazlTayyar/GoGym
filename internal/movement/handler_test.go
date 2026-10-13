@@ -61,13 +61,12 @@ func requireErrorEnvelope(t *testing.T, rec *httptest.ResponseRecorder, wantStat
 }
 
 func TestCreate_ReportsFieldLevelErrors(t *testing.T) {
-	c, rec := newTestContext(t, http.MethodPost, "/api/v1/movements", `{"muscle_group":"quads"}`, uuid.New())
+	c, rec := newTestContext(t, http.MethodPost, "/api/v1/movements", `{"category":"strength"}`, uuid.New())
 
 	newTestHandler().Create(c)
 
 	errBody := requireErrorEnvelope(t, rec, http.StatusBadRequest, httpx.CodeValidationFailed)
-	assert.Equal(t, httpx.MsgFieldRequired, errBody.Fields["name"])
-	assert.Contains(t, errBody.Fields, fieldMuscleGroup)
+	assert.Equal(t, map[string]string{"name": httpx.MsgFieldRequired}, errBody.Fields)
 }
 
 func TestCreate_MalformedBodyHasNoFields(t *testing.T) {
@@ -77,25 +76,6 @@ func TestCreate_MalformedBodyHasNoFields(t *testing.T) {
 
 	errBody := requireErrorEnvelope(t, rec, http.StatusBadRequest, httpx.CodeValidationFailed)
 	assert.Empty(t, errBody.Fields)
-}
-
-func TestList_RejectsUnknownFilterValues(t *testing.T) {
-	for name, tc := range map[string]struct {
-		target    string
-		wantField string
-	}{
-		"unknown muscle group": {target: "/api/v1/movements?muscle_group=quads", wantField: fieldMuscleGroup},
-		"unknown equipment":    {target: "/api/v1/movements?equipment=sled", wantField: fieldEquipment},
-	} {
-		t.Run(name, func(t *testing.T) {
-			c, rec := newTestContext(t, http.MethodGet, tc.target, "", uuid.New())
-
-			newTestHandler().List(c)
-
-			errBody := requireErrorEnvelope(t, rec, http.StatusBadRequest, httpx.CodeValidationFailed)
-			assert.Contains(t, errBody.Fields, tc.wantField)
-		})
-	}
 }
 
 func TestMalformedIDIsNotFound(t *testing.T) {

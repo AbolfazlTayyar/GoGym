@@ -57,18 +57,11 @@ func (r *Repository) FindVisibleByIDs(ctx context.Context, coachID uuid.UUID, id
 	return movements, nil
 }
 
-// List expects opts already normalized by normalizeListOptions.
-func (r *Repository) List(ctx context.Context, coachID uuid.UUID, opts ListOptions) ([]Movement, error) {
+func (r *Repository) List(ctx context.Context, coachID uuid.UUID, nameQuery string) ([]Movement, error) {
 	query := tenant.ScopeWithUniversal(r.db.WithContext(ctx), coachID)
 
-	if pattern := search.ContainsPattern(opts.Query); pattern != "" {
+	if pattern := search.ContainsPattern(nameQuery); pattern != "" {
 		query = query.Where(nameSearchClause, pattern)
-	}
-	if opts.MuscleGroup != "" {
-		query = query.Where("muscle_group = ?", opts.MuscleGroup)
-	}
-	if opts.Equipment != "" {
-		query = query.Where("equipment = ?", opts.Equipment)
 	}
 
 	movements := make([]Movement, 0)
@@ -82,7 +75,7 @@ func (r *Repository) List(ctx context.Context, coachID uuid.UUID, opts ListOptio
 func (r *Repository) Update(ctx context.Context, coachID uuid.UUID, m *Movement) error {
 	result := tenant.Scope(r.db.WithContext(ctx), coachID).
 		Model(m).
-		Select("name", "category", "description", "muscle_group", "equipment").
+		Select("name", "category", "description").
 		Updates(m)
 	if result.Error != nil {
 		return fmt.Errorf("movement: failed to update: %w", result.Error)

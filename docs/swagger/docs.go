@@ -762,7 +762,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Lists the authenticated coach's own movements together with the universal, system-seeded ones, ordered by name. A universal movement has a null coach_id and is read-only. Filters combine with AND; an unknown muscle_group or equipment value is a 400, not an empty list. Not paginated.",
+                "description": "Lists the authenticated coach's own movements together with the universal, system-seeded ones, ordered by name. A universal movement has a null coach_id and is read-only. Not paginated.",
                 "produces": [
                     "application/json"
                 ],
@@ -775,37 +775,6 @@ const docTemplate = `{
                         "type": "string",
                         "description": "Case-insensitive partial match on name",
                         "name": "q",
-                        "in": "query"
-                    },
-                    {
-                        "enum": [
-                            "chest",
-                            "back",
-                            "shoulders",
-                            "arms",
-                            "legs",
-                            "core",
-                            "full_body"
-                        ],
-                        "type": "string",
-                        "description": "Only movements for this primary muscle group",
-                        "name": "muscle_group",
-                        "in": "query"
-                    },
-                    {
-                        "enum": [
-                            "bodyweight",
-                            "barbell",
-                            "dumbbell",
-                            "kettlebell",
-                            "machine",
-                            "cable",
-                            "band",
-                            "other"
-                        ],
-                        "type": "string",
-                        "description": "Only movements using this equipment",
-                        "name": "equipment",
                         "in": "query"
                     }
                 ],
@@ -831,12 +800,6 @@ const docTemplate = `{
                             ]
                         }
                     },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.ValidationErrorEnvelope"
-                        }
-                    },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
@@ -857,7 +820,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Adds a movement owned by the authenticated coach. The owner comes from the bearer token — a coach_id in the body is ignored. name is required (at most 100 characters); category (at most 50), description (at most 2000), muscle_group and equipment are optional. muscle_group and equipment are matched case-insensitively and stored lowercase.",
+                "description": "Adds a movement owned by the authenticated coach. The owner comes from the bearer token — a coach_id in the body is ignored. name is required (at most 100 characters); category (at most 50) and description (at most 2000) are optional.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1771,33 +1734,6 @@ const docTemplate = `{
                     "type": "string",
                     "example": "Rear foot on a bench"
                 },
-                "equipment": {
-                    "type": "string",
-                    "enum": [
-                        "bodyweight",
-                        "barbell",
-                        "dumbbell",
-                        "kettlebell",
-                        "machine",
-                        "cable",
-                        "band",
-                        "other"
-                    ],
-                    "example": "dumbbell"
-                },
-                "muscle_group": {
-                    "type": "string",
-                    "enum": [
-                        "chest",
-                        "back",
-                        "shoulders",
-                        "arms",
-                        "legs",
-                        "core",
-                        "full_body"
-                    ],
-                    "example": "legs"
-                },
                 "name": {
                     "type": "string",
                     "example": "Bulgarian split squat"
@@ -1809,7 +1745,7 @@ const docTemplate = `{
             "properties": {
                 "category": {
                     "type": "string",
-                    "example": "strength"
+                    "example": "قدرتی"
                 },
                 "coach_id": {
                     "type": "string",
@@ -1821,21 +1757,7 @@ const docTemplate = `{
                 },
                 "description": {
                     "type": "string",
-                    "example": "High bar, below parallel"
-                },
-                "equipment": {
-                    "type": "string",
-                    "enum": [
-                        "bodyweight",
-                        "barbell",
-                        "dumbbell",
-                        "kettlebell",
-                        "machine",
-                        "cable",
-                        "band",
-                        "other"
-                    ],
-                    "example": "barbell"
+                    "example": "هالتر روی کول، تا زیر موازی"
                 },
                 "id": {
                     "type": "string",
@@ -1845,22 +1767,9 @@ const docTemplate = `{
                     "type": "string",
                     "example": "https://example.com/back-squat.mp4"
                 },
-                "muscle_group": {
-                    "type": "string",
-                    "enum": [
-                        "chest",
-                        "back",
-                        "shoulders",
-                        "arms",
-                        "legs",
-                        "core",
-                        "full_body"
-                    ],
-                    "example": "legs"
-                },
                 "name": {
                     "type": "string",
-                    "example": "Back squat"
+                    "example": "اسکات هالتر"
                 },
                 "updated_at": {
                     "type": "string",

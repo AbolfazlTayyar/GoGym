@@ -8,13 +8,6 @@ import (
 	"gorm.io/gorm"
 )
 
-// muscleGroups and equipmentTypes mirror the movement table's CHECK constraints: a new value needs a
-// migration as well as an entry here.
-var (
-	muscleGroups   = []string{"chest", "back", "shoulders", "arms", "legs", "core", "full_body"}
-	equipmentTypes = []string{"bodyweight", "barbell", "dumbbell", "kettlebell", "machine", "cable", "band", "other"}
-)
-
 // Movement.CoachID is NULL for a universal movement, which every coach can read and none can change.
 // Deletes are soft so existing block_movement references stay valid.
 type Movement struct {
@@ -23,8 +16,6 @@ type Movement struct {
 	Name        string         `gorm:"column:name;type:text;not null"`
 	Category    *string        `gorm:"column:category;type:text"`
 	Description *string        `gorm:"column:description;type:text"`
-	MuscleGroup *string        `gorm:"column:muscle_group;type:text"`
-	Equipment   *string        `gorm:"column:equipment;type:text"`
 	MediaURL    *string        `gorm:"column:media_url;type:text"`
 	CreatedAt   time.Time      `gorm:"column:created_at;type:timestamptz;not null"`
 	UpdatedAt   time.Time      `gorm:"column:updated_at;type:timestamptz;not null"`

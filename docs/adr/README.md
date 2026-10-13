@@ -24,7 +24,7 @@ One file per decision, [MADR](https://adr.github.io/madr/)-style. Process rules 
 | [0017](0017-plan-day-cap-in-schema.md) | A plan has at most 7 days, enforced by the schema | 2026-10-06 | accepted |
 | [0018](0018-workout-logs-snapshot-prescription.md) | Workout logs snapshot the prescription, not the plan rows | 2026-10-07 | accepted |
 | [0019](0019-unusable-body-reference-is-a-field-error.md) | An unusable id in the request body is a field error, not a 404 | 2026-10-07 | accepted |
-| [0020](0020-movement-filter-vocabularies.md) | Movement muscle group and equipment are closed vocabularies | 2026-10-08 | accepted |
+| [0020](0020-movement-filter-vocabularies.md) | Movement muscle group and equipment are closed vocabularies | 2026-10-08 | superseded by [0028](0028-drop-movement-filters.md) |
 | [0021](0021-universal-rows-forbidden.md) | Changing a universal row is a 403; another coach's row stays a 404 | 2026-10-08 | accepted |
 | [0022](0022-delete-movement-in-use.md) | Deleting a movement a plan uses is allowed, as a soft delete | 2026-10-08 | accepted |
 | [0023](0023-migrations-in-compose-service.md) | Migrations run in a one-shot Compose service before the API starts | 2026-10-08 | accepted |
@@ -32,3 +32,4 @@ One file per decision, [MADR](https://adr.github.io/madr/)-style. Process rules 
 | [0025](0025-coach-accounts-by-cli.md) | Coach accounts are created by a CLI, not a public signup endpoint | 2026-10-11 | accepted |
 | [0026](0026-healthz-cached-not-hidden.md) | /healthz caches its database ping instead of hiding behind a secret path | 2026-10-11 | accepted |
 | [0027](0027-platform-package-for-infrastructure.md) | Shared infrastructure lives under internal/platform | 2026-10-12 | accepted |
+| [0028](0028-drop-movement-filters.md) | Movement has no muscle group or equipment until the library outgrows search | 2026-10-13 | accepted |

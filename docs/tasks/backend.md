@@ -775,9 +775,9 @@ $ curl -s -X POST ... /blocks/$BLOCK_ID/movements -d '[{"movement_id":"<valid>",
 Create the internal/movement module. Implement:
 - GET /api/v1/movements?q= — list movements visible to the coach: their own
   (coach_id = authenticated coach) plus all universal ones (coach_id IS NULL), optional
-  name search, plus filters on the muscle group and equipment columns added by the
-  schema amendments task — those filters are what make picking a movement fast while
-  building a plan, which is the point of the whole builder.
+  name search. No muscle group or equipment filters yet — one coach's library is short
+  enough for name search and category (see docs/adr/0028 and the deferred *Movement
+  muscle group & equipment filters* task).
 - POST /api/v1/movements — create a movement owned by the authenticated coach
   (coach_id set server-side, never from the request).
 - PUT /api/v1/movements/:id — edit a movement; return 403 if it's universal
@@ -791,10 +791,8 @@ Create the internal/movement module. Implement:
 Also add a seed migration (separate from the schema migration, per golang-migrate's
 convention of one concern per migration) inserting a small starter set of universal
 movements (coach_id NULL) — a handful across warmup/strength/cardio categories is
-enough for v1, this isn't meant to be exhaustive. Populate the muscle group and
-equipment columns on the seeded rows; a seeded library with those left null makes the
-new filters look broken on a fresh account, which is exactly the first impression a
-new coach gets. Leave the media/video column null — the upload flow isn't in v1.
+enough for v1, this isn't meant to be exhaustive. Give every seeded row a category.
+Leave the media/video column null — the upload flow isn't in v1.
 
 Write integration tests: coach can edit/delete their own movement; coach gets 403
 editing/deleting a universal one; coach gets 403 (or 404, pick consistently with the
@@ -808,13 +806,12 @@ Add swagger annotations to all four handlers and rerun `make swagger`.
 
 **Expected output:**
 ```
-$ curl -s -H "Authorization: Bearer $NEW_COACH_TOKEN" "localhost:8080/api/v1/movements?muscle_group=legs"
+$ curl -s -G -H "Authorization: Bearer $NEW_COACH_TOKEN" localhost:8080/api/v1/movements --data-urlencode "q=اسکات"
 {"success":true,"data":[
-  {"id":"...","coach_id":null,"name":"Back squat","category":"strength","description":null,"muscle_group":"legs","equipment":"barbell","media_url":null,...},
-  {"id":"...","coach_id":null,"name":"Bodyweight squat","category":"warmup","description":null,"muscle_group":"legs","equipment":"bodyweight","media_url":null,...},
-  ...
+  {"id":"...","coach_id":null,"name":"اسکات با وزن بدن","category":"گرم کردن","description":null,"media_url":null,...},
+  {"id":"...","coach_id":null,"name":"اسکات هالتر","category":"قدرتی","description":null,"media_url":null,...}
 ],"error":null}
-# 6 seeded movements, ordered by name
+# the 2 seeded squats, ordered by name
 
 $ curl -s -X PUT -H "Authorization: Bearer $TOKEN" localhost:8080/api/v1/movements/$UNIVERSAL_ID -d '{"name":"Squat"}'
 {"success":false,"data":null,"error":{"code":"forbidden","message":"universal movements can't be edited or deleted"}}
@@ -828,7 +825,7 @@ $ curl -s -X DELETE -H "Authorization: Bearer $TOKEN" localhost:8080/api/v1/move
 # a soft delete, not a 409: the plan still names the movement, it just leaves the library — see docs/adr/0022
 ```
 
-**In short:** every coach starts with a ready-made exercise library they can search and filter, and can add, edit and remove their own exercises without touching the shared ones.
+**In short:** every coach starts with a ready-made exercise library they can search, and can add, edit and remove their own exercises without touching the shared ones.
 
 ---
 
@@ -1037,3 +1034,59 @@ $ curl -s -X POST localhost:8080/api/v1/auth/password-reset/request -d '{"phone"
 ```
 
 **In short:** a typo'd phone can no longer lock an account forever, and a coach who forgets their password can get back in without asking you to run a command.
+
+---
+
+### Movement muscle group & equipment filters
+
+⏸ **Deferred** (optional) — start when name search and category stop being enough to find a movement while building a plan: the coach reports scrolling for one, or the library grows well past the 20 seeded movements.
+
+**Description:** Muscle group and equipment were built once as closed-set filters (docs/adr/0020) and dropped before the first ship, while there is one coach with a short library (docs/adr/0028). Bringing them back is additive: nullable columns, new response fields, and optional filter params, so no existing client breaks. It also fills the "`movement` has only `category`" gap listed in [product-direction.md](../product-direction.md).
+
+**Prompt:**
+```
+Add muscle group and equipment back to movements, as filters for the movement list.
+Read docs/adr/0020 and docs/adr/0028 first: 0020 is the design that was built and
+dropped, 0028 is why.
+
+- Migration: add nullable muscle_group and equipment TEXT columns to movement, each with
+  a CHECK constraint on a closed set. Start from 0020's sets (muscle_group: chest, back,
+  shoulders, arms, legs, core, full_body; equipment: bodyweight, barbell, dumbbell,
+  kettlebell, machine, cable, band, other), but first ask me whether a compound lift
+  needs several muscle groups (0020's option 3, TEXT[]). Backfill the seeded universal
+  movements in the same migration; the old seed has a value for every seeded row, matched
+  by id (git show 9f368b5:migrations/000006_seed_universal_movements.up.sql — its names
+  are the English originals). Every value in
+  each set should be used by at least one seeded row, so no filter is empty on a new
+  account.
+- POST and PUT /api/v1/movements accept both as optional fields, matched
+  case-insensitively and stored lowercase; an unknown value is a field error under its
+  json name. Both appear in the movement response.
+- GET /api/v1/movements takes ?muscle_group= and ?equipment=, combined with each other
+  and with q by AND. An unknown value is a 400, not an empty list, so a typo isn't
+  served as an empty library.
+- The Go value lists mirror the CHECK constraints; say so in a comment next to them.
+
+Record the decision as the next ADR, superseding 0028. Update docs/er-diagram.md in the
+same commit as the migration. Swagger annotations with Enums on the new fields and
+params, then `make swagger`. Integration tests: every filter value returns at least one
+seeded movement on a fresh account; filters combine with AND and with q; an unknown
+filter value is a 400; create stores a mixed-case value lowercase; bad values in a body
+are reported per field together with any other field errors.
+```
+
+**Checkpoint:** On a fresh account, every `?muscle_group=` and `?equipment=` value returns at least one seeded movement. `?muscle_group=quads` is a 400 naming `muscle_group`. Creating a movement with `"equipment":"Kettlebell"` returns `"kettlebell"`, and `?equipment=kettlebell` then lists it next to the seeded سوئینگ کتل بل. Swagger UI shows both filters as dropdowns.
+
+**Expected output:**
+```
+$ curl -s -H "Authorization: Bearer $NEW_COACH_TOKEN" "localhost:8080/api/v1/movements?muscle_group=legs&equipment=barbell"
+{"success":true,"data":[
+  {"id":"...","coach_id":null,"name":"اسکات هالتر","category":"قدرتی","description":null,"muscle_group":"legs","equipment":"barbell","media_url":null,...},
+  {"id":"...","coach_id":null,"name":"ددلیفت رومانیایی","category":"قدرتی","description":null,"muscle_group":"legs","equipment":"barbell","media_url":null,...}
+],"error":null}
+
+$ curl -s -H "Authorization: Bearer $TOKEN" "localhost:8080/api/v1/movements?muscle_group=quads"
+{"success":false,"data":null,"error":{"code":"validation_failed","message":"invalid request","fields":{"muscle_group":"must be one of chest, back, shoulders, arms, legs, core, full_body"}}}
+```
+
+**In short:** once the library is too long to scroll, the coach can narrow it to "legs, barbell" in one tap.
