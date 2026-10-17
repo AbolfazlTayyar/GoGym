@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Concept 1 — Notebook tabs</title>
+<link rel="stylesheet" href="board.css">
+<style>
+  .screen { background: #F6F2EA; color: #26211D; }
+  .dim { color: #7C7268; }
+  .hdr { padding: 6px 20px 12px; }
+  .hdr h3 { font-size: 26px; font-weight: 800; }
+  .hdr .sub { font-size: 13px; margin-top: 2px; }
+  .search { margin: 0 20px; height: 46px; border-radius: 14px; background: #fff; border: 1px solid #E7DFD3; display: flex; align-items: center; gap: 8px; padding: 0 14px; color: #A39889; font-size: 14px; }
+  .seg { margin: 12px 20px 0; display: flex; background: #EAE3D7; border-radius: 12px; padding: 4px; }
+  .seg div { flex: 1; text-align: center; padding: 8px 0; border-radius: 9px; font-size: 14px; font-weight: 700; color: #7C7268; }
+  .seg .on { background: #26211D; color: #fff; }
+  .sticks { margin: 14px 20px 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; }
+  .stick { height: 68px; border-radius: 12px 12px 12px 4px; color: #fff; padding: 10px 11px; display: flex; flex-direction: column; justify-content: flex-end; box-shadow: inset 0 -4px 0 rgba(0,0,0,0.12); }
+  .stick b { font-size: 16px; font-weight: 800; line-height: 1.2; }
+  .stick span { font-size: 12px; opacity: 0.88; }
+  .hint { margin: 12px 20px 0; font-size: 12px; text-align: center; }
+  .nav { margin-top: auto; height: 74px; flex: none; background: #fff; border-top: 1px solid #E7DFD3; display: flex; padding-top: 10px; }
+  .nav div { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 11px; font-weight: 600; color: #B5ACA2; }
+  .nav .on { color: #26211D; }
+
+  /* day view */
+  .split { flex: 1; display: flex; min-height: 0; }
+  .page { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .rail { width: 30px; flex: none; display: flex; flex-direction: column; gap: 5px; padding-top: 8px; }
+  .rail div { height: 40px; border-radius: 8px 0 0 8px; color: #fff; font-size: 13px; font-weight: 800; display: flex; align-items: center; justify-content: center; opacity: 0.9; }
+  .rail .cur { margin-right: -12px; width: 42px; opacity: 1; box-shadow: -2px 2px 6px rgba(0,0,0,0.15); }
+  .athdr { display: flex; align-items: center; gap: 10px; padding: 4px 14px 10px; }
+  .athdr .who { flex: 1; }
+  .athdr .who b { font-size: 21px; font-weight: 800; display: block; }
+  .athdr .who span { font-size: 12.5px; }
+  .ibtn { width: 36px; height: 36px; border-radius: 50%; background: #fff; border: 1px solid #E7DFD3; display: flex; align-items: center; justify-content: center; }
+  .tabs { display: flex; gap: 6px; padding: 0 14px; border-bottom: 2px solid var(--c); }
+  .tabs div { width: 50px; height: 42px; border-radius: 10px 10px 0 0; display: flex; align-items: center; justify-content: center; font: 800 19px "Inter", sans-serif; background: #EAE3D7; color: #7C7268; }
+  .tabs .on { background: var(--c); color: #fff; }
+  .tabs .add { background: transparent; border: 1.5px dashed #C9BFB1; border-bottom: none; color: #A39889; }
+  .sheet { flex: 1; background: #fff; padding: 10px 14px 0; overflow: hidden; }
+  .cardio { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: #7C7268; background: #F6F2EA; border-radius: 10px; padding: 7px 10px; }
+  .mv { display: flex; gap: 10px; padding: 8px 0; border-bottom: 1px solid #F0EAE0; }
+  .num { width: 24px; height: 24px; flex: none; border-radius: 50%; background: #F1ECE3; font-size: 13px; font-weight: 800; display: flex; align-items: center; justify-content: center; margin-top: 1px; }
+  .mv .nm { font-size: 15px; font-weight: 700; line-height: 1.35; }
+  .mv .rx { font-size: 13px; color: var(--c); font-weight: 700; margin-top: 1px; }
+  .ss { border-right: 3px solid var(--c); padding-right: 8px; }
+  .ss .plus { font-size: 12px; font-weight: 800; color: var(--c); }
+  .sslabel { font-size: 10.5px; font-weight: 800; color: #fff; background: var(--c); border-radius: 6px; padding: 1px 6px; margin-right: 6px; vertical-align: 2px; margin-left: 6px; }
+
+  /* builder */
+  .bhdr { display: flex; align-items: center; gap: 10px; padding: 4px 16px 10px; }
+  .bhdr .t { flex: 1; font-size: 17px; font-weight: 800; }
+  .bhdr .t span { display: block; font-size: 12.5px; font-weight: 500; color: #7C7268; }
+  .save { background: #26211D; color: #fff; font-weight: 800; font-size: 14px; padding: 9px 16px; border-radius: 12px; }
+  .copied { margin: 0 16px 10px; border: 1.5px dashed #C9BFB1; border-radius: 12px; padding: 8px 12px; display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: #5E554C; }
+  .copied a { margin-right: auto; font-weight: 800; color: #26211D; }
+  .brow { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid #F0EAE0; }
+  .brow .nm { flex: 1; font-size: 14px; font-weight: 700; }
+  .chip { font-size: 12px; font-weight: 700; padding: 4px 8px; border-radius: 8px; background: #F6F2EA; white-space: nowrap; }
+  .open { border: 2px solid #26211D; border-radius: 14px; padding: 10px 12px; margin: 8px 0; background: #fff; }
+  .open .top { display: flex; align-items: center; gap: 8px; }
+  .open .top .nm { flex: 1; font-size: 15px; font-weight: 800; }
+  .steps { display: flex; gap: 10px; margin-top: 10px; }
+  .step { flex: 1; }
+  .step label { font-size: 11.5px; color: #7C7268; font-weight: 600; }
+  .step .ctl { display: flex; align-items: center; justify-content: space-between; background: #F6F2EA; border-radius: 12px; height: 44px; margin-top: 3px; padding: 0 4px; }
+  .step .ctl i { width: 36px; height: 36px; border-radius: 10px; background: #fff; font-style: normal; font-size: 20px; font-weight: 800; display: flex; align-items: center; justify-content: center; }
+  .step .ctl b { font-size: 19px; font-weight: 800; }
+  .sides { display: flex; gap: 6px; margin-top: 10px; }
+  .sides div { flex: 1; text-align: center; font-size: 13px; font-weight: 700; padding: 7px 0; border-radius: 10px; background: #F6F2EA; color: #7C7268; }
+  .sides .on { background: var(--c); color: #fff; }
+  .presets { display: flex; gap: 6px; margin-top: 10px; overflow: hidden; }
+  .presets div { font-size: 12px; font-weight: 700; padding: 5px 9px; border-radius: 999px; border: 1px solid #E0D7CA; white-space: nowrap; }
+  .addss { margin-top: 10px; font-size: 13px; font-weight: 800; color: var(--c); display: flex; align-items: center; gap: 5px; }
+  .adder { margin-top: auto; background: #fff; border-top: 1px solid #E7DFD3; padding: 10px 16px 22px; flex: none; }
+  .hits { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+  .hits div { font-size: 13px; font-weight: 700; padding: 7px 11px; border-radius: 10px; background: #F6F2EA; }
+  .hits .first { background: #26211D; color: #fff; }
+  .field { height: 46px; border-radius: 14px; border: 2px solid #26211D; display: flex; align-items: center; gap: 8px; padding: 0 12px; font-size: 15px; font-weight: 600; }
+  .field .caret { width: 2px; height: 20px; background: #26211D; margin-right: -6px; }
+</style>
+</head>
+<body>
+<div class="board">
+  <h1>Concept 1 — Notebook tabs</h1>
+  <p class="pitch">Her notebook, made digital. Every private athlete is a colored stick: same color everywhere, so she finds people by color before she reads a name. Light, paper-like theme.</p>
+  <div class="tags"><span class="tag">Light theme</span><span class="tag">Home → any day: 2 taps</span><span class="tag">Switch athlete without going back</span><span class="tag">Inline editor with steppers</span></div>
+
+  <div class="row">
+    <div class="col">
+      <div class="phone"><div class="screen" dir="rtl">
+        <div class="status"><span>9:41</span><span>●●● 100%</span></div>
+        <div class="hdr"><h3>شاگردها</h3><div class="sub dim">شنبه ۲۶ مهر ۱۴۰۵</div></div>
+        <div class="search">ICON_SEARCH<span>جستجوی نام…</span></div>
+        <div class="seg"><div class="on">خصوصی ۱۵</div><div>عمومی ۹</div></div>
+        <div class="sticks" data-fill="sticks"></div>
+        <div class="hint dim">برای جابه‌جا کردن، نگه دارید و بکشید</div>
+        <div class="nav"><div class="on">ICON_USERS شاگردها</div><div>ICON_DUMBBELL حرکات</div></div>
+      </div></div>
+      <h2>Home — the sticks</h2>
+      <ul>
+        <li>Only private athletes; public ones are one tab away, found by search.</li>
+        <li>One color per athlete, kept on every screen. She orders them herself, like moving sticks.</li>
+        <li>Tap a stick → that athlete's current plan; then tap the day the athlete names.</li>
+      </ul>
+    </div>
+
+    <div class="col">
+      <div class="phone"><div class="screen" dir="rtl" style="--c:#F3A712">
+        <div class="status"><span>9:41</span><span>●●● 100%</span></div>
+        <div class="split">
+          <div class="page">
+            <div class="athdr">
+              <div class="ibtn">ICON_BACK</div>
+              <div class="who"><b>سارا کریمی</b><span class="dim">برنامه مهر · شروع ۱ مهر</span></div>
+              <div class="ibtn">ICON_EDIT</div>
+            </div>
+            <div class="tabs"><div class="on">A</div><div>B</div><div>C</div><div>D</div><div>E</div></div>
+            <div class="sheet" data-fill="day"></div>
+          </div>
+          <div class="rail" data-fill="rail"></div>
+        </div>
+      </div></div>
+      <h2>Day view — read the next movement</h2>
+      <ul>
+        <li>Letter tabs like her plans; the page under them reads like her handwriting: number, name, sets × reps.</li>
+        <li>The colored rail on the edge holds the other private athletes: one tap jumps to the next person on the floor.</li>
+        <li>All nine movements fit one screen, so a screenshot is the whole day.</li>
+      </ul>
+    </div>
+
+    <div class="col">
+      <div class="phone"><div class="screen" dir="rtl" style="--c:#F3A712">
+        <div class="status"><span>9:41</span><span>●●● 100%</span></div>
+        <div class="bhdr">
+          <div class="ibtn">ICON_BACK</div>
+          <div class="t">پلن جدید<span>سارا کریمی · برنامه آبان</span></div>
+          <div class="save">ذخیره</div>
+        </div>
+        <div class="copied">ICON_COPY<span>کپی‌شده از «برنامه مهر» — هرچه لازم است عوض کنید</span><a>تغییر</a></div>
+        <div class="tabs"><div>A</div><div>B</div><div class="on">C</div><div>D</div><div>E</div><div class="add">ICON_PLUS</div></div>
+        <div class="sheet" data-fill="builder"></div>
+        <div class="adder">
+          <div class="hits" data-fill="hits"></div>
+          <div class="field">ICON_SEARCH<span>پلان</span><span class="caret"></span></div>
+        </div>
+      </div></div>
+      <h2>Builder — write it like the notebook</h2>
+      <ul>
+        <li>Starts as a copy of her last plan; she only changes what's different.</li>
+        <li>Rows stay one line each; the open row gets big steppers, per-leg/per-side, and her common presets (15 × 3 is one tap).</li>
+        <li>Type a few letters at the bottom, tap a hit, the next row appears with the last row's sets × reps.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<script src="data.js"></script>
+<script>
+  document.body.innerHTML = document.body.innerHTML
+    .replaceAll("ICON_SEARCH", ICON.search).replaceAll("ICON_BACK", ICON.back).replaceAll("ICON_EDIT", ICON.edit)
+    .replaceAll("ICON_PLUS", ICON.plus).replaceAll("ICON_COPY", ICON.copy)
+    .replaceAll("ICON_USERS", ICON.users).replaceAll("ICON_DUMBBELL", ICON.dumbbell);
+
+  const mv = (it, i) => {
+    if (it.parts.length > 1) {
+      const names = it.parts.map((p, j) => `<div class="nm">${j ? '<span class="plus">+ </span>' : ""}${p.n}</div>`).join("");
+      return `<div class="mv"><div class="num">${fa(i + 1)}</div><div class="ss" style="flex:1">${names}<div class="rx"><span class="sslabel">سوپرست</span>${rx(it)}</div></div></div>`;
+    }
+    return `<div class="mv"><div class="num">${fa(i + 1)}</div><div><div class="nm">${it.parts[0].n}</div><div class="rx">${rx(it)}</div></div></div>`;
+  };
+
+  fill({
+    sticks: () => PRIVATE.map((a) => `<div class="stick" style="background:${a.color}"><b>${a.first}</b><span>${a.last}</span></div>`).join(""),
+    rail: () => PRIVATE.slice(0, 15).map((a) => `<div class="${a.first === "سارا" ? "cur" : ""}" style="background:${a.color}">${a.first[0]}</div>`).join(""),
+    day: () => `<div class="cardio">${ICON.clock}گرم کردن · ${DAY_A.warm}</div>`
+      + DAY_A.items.map(mv).join("")
+      + `<div class="cardio" style="margin-top:8px">${ICON.clock}سرد کردن · ${DAY_A.cool}</div>`,
+    builder: () => {
+      const rows = DAY_C_DRAFT.items.slice(0, 4).map((it, i) =>
+        `<div class="brow"><span class="dim">${ICON.grip}</span><div class="num">${fa(i + 1)}</div><div class="nm">${it.parts[0].n}</div><div class="chip">${rx(it)}</div></div>`).join("");
+      const open = DAY_C_DRAFT.items[4];
+      return `<div class="cardio">${ICON.clock}گرم کردن · ${DAY_C_DRAFT.warm}</div>${rows}
+        <div class="open">
+          <div class="top"><div class="num">${fa(5)}</div><div class="nm">${open.parts[0].n}</div><span class="dim">${ICON.trash}</span></div>
+          <div class="steps">
+            <div class="step"><label>تکرار</label><div class="ctl"><i>+</i><b>${fa(12)}</b><i>−</i></div></div>
+            <div class="step"><label>ست</label><div class="ctl"><i>+</i><b>${fa(3)}</b><i>−</i></div></div>
+          </div>
+          <div class="sides"><div>تکرار</div><div class="on">هرپا</div><div>هرسمت</div><div>ثانیه</div></div>
+          <div class="presets">${PRESETS.map((p) => `<div>${p}</div>`).join("")}</div>
+          <div class="addss">${ICON.link}حرکت دوم برای سوپرست</div>
+        </div>`;
+    },
+    hits: () => SEARCH_HITS.map((h, i) => `<div class="${i ? "" : "first"}">${h}</div>`).join(""),
+  });
+</script>
+</body>
+</html>

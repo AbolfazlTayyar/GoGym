@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Concept 4 — Classic</title>
+<link rel="stylesheet" href="board.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600;700&display=swap">
+<style>
+  body { width: 1860px; }
+  .row { gap: 40px; }
+  /* Tokens copied from gym-trainer-app.jsx. */
+  .screen {
+    --bg: #121316; --surface: #1B1D22; --surface2: #23262B; --surface3: #2A2D33; --border: #2E3239; --borderLight: #3A3E45;
+    --text: #F2F1ED; --textDim: #9A9EA6; --textFaint: #5B5F68; --accent: #E8A33D; --accentDim: rgba(232,163,61,0.13);
+    --accentBorder: rgba(232,163,61,0.4); --data: #5B8C9A; --danger: #C1554A; --dangerDim: rgba(193,85,74,0.14);
+    --success: #7A9B6E; --successDim: rgba(122,155,110,0.15);
+    background: var(--bg); color: var(--text);
+  }
+  .status { color: #9A9EA6; font-family: "JetBrains Mono", monospace; font-size: 11px; height: 28px; }
+  .mono { font-family: "JetBrains Mono", "Vazirmatn", monospace; }
+  .sh { display: flex; align-items: center; gap: 12px; padding: 10px 16px 12px; border-bottom: 1px solid var(--border); background: rgba(18,19,22,0.92); flex: none; }
+  .sh .t { flex: 1; min-width: 0; }
+  .sh .t b { font-size: 17px; font-weight: 700; display: block; }
+  .sh .t span { font-size: 12px; color: var(--textDim); }
+  .cb { width: 34px; height: 34px; border-radius: 50%; background: var(--surface2); display: flex; align-items: center; justify-content: center; flex: none; color: var(--text); }
+  .cb.acc { color: var(--accent); }
+  .body { padding: 16px; display: flex; flex-direction: column; gap: 12px; overflow: hidden; flex: 1; min-height: 0; }
+  .body > * { flex: none; }
+  .body.tight { gap: 8px; padding-top: 12px; }
+  .input { height: 42px; border-radius: 12px; background: var(--surface2); border: 1px solid var(--border); display: flex; align-items: center; gap: 8px; padding: 0 12px; font-size: 14px; color: var(--textFaint); }
+  .chips { display: flex; gap: 6px; }
+  .chip { white-space: nowrap; border-radius: 999px; padding: 6px 14px; font-size: 14px; font-weight: 500; background: var(--surface2); color: var(--textDim); border: 1px solid var(--border); }
+  .chip.on { background: var(--accentDim); color: var(--accent); border-color: var(--accentBorder); }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 14px 16px; }
+  .ath .r1 { display: flex; align-items: center; gap: 12px; }
+  .avatar { width: 46px; height: 46px; border-radius: 50%; border: 2px solid var(--tone); color: var(--tone); background: var(--surface2); display: flex; align-items: center; justify-content: center; font-size: 17px; font-weight: 700; flex: none; }
+  .ath .nm { flex: 1; }
+  .ath .nm b { font-size: 15px; font-weight: 700; display: block; }
+  .ath .nm span { font-size: 12px; color: var(--textDim); }
+  .ath .r2 { display: flex; align-items: center; justify-content: space-between; margin-top: 10px; }
+  .pill { display: inline-flex; align-items: center; gap: 4px; border-radius: 999px; padding: 4px 10px; font-size: 12px; font-weight: 500; }
+  .pill.success { background: var(--successDim); color: var(--success); }
+  .pill.warning { background: var(--accentDim); color: var(--accent); }
+  .pill.danger { background: var(--dangerDim); color: var(--danger); }
+  .pill.neutral { background: var(--surface3); color: var(--textDim); }
+  .small { font-size: 12px; color: var(--textFaint); }
+  .nav { display: flex; background: var(--surface); border-top: 1px solid var(--border); flex: none; height: 64px; }
+  .nav div { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; padding-top: 9px; font-size: 11px; font-weight: 500; color: var(--textFaint); border-top: 2px solid transparent; }
+  .nav .on { color: var(--accent); border-top-color: var(--accent); }
+
+  .days { display: flex; gap: 8px; padding: 12px 16px 0; flex: none; }
+  .days div { flex: 1; min-width: 0; padding: 10px 0; border-radius: 16px; text-align: center; font-weight: 800; font-size: 15px; background: var(--surface); border: 1px solid var(--border); }
+  .days .on { background: var(--accent); color: #1A1305; border-color: var(--accent); }
+  .days .add { flex: 0 0 46px; border-style: dashed; color: var(--textDim); display: flex; align-items: center; justify-content: center; }
+  .dlabel { font-size: 14px; font-weight: 700; color: var(--textDim); }
+  .blk .bh { display: flex; align-items: center; justify-content: space-between; margin-bottom: 9px; }
+  .blk .bh .l { display: flex; align-items: center; gap: 8px; }
+  .badge { width: 24px; height: 24px; border-radius: 8px; background: var(--surface3); color: var(--textDim); font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  .sets { font-size: 12px; font-weight: 600; color: var(--data); }
+  .mvs { display: flex; flex-direction: column; gap: 9px; }
+  .mvs.ss { padding-right: 14px; border-right: 2px solid var(--accentBorder); }
+  .mvrow { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .mvrow .n { font-size: 14px; font-weight: 500; }
+  .mvrow .rp { font-size: 12.5px; font-weight: 600; color: var(--accent); white-space: nowrap; }
+
+  .copy { background: var(--accentDim); border: 1px solid var(--accentBorder); border-radius: 14px; padding: 8px 12px; display: flex; align-items: center; gap: 10px; }
+  .copy .t { flex: 1; font-size: 13px; }
+  .copy .t b { display: block; font-size: 13.5px; }
+  .copy .t span { color: var(--textDim); font-size: 12px; }
+  .ghost { display: flex; align-items: center; justify-content: center; gap: 6px; border-radius: 14px; padding: 9px 14px; font-size: 13px; font-weight: 600; background: var(--surface2); border: 1px solid var(--border); }
+  .dayhead { display: flex; align-items: center; gap: 10px; }
+  .dbadge { width: 32px; height: 32px; border-radius: 12px; background: var(--accentDim); color: var(--accent); font-weight: 800; font-size: 14px; display: flex; align-items: center; justify-content: center; flex: none; }
+  .ein { flex: 1; height: 36px; border-radius: 12px; background: var(--surface2); border: 1px solid var(--border); display: flex; align-items: center; padding: 0 12px; font-size: 13px; color: var(--textFaint); }
+  .eblk { background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 7px 12px; }
+  .eblk .h { display: flex; align-items: center; gap: 8px; }
+  .eblk .h .lbl { flex: 1; font-size: 12px; font-weight: 700; color: var(--textDim); }
+  .mini { display: flex; align-items: center; gap: 2px; background: var(--surface3); border-radius: 9px; padding: 2px; }
+  .mini i { width: 24px; height: 24px; border-radius: 7px; background: var(--bg); font-style: normal; font-weight: 800; font-size: 15px; display: flex; align-items: center; justify-content: center; color: var(--textDim); }
+  .mini b { font-size: 12.5px; font-weight: 700; padding: 0 6px; color: var(--data); }
+  .eblk .mvrow { margin-top: 7px; background: var(--surface3); border-radius: 8px; padding: 6px 10px; }
+  .eblk .mvrow .n { font-size: 13px; }
+  .eblk .mvrow .rp { font-size: 12px; }
+  .eblk.active { border-color: var(--accentBorder); }
+  .eblk .mvrow.edit .rp { outline: 1.5px solid var(--accent); border-radius: 6px; padding: 1px 6px; }
+  .dashed { margin-top: 7px; border: 1px dashed var(--accentBorder); color: var(--accent); border-radius: 8px; padding: 7px 0; font-size: 12px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 5px; }
+  .savebar { flex: none; padding: 10px 16px 16px; background: var(--bg); border-top: 1px solid var(--border); }
+  .primary { display: flex; align-items: center; justify-content: center; gap: 8px; border-radius: 16px; padding: 13px 0; font-size: 15px; font-weight: 700; background: var(--accent); color: #1A1305; }
+
+  .scrim { position: absolute; inset: 0; background: rgba(0,0,0,0.6); }
+  .modal { position: absolute; right: 0; left: 0; bottom: 0; background: var(--surface); border: 1px solid var(--border); border-radius: 24px 24px 0 0; padding: 18px 20px 20px; }
+  .modal .mh { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .modal .mh b { font-size: 16px; font-weight: 700; }
+  .modal .input { color: var(--text); font-weight: 500; }
+  .res { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+  .item { display: flex; align-items: center; justify-content: space-between; background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 10px 14px; }
+  .item b { font-size: 14px; font-weight: 600; display: block; }
+  .item span { font-size: 12px; color: var(--textFaint); }
+  .item.sel { flex-direction: column; align-items: stretch; border-color: var(--accentBorder); }
+  .item.sel .top { display: flex; align-items: center; justify-content: space-between; }
+  .units { display: flex; gap: 6px; margin-top: 10px; }
+  .units .chip { padding: 5px 0; flex: 1; text-align: center; font-size: 13px; }
+  .steps { display: flex; gap: 8px; margin-top: 10px; }
+  .step { flex: 1; display: flex; align-items: center; justify-content: space-between; background: var(--surface3); border-radius: 12px; height: 46px; padding: 0 5px; }
+  .step i { width: 36px; height: 36px; border-radius: 10px; background: var(--bg); font-style: normal; font-size: 19px; font-weight: 800; display: flex; align-items: center; justify-content: center; }
+  .step div { text-align: center; }
+  .step b { font-size: 18px; font-weight: 800; display: block; line-height: 1.1; }
+  .step small { font-size: 10.5px; color: var(--textDim); }
+  .presets { display: flex; gap: 5px; margin-top: 10px; }
+  .presets div { font-size: 11.5px; font-weight: 600; padding: 4px 8px; border-radius: 999px; border: 1px solid var(--borderLight); color: var(--textDim); white-space: nowrap; }
+  .acts { display: flex; gap: 8px; margin-top: 12px; }
+  .acts .primary { flex: 1.4; padding: 11px 0; font-size: 14px; }
+  .acts .ghost { flex: 1; }
+</style>
+</head>
+<body>
+<div class="board">
+  <h1>Concept 4 — Classic</h1>
+  <p class="pitch">The earlier gym-trainer-app.jsx kept almost as it is: same palette, header, athlete cards, day pills, block cards and movement sheet. Only what the brief needs is changed: tapping an athlete opens the plan, search is visible, plans start from a copy, and reps can be set per leg, per side or in seconds.</p>
+  <div class="tags"><span class="tag">Dark (the original palette)</span><span class="tag">Home → any day: 2 taps</span><span class="tag">No per-athlete colors</span><span class="tag">Closest to the earlier design</span></div>
+
+  <div class="row">
+    <div class="col">
+      <div class="phone"><div class="screen" dir="rtl">
+        <div class="status"><span>9:41</span><span>●●● 5G 100%</span></div>
+        <div class="sh">
+          <div class="t"><b>پنل مربی</b><span>۱۵ شاگرد خصوصی · ۱ بدون پلن</span></div>
+          <div class="cb acc">ICON_PLUS</div>
+        </div>
+        <div class="body">
+          <div class="input">ICON_SEARCH<span>جستجوی نام شاگرد…</span></div>
+          <div class="chips"><span class="chip on">خصوصی ۱۵</span><span class="chip">عمومی ۹</span></div>
+          <div data-fill="cards" style="display:flex;flex-direction:column;gap:10px"></div>
+        </div>
+        <div class="nav"><div class="on">ICON_USERS شاگردها</div><div>ICON_DUMBBELL کتابخانه حرکات</div></div>
+      </div></div>
+      <h2>Home — the same cards</h2>
+      <ul>
+        <li>The original card: avatar, name, goal · level, status pill. Search moved out of the icon into a field, since she searches a lot.</li>
+        <li>Private athletes only; public ones under the second chip.</li>
+        <li>Dropped: the week-progress plates and "last update", since a plan has no length and nothing records updates. Cards are a little shorter so about five fit.</li>
+      </ul>
+    </div>
+
+    <div class="col">
+      <div class="phone"><div class="screen" dir="rtl">
+        <div class="status"><span>9:41</span><span>●●● 5G 100%</span></div>
+        <div class="sh">
+          <div class="cb">ICON_BACK</div>
+          <div class="t"><b>برنامه مهر</b><span>سارا کریمی · شروع ۱ مهر ۱۴۰۵</span></div>
+          <div class="cb">ICON_USER</div>
+          <div class="cb acc">ICON_EDIT</div>
+        </div>
+        <div class="days"><div class="on">A</div><div>B</div><div>C</div><div>D</div><div>E</div></div>
+        <div class="body" data-fill="day"></div>
+      </div></div>
+      <h2>Day view — the original plan detail</h2>
+      <ul>
+        <li>Tapping a card now lands here, not on the profile. The profile is the person icon in the header.</li>
+        <li>Same block cards: number, superset pill, sets in teal, reps in amber, supersets with the amber edge.</li>
+        <li>Her warm-up and cool-down cardio get their own unnumbered card. Cards are tall, so a nine-movement day scrolls and a screenshot shows about five.</li>
+      </ul>
+    </div>
+
+    <div class="col">
+      <div class="phone"><div class="screen" dir="rtl">
+        <div class="status"><span>9:41</span><span>●●● 5G 100%</span></div>
+        <div class="sh">
+          <div class="cb">ICON_BACK</div>
+          <div class="t"><b>ساخت پلن جدید</b><span>سارا کریمی · برنامه آبان · شروع ۱ آبان</span></div>
+        </div>
+        <div class="days" style="padding-bottom:2px"><div>A</div><div>B</div><div class="on">C</div><div>D</div><div>E</div><div class="add">ICON_PLUS</div></div>
+        <div class="body tight" data-fill="builder"></div>
+        <div class="savebar"><div class="primary">ICON_CHECK ذخیره پلن</div></div>
+      </div></div>
+      <h2>Builder — the original editor, faster</h2>
+      <ul>
+        <li>Starts as a copy of her last plan (amber card); she changes what's different.</li>
+        <li>Days became the same A–E pills as the day view, so one day is on screen at a time instead of all five stacked.</li>
+        <li>Each block keeps its card, with a small sets stepper. "ذخیره پلن" stays pinned at the bottom.</li>
+      </ul>
+    </div>
+
+    <div class="col">
+      <div class="phone"><div class="screen" dir="rtl">
+        <div class="status"><span>9:41</span><span>●●● 5G 100%</span></div>
+        <div class="sh">
+          <div class="cb">ICON_BACK</div>
+          <div class="t"><b>ساخت پلن جدید</b><span>سارا کریمی · برنامه آبان · شروع ۱ آبان</span></div>
+        </div>
+        <div class="days" style="padding-bottom:2px"><div>A</div><div>B</div><div class="on">C</div><div>D</div><div>E</div><div class="add">ICON_PLUS</div></div>
+        <div class="body tight" data-fill="builder"></div>
+        <div class="scrim"></div>
+        <div class="modal">
+          <div class="mh"><b>افزودن حرکت به بلوک ۶</b><span style="color:#9A9EA6">ICON_X</span></div>
+          <div class="input">ICON_SEARCH<span>پلان</span></div>
+          <div class="chips" style="margin-top:10px" data-fill="cats"></div>
+          <div class="res" data-fill="results"></div>
+        </div>
+      </div></div>
+      <h2>Movement picker — the original sheet</h2>
+      <ul>
+        <li>Same search, category chips and result list as before.</li>
+        <li>New: tapping a result opens it in place to set the type (reps, per leg, per side, seconds), reps and sets, with her common presets.</li>
+        <li>"افزودن" adds it as its own block; "+ سوپرست" adds it and keeps the sheet open for the next movement in the same block.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<script src="data.js"></script>
+<script>
+  document.body.innerHTML = document.body.innerHTML
+    .replaceAll("ICON_SEARCH", ICON.search).replaceAll("ICON_BACK", ICON.back).replaceAll("ICON_EDIT", ICON.edit)
+    .replaceAll("ICON_PLUS", ICON.plus).replaceAll("ICON_USERS", ICON.users).replaceAll("ICON_DUMBBELL", ICON.dumbbell)
+    .replaceAll("ICON_USER", ICON.user).replaceAll("ICON_CHECK", ICON.check).replaceAll("ICON_X", ICON.x);
+
+  const card = (a, i) => {
+    const noPlan = i === 3;
+    const tone = noPlan ? "var(--danger)" : "var(--accent)";
+    const pill = noPlan
+      ? `<span class="pill danger">${ICON.alert}بدون پلن فعال</span>`
+      : `<span class="pill success">پلن فعال · ${fa(a.days)} روز</span>`;
+    return `<div class="card ath">
+      <div class="r1"><div class="avatar" style="--tone:${tone}">${a.first[0]}</div>
+        <div class="nm"><b>${a.first} ${a.last}</b><span>${GOALS[i % GOALS.length]} · ${LEVELS[i % LEVELS.length]}</span></div>
+        <span style="color:var(--textFaint)">${ICON.chevL}</span></div>
+      <div class="r2">${pill}<span class="small">${noPlan ? "آخرین پلن: شهریور" : "شروع ۱ مهر"}</span></div></div>`;
+  };
+
+  const block = (it, i) => {
+    const ss = it.parts.length > 1;
+    const rows = it.parts.map((p) => `<div class="mvrow"><span class="n">${p.n}</span><span class="rp">${part(p)}</span></div>`).join("");
+    return `<div class="card blk"><div class="bh"><div class="l"><span class="badge">${fa(i + 1)}</span>${ss ? '<span class="pill warning">سوپرست</span>' : ""}</div>
+      <span class="sets">${fa(it.sets)} ست</span></div><div class="mvs ${ss ? "ss" : ""}">${rows}</div></div>`;
+  };
+
+  const cardio = (label, text) => {
+    const [name, ...rest] = text.split(" ");
+    return `<div class="card blk" style="padding:10px 16px"><div class="mvrow"><span class="l" style="display:flex;gap:8px;align-items:center">
+      <span class="pill neutral">${label}</span><span class="n">${name}</span></span><span class="rp">${rest.join(" ")}</span></div></div>`;
+  };
+
+  const eblk = (it, i, active) => {
+    const p = it.parts[0];
+    return `<div class="eblk ${active ? "active" : ""}"><div class="h"><span class="lbl">بلوک ${fa(i + 1)}</span>
+      <span class="mini"><i>+</i><b>${fa(it.sets)} ست</b><i>−</i></span><span style="color:var(--danger)">${ICON.trash}</span></div>
+      <div class="mvrow ${active ? "edit" : ""}"><span class="n">${p.n}</span><span class="rp">${part(p)}</span></div>
+      ${active ? `<div class="dashed">${ICON.plus}افزودن حرکت (تکی یا سوپرست)</div>` : ""}</div>`;
+  };
+
+  fill({
+    cards: () => PRIVATE.slice(0, 5).map(card).join(""),
+    day: () => `<div class="dlabel">روز A</div>` + cardio("گرم کردن", DAY_A.warm) + DAY_A.items.map(block).join(""),
+    builder: () => `<div class="copy">${ICON.copy}<div class="t"><b>کپی‌شده از «برنامه مهر»</b><span>۵ روز · ۴۳ حرکت — فقط تغییرات را وارد کنید</span></div><span class="ghost">تغییر</span></div>
+      <div class="dayhead"><span class="dbadge">C</span><span class="ein">یادداشت روز (اختیاری)…</span></div>`
+      + DAY_C_DRAFT.items.map((it, i) => eblk(it, i, i === DAY_C_DRAFT.items.length - 1)).join(""),
+    cats: () => `<span class="chip on">همه</span>` + CATEGORIES.map((c) => `<span class="chip">${c}</span>`).join(""),
+    results: () => `<div class="item sel"><div class="top"><div><b>پلانک</b><span>قدرتی</span></div><span style="color:var(--accent)">${ICON.check}</span></div>
+        <div class="units"><span class="chip">تکرار</span><span class="chip">هرپا</span><span class="chip">هرسمت</span><span class="chip on">ثانیه</span></div>
+        <div class="steps"><div class="step"><i>+</i><div><b>۴۵</b><small>ثانیه</small></div><i>−</i></div>
+          <div class="step"><i>+</i><div><b>۳</b><small>ست</small></div><i>−</i></div></div>
+        <div class="presets">${PRESETS.map((p) => `<div>${p}</div>`).join("")}</div>
+        <div class="acts"><div class="primary">افزودن</div><div class="ghost">+ سوپرست</div></div></div>`
+      + SEARCH_HITS.slice(1).map((h) => `<div class="item"><div><b>${h}</b><span>قدرتی</span></div><span style="color:var(--accent)">${ICON.plus}</span></div>`).join(""),
+  });
+</script>
+</body>
+</html>
