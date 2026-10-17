@@ -20,9 +20,12 @@ func requireValidationFields(t *testing.T, err error) map[string]string {
 	return verr.Fields
 }
 
+// testNow pins the date window: the latest date it allows is 2026-10-01.
+var testNow = time.Date(2026, 9, 30, 21, 0, 0, 0, time.UTC)
+
 // apply runs applyInput on an empty measurement, for tests that only look at the error.
 func apply(input Input) error {
-	return applyInput(&Measurement{}, input)
+	return applyInput(&Measurement{}, input, testNow)
 }
 
 func TestApplyInput_Valid(t *testing.T) {
@@ -32,7 +35,7 @@ func TestApplyInput_Valid(t *testing.T) {
 		Date:   " 2026-09-24 ",
 		Weight: fltptr(72.5),
 		Waist:  fltptr(81),
-	})
+	}, testNow)
 	require.NoError(t, err)
 
 	assert.Equal(t, time.Date(2026, 9, 24, 0, 0, 0, 0, time.UTC), m.Date)
@@ -44,7 +47,7 @@ func TestApplyInput_Valid(t *testing.T) {
 func TestApplyInput_ReplacesEveryMetric(t *testing.T) {
 	m := &Measurement{Weight: fltptr(74), Chest: fltptr(99)}
 
-	require.NoError(t, applyInput(m, Input{Date: "2026-09-24", Weight: fltptr(73)}))
+	require.NoError(t, applyInput(m, Input{Date: "2026-09-24", Weight: fltptr(73)}, testNow))
 
 	require.NotNil(t, m.Weight)
 	assert.InDelta(t, 73, *m.Weight, 0)
@@ -55,7 +58,7 @@ func TestApplyInput_InvalidInputLeavesMeasurementUntouched(t *testing.T) {
 	date := time.Date(2026, 9, 20, 0, 0, 0, 0, time.UTC)
 	m := &Measurement{Date: date, Weight: fltptr(74)}
 
-	err := applyInput(m, Input{Date: "2026-09-24", Weight: fltptr(74), Waist: fltptr(0.8)})
+	err := applyInput(m, Input{Date: "2026-09-24", Weight: fltptr(74), Waist: fltptr(0.8)}, testNow)
 	requireValidationFields(t, err)
 
 	assert.Equal(t, date, m.Date)
@@ -83,6 +86,42 @@ func TestApplyInput_Date(t *testing.T) {
 			assert.Len(t, fields, 1)
 		})
 	}
+}
+
+func TestApplyInput_DateWindow(t *testing.T) {
+	for name, tc := range map[string]struct {
+		date   string
+		wantOK bool
+	}{
+		"earliest allowed":            {date: "2000-01-01", wantOK: true},
+		"day before the earliest":     {date: "1999-12-31"},
+		"mistyped year in the past":   {date: "1926-09-24"},
+		"tomorrow in UTC":             {date: "2026-10-01", wantOK: true},
+		"two days ahead":              {date: "2026-10-02"},
+		"mistyped year in the future": {date: "2062-09-24"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			err := apply(Input{Date: tc.date, Weight: fltptr(70)})
+
+			if tc.wantOK {
+				require.NoError(t, err)
+				return
+			}
+			fields := requireValidationFields(t, err)
+			assert.Equal(t, "must be between 2000-01-01 and 2026-10-01", fields["date"])
+			assert.Len(t, fields, 1)
+		})
+	}
+}
+
+func TestApplyInput_DateWindowFollowsUTC(t *testing.T) {
+	// 01:30 on 2026-10-01 in Tehran, which is still 2026-09-30 in UTC.
+	tehran := time.FixedZone("IRST", 3*60*60+30*60)
+	now := time.Date(2026, 10, 1, 1, 30, 0, 0, tehran)
+
+	require.NoError(t, applyInput(&Measurement{}, Input{Date: "2026-10-01", Weight: fltptr(70)}, now),
+		"the coach's local today is allowed")
+	requireValidationFields(t, applyInput(&Measurement{}, Input{Date: "2026-10-02", Weight: fltptr(70)}, now))
 }
 
 func TestApplyInput_RequiresAtLeastOneValue(t *testing.T) {

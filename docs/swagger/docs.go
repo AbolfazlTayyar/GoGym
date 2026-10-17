@@ -314,7 +314,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Records one check-in for the athlete. date is required (YYYY-MM-DD); every metric is optional, but at least one must be given. Weight is in kilograms, circumferences in centimetres. An athlete that belongs to another coach is reported as not found.",
+                "description": "Records one check-in for the athlete. date is required (YYYY-MM-DD), no earlier than 2000-01-01 and no later than tomorrow in UTC; every metric is optional, but at least one must be given. Weight is in kilograms, circumferences in centimetres. An athlete that belongs to another coach is reported as not found.",
                 "consumes": [
                     "application/json"
                 ],

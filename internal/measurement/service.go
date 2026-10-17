@@ -14,6 +14,14 @@ import (
 // dateLayout is the wire format both ways, so a chart can use the value without parsing a timestamp.
 const dateLayout = "2006-01-02"
 
+// The date window catches a mistyped year. It reaches a day past today in UTC because a coach east of
+// UTC is already on tomorrow's date for part of every day.
+var earliestDate = time.Date(2000, time.January, 1, 0, 0, 0, 0, time.UTC)
+
+const maxDaysAhead = 1
+
+const msgDateRange = "must be between %s and %s"
+
 // Bounds are tight enough to catch a client that sent grams or metres, not to judge the athlete.
 const (
 	minWeightKG        = 20
@@ -66,7 +74,7 @@ func (s *Service) Create(ctx context.Context, coachID, athleteID uuid.UUID, inpu
 	}
 
 	m := &Measurement{ID: uuid.New(), AthleteID: athleteID}
-	if err := applyInput(m, input); err != nil {
+	if err := applyInput(m, input, time.Now()); err != nil {
 		return nil, err
 	}
 
@@ -94,7 +102,7 @@ func (s *Service) Update(ctx context.Context, coachID, id uuid.UUID, input Input
 		return nil, err
 	}
 
-	if err := applyInput(m, input); err != nil {
+	if err := applyInput(m, input, time.Now()); err != nil {
 		return nil, err
 	}
 
@@ -139,9 +147,12 @@ type metric struct {
 }
 
 // applyInput collects every field error before returning, so a coach sees all mistakes at once, and
-// leaves m untouched unless the whole input is valid.
-func applyInput(m *Measurement, input Input) error {
+// leaves m untouched unless the whole input is valid. now is a parameter so tests can pin the date window.
+func applyInput(m *Measurement, input Input, now time.Time) error {
 	fields := make(map[string]string)
+
+	y, mo, d := now.UTC().Date()
+	latestDate := time.Date(y, mo, d+maxDaysAhead, 0, 0, 0, 0, time.UTC)
 
 	rawDate := strings.TrimSpace(input.Date)
 	date, err := time.Parse(dateLayout, rawDate)
@@ -150,6 +161,8 @@ func applyInput(m *Measurement, input Input) error {
 		fields["date"] = httpx.MsgFieldRequired
 	case err != nil:
 		fields["date"] = httpx.MsgDateFormat
+	case date.Before(earliestDate) || date.After(latestDate):
+		fields["date"] = fmt.Sprintf(msgDateRange, earliestDate.Format(dateLayout), latestDate.Format(dateLayout))
 	}
 
 	metrics := []metric{
