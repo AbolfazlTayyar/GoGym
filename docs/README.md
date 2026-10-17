@@ -21,6 +21,7 @@ for." It is not committed scope.
 | Document | What it is |
 |---|---|
 | [product-direction.md](product-direction.md) | The post-v1 hypothesis: why v1 alone is hard to sell, what is missing, and in what order to fix it. Explicitly unvalidated — it is reasoning from these docs, not from users. The parts of it that must happen *during* v1 are already folded into [tasks/](tasks/README.md) as the tasks marked `[A1]`–`[A4]`. |
+| [stakeholder-brief.md](stakeholder-brief.md) | How the coach works and what they need from the app, in their own words: instant plan lookup in a crowded gym, fast plan writing on a phone, RTL with Jalali dates. Input for the *Frontend stack decision* in [tasks/backend.md](tasks/backend.md). |
 
 If it ever conflicts with [tasks/](tasks/README.md), the task files are what gets built — fix the task text,
 don't work from the rationale.
