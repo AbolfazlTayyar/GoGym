@@ -90,6 +90,12 @@ athletes to another.
   read it from there.
 - A lookup that's out of scope for the authenticated coach (another coach's row) must 404, not
   403 — don't leak that the row exists at all.
+- A child row with no `coach_id` that is addressed by its own id gets a flat route
+  (`/plans/:id`, `/measurements/:id`), not one nested under its athlete: a nested path carries a
+  parent id the server would then have to check against the child's. The service loads the row,
+  then checks its parent through the parent's tenant-scoped lookup (`athlete.Service.Get`) before
+  using it, so another coach's child 404s like a missing one — see
+  [ADR 0015](adr/0015-child-ownership-via-parent-lookup.md).
 - A write to a universal row is the one 403 (`forbidden`): the coach can already read that row,
   so refusing it openly leaks nothing — see [ADR 0021](adr/0021-universal-rows-forbidden.md).
 - Postgres row-level security was considered as defense in depth and deliberately deferred:
