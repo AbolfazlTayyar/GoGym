@@ -1090,3 +1090,100 @@ $ curl -s -H "Authorization: Bearer $TOKEN" "localhost:8080/api/v1/movements?mus
 ```
 
 **In short:** once the library is too long to scroll, the coach can narrow it to "legs, barbell" in one tap.
+
+---
+
+### Plan prescription detail: per-side reps, rep schemes, tempo & day notes
+
+⏸ **Deferred** — start before the frontend plan builder is designed, or as soon as a coach finds block notes too loose for these.
+
+**Description:** The first real plan entered through the API, a coach's monthly A–E sheet, needed four things the model doesn't have, and all four ended up in free-text block notes:
+
+- **Per-side reps.** "15 reps each leg" (هر پا / هر سمت). It belongs to one movement, not the block: in a superset of a single-leg hip thrust with a glute-bridge hold, only the hip thrust is per leg.
+- **Rep schemes one `reps` int can't hold.** "10+10+10" (a calf raise in three foot positions, back to back), "4+4+3" (clusters), and "12/10/8", which [product-direction.md](../product-direction.md) lists as the normal case.
+- **Tempo.** "2-second pause at the squeeze". Also listed in product-direction.md.
+- **Day notes.** "Do day E with minimal rest" is about the whole day, and `day` has nowhere to put it, so it went into the plan note.
+
+All four are additive (nullable or defaulted columns and new optional fields), so no client breaks. The reason not to wait too long is that a plan already entered with these in notes stays that way: nothing can move them into the new fields automatically.
+
+**Prompt:**
+```
+Extend the plan builder so a prescription can say what a coach's sheet says, instead of
+pushing it into block notes.
+
+- block_movement gets:
+  - per_side BOOLEAN NOT NULL DEFAULT false. When true, reps and duration_seconds are per
+    side. It sits on the movement, not the block, because a superset can mix a unilateral
+    movement with a bilateral one.
+  - tempo TEXT, nullable, free text with a length bound (e.g. "3-1-1-0", "2s pause at
+    the top").
+  - A way to hold "10+10+10", "4+4+3" and "12/10/8". My lean is a nullable free-text
+    rep_scheme next to reps, shown in place of reps when it's set, the same call as load
+    (docs/adr/0009). The alternative is structured per-set rows. Ask me before picking
+    that one: it changes the block_movement shape, and the frontend depends on it.
+- day gets notes TEXT, nullable, with the same bound as block notes.
+- POST /plans/:id/days accepts notes; POST /blocks/:id/movements accepts per_side, tempo
+  and the rep scheme; GET /plans/:id returns all of them. Blank text is stored as NULL,
+  like the existing optional text fields. Errors in a batch are keyed "[i].name".
+- The comment in internal/plan/model.go lists what a future workout log snapshots
+  (docs/adr/0018). Add per_side, tempo and the rep scheme to that list, or a log will
+  record "15 reps" for what was 15 per leg.
+
+Record the rep-scheme decision as the next ADR. Update docs/er-diagram.md in the same
+commit as the migration. Add swagger annotations, then run `make swagger`. Integration
+tests: each new field round-trips through GET /plans/:id; per_side defaults to false when
+omitted; an over-long tempo, rep scheme or day note is a field error reported together
+with the others in the batch.
+```
+
+**Checkpoint:** Rebuild day A of that sheet without leaning on notes for these. The hip thrust + glute-bridge superset has `per_side: true` only on the hip thrust. The inner-thigh machine has a tempo. Day C's calf raise carries `10+10+10` as a rep scheme. Day E has its "minimal rest" note on the day, and `GET /plans/:id` shows all of it.
+
+**Expected output:**
+```
+$ curl -s -H "Authorization: Bearer $TOKEN" localhost:8080/api/v1/plans/$PLAN_ID
+{"success":true,"data":{..., "days":[
+  {"id":"...","label":"A","order_index":0,"notes":null,"blocks":[...,
+    {"id":"...","order_index":1,"sets":3,"rest_seconds":null,"notes":"superset","movements":[
+      {"name":"هیپ تراست تک پا با صفحه","reps":15,"duration_seconds":null,"per_side":true,"tempo":null,"rep_scheme":null,...},
+      {"name":"پل باسن هولد","reps":null,"duration_seconds":45,"per_side":false,"tempo":null,"rep_scheme":null,...}]}]},
+  ...,
+  {"id":"...","label":"E","order_index":4,"notes":"با حداقل استراحت","blocks":[...]}]},"error":null}
+```
+
+**In short:** the plan says "15 per leg, pause 2 seconds, 10+10+10" in fields a client can show and a workout log can copy, not in notes it can only print.
+
+---
+
+### Measurements: abdomen girth
+
+⏸ **Deferred** — start before the coach records real check-ins with an abdomen value.
+
+**Description:** The coach's sheet has both شکم (abdomen, the girth at the navel) and کمر (waist, the narrowest point). `athlete_measurement` has only `waist`, so a coach who tracks both has to drop one or put the abdomen figure in `waist`. Either way the waist history gets mixed up, and that can't be fixed later because nobody will know which number each row was. Adding the column is additive. The reason to do it early is to keep `waist` clean.
+
+**Prompt:**
+```
+Add abdomen to athlete measurements, next to waist.
+
+- Migration: nullable NUMERIC abdomen column on athlete_measurement, the same type as
+  the other girths.
+- POST /athletes/:id/measurements and PUT /measurements/:id accept abdomen, with the
+  circumference bounds the other girths use. It counts toward the "at least one value"
+  rule; update that message. The measurement response returns it.
+- Add a one-line comment in the model saying abdomen is the girth at the navel and waist
+  is the narrowest point, so the two aren't treated as duplicates and merged.
+
+Update docs/er-diagram.md in the same commit as the migration. Swagger annotations, then
+`make swagger`. Tests: abdomen round-trips on create and update; abdomen alone satisfies
+the "at least one value" rule; an out-of-range abdomen is a field error.
+```
+
+**Checkpoint:** A measurement with only `abdomen` is accepted and listed. One with `abdomen: 5` is a 400 naming `abdomen`. Existing measurements list with `abdomen: null`.
+
+**Expected output:**
+```
+$ curl -s -X POST -H "Authorization: Bearer $TOKEN" localhost:8080/api/v1/athletes/$ATHLETE_ID/measurements \
+    -d '{"date":"2026-10-17","waist":68,"abdomen":74}'
+{"success":true,"data":{"id":"...","date":"2026-10-17","weight":null,"chest":null,"waist":68,"abdomen":74,"arm":null,"thigh":null,"hip":null,...},"error":null}
+```
+
+**In short:** the coach can record both belly measurements without spoiling the waist history.
