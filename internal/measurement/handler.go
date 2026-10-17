@@ -14,6 +14,8 @@ import (
 // paramAthleteID must match the athlete module's /athletes/:id wildcard; gin panics on two names for one segment.
 const paramAthleteID = "id"
 
+const paramMeasurementID = "id"
+
 // measurementResponse is one chart point; unrecorded metrics are null so a chart can skip them rather than plot 0.
 type measurementResponse struct {
 	ID        string   `json:"id" example:"7c9e6679-7425-40de-944b-e07fc1f90ae7"`
@@ -45,8 +47,9 @@ func newMeasurementResponse(m *Measurement) measurementResponse {
 	}
 }
 
-// createRequest has no binding tags on purpose: the service owns every rule, presence included.
-type createRequest struct {
+// measurementRequest serves both create and update. It has no binding tags on purpose: the service owns
+// every rule, presence included.
+type measurementRequest struct {
 	Date   string   `json:"date" example:"2026-09-24"`
 	Weight *float64 `json:"weight" example:"72.5"`
 	Chest  *float64 `json:"chest" example:"98"`
@@ -73,7 +76,7 @@ func NewHandler(svc *Service) *Handler {
 //	@Produce		json
 //	@Security		BearerAuth
 //	@Param			id		path		string			true	"Athlete ID"	format(uuid)
-//	@Param			request	body		createRequest	true	"Measurement values"
+//	@Param			request	body		measurementRequest	true	"Measurement values"
 //	@Success		201		{object}	httpx.SuccessEnvelope{data=measurementResponse}
 //	@Failure		400		{object}	httpx.ValidationErrorEnvelope
 //	@Failure		401		{object}	httpx.UnauthorizedEnvelope
@@ -92,13 +95,13 @@ func (h *Handler) Create(c *gin.Context) {
 		return
 	}
 
-	var req createRequest
+	var req measurementRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		httpx.ErrorFields(c, http.StatusBadRequest, httpx.CodeValidationFailed, httpx.MsgInvalidRequest, httpx.ValidationFields(err))
 		return
 	}
 
-	created, err := h.svc.Create(c.Request.Context(), coachID, athleteID, CreateInput(req))
+	created, err := h.svc.Create(c.Request.Context(), coachID, athleteID, Input(req))
 	if err != nil {
 		writeServiceError(c, err)
 		return
@@ -146,6 +149,82 @@ func (h *Handler) List(c *gin.Context) {
 	httpx.OK(c, items)
 }
 
+// Update corrects one of the coach's measurements.
+//
+//	@Summary		Update a measurement
+//	@Description	Replaces the date and every metric of a measurement, under the same rules as create: a metric left out is cleared, and at least one must be given. A measurement whose athlete belongs to another coach is reported as not found, the same as one that doesn't exist.
+//	@Tags			measurements
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			id		path		string				true	"Measurement ID"	format(uuid)
+//	@Param			request	body		measurementRequest	true	"Measurement values"
+//	@Success		200		{object}	httpx.SuccessEnvelope{data=measurementResponse}
+//	@Failure		400		{object}	httpx.ValidationErrorEnvelope
+//	@Failure		401		{object}	httpx.UnauthorizedEnvelope
+//	@Failure		404		{object}	httpx.NotFoundEnvelope
+//	@Failure		500		{object}	httpx.InternalErrorEnvelope
+//	@Router			/api/v1/measurements/{id} [put]
+func (h *Handler) Update(c *gin.Context) {
+	coachID, ok := tenant.CoachIDFromContext(c)
+	if !ok {
+		httpx.Error(c, http.StatusUnauthorized, httpx.CodeUnauthorized, httpx.MsgUnauthorized)
+		return
+	}
+
+	id, ok := httpx.PathUUID(c, paramMeasurementID)
+	if !ok {
+		return
+	}
+
+	var req measurementRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		httpx.ErrorFields(c, http.StatusBadRequest, httpx.CodeValidationFailed, httpx.MsgInvalidRequest, httpx.ValidationFields(err))
+		return
+	}
+
+	updated, err := h.svc.Update(c.Request.Context(), coachID, id, Input(req))
+	if err != nil {
+		writeServiceError(c, err)
+		return
+	}
+
+	httpx.OK(c, newMeasurementResponse(updated))
+}
+
+// Delete removes one of the coach's measurements for good.
+//
+//	@Summary		Delete a measurement
+//	@Description	Permanently removes a measurement from the athlete's history; data is null on success. There is no undo. A measurement whose athlete belongs to another coach is reported as not found, the same as one that doesn't exist.
+//	@Tags			measurements
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			id	path		string	true	"Measurement ID"	format(uuid)
+//	@Success		200	{object}	httpx.NoContentEnvelope
+//	@Failure		401	{object}	httpx.UnauthorizedEnvelope
+//	@Failure		404	{object}	httpx.NotFoundEnvelope
+//	@Failure		500	{object}	httpx.InternalErrorEnvelope
+//	@Router			/api/v1/measurements/{id} [delete]
+func (h *Handler) Delete(c *gin.Context) {
+	coachID, ok := tenant.CoachIDFromContext(c)
+	if !ok {
+		httpx.Error(c, http.StatusUnauthorized, httpx.CodeUnauthorized, httpx.MsgUnauthorized)
+		return
+	}
+
+	id, ok := httpx.PathUUID(c, paramMeasurementID)
+	if !ok {
+		return
+	}
+
+	if err := h.svc.Delete(c.Request.Context(), coachID, id); err != nil {
+		writeServiceError(c, err)
+		return
+	}
+
+	httpx.NoContent(c)
+}
+
 // writeServiceError hides unexpected errors behind a generic 500; the detail belongs in logs.
 func writeServiceError(c *gin.Context, err error) {
 	var verr *ValidationError
@@ -154,7 +233,7 @@ func writeServiceError(c *gin.Context, err error) {
 		return
 	}
 
-	if errors.Is(err, athlete.ErrNotFound) {
+	if errors.Is(err, athlete.ErrNotFound) || errors.Is(err, ErrNotFound) {
 		httpx.Error(c, http.StatusNotFound, httpx.CodeNotFound, httpx.MsgNotFound)
 		return
 	}

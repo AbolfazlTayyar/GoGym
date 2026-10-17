@@ -12,7 +12,7 @@ One file per decision, [MADR](https://adr.github.io/madr/)-style. Process rules 
 | [0005](0005-integration-tests-on-real-postgres.md) | Unit tests plus integration tests on a real Postgres | 2026-09-16 | accepted |
 | [0006](0006-ci-fail-fast-pinned-tools.md) | Fail-fast CI with pinned tool versions | 2026-09-17 | accepted |
 | [0007](0007-swagger-dev-only-root-basepath.md) | swaggo docs, dev-only UI, root basePath | 2026-09-17 | accepted |
-| [0008](0008-soft-delete.md) | Soft delete for coach-deletable tables | 2026-09-19 | accepted |
+| [0008](0008-soft-delete.md) | Soft delete for athletes and movements, hard delete for measurements | 2026-09-19 | accepted |
 | [0009](0009-free-text-load.md) | Prescribed load is free text | 2026-09-19 | accepted |
 | [0010](0010-coach-jwt-auth.md) | Coach-only JWT auth with in-process rate limiting | 2026-09-20 | accepted |
 | [0011](0011-tenant-isolation-single-helper.md) | Tenant isolation through one scoping helper | 2026-09-20 | accepted |

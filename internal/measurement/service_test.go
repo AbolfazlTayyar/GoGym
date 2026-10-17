@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/AbolfazlTayyar/gogym/internal/platform/httpx"
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -21,25 +20,51 @@ func requireValidationFields(t *testing.T, err error) map[string]string {
 	return verr.Fields
 }
 
-func TestBuildMeasurement_Valid(t *testing.T) {
-	athleteID := uuid.New()
+// apply runs applyInput on an empty measurement, for tests that only look at the error.
+func apply(input Input) error {
+	return applyInput(&Measurement{}, input)
+}
 
-	m, err := buildMeasurement(athleteID, CreateInput{
+func TestApplyInput_Valid(t *testing.T) {
+	m := &Measurement{}
+
+	err := applyInput(m, Input{
 		Date:   " 2026-09-24 ",
 		Weight: fltptr(72.5),
 		Waist:  fltptr(81),
 	})
 	require.NoError(t, err)
 
-	assert.NotEqual(t, uuid.Nil, m.ID)
-	assert.Equal(t, athleteID, m.AthleteID)
 	assert.Equal(t, time.Date(2026, 9, 24, 0, 0, 0, 0, time.UTC), m.Date)
 	require.NotNil(t, m.Weight)
 	assert.InDelta(t, 72.5, *m.Weight, 0)
 	assert.Nil(t, m.Chest, "an unrecorded metric stays null, not 0")
 }
 
-func TestBuildMeasurement_Date(t *testing.T) {
+func TestApplyInput_ReplacesEveryMetric(t *testing.T) {
+	m := &Measurement{Weight: fltptr(74), Chest: fltptr(99)}
+
+	require.NoError(t, applyInput(m, Input{Date: "2026-09-24", Weight: fltptr(73)}))
+
+	require.NotNil(t, m.Weight)
+	assert.InDelta(t, 73, *m.Weight, 0)
+	assert.Nil(t, m.Chest, "a metric left out of an update is cleared")
+}
+
+func TestApplyInput_InvalidInputLeavesMeasurementUntouched(t *testing.T) {
+	date := time.Date(2026, 9, 20, 0, 0, 0, 0, time.UTC)
+	m := &Measurement{Date: date, Weight: fltptr(74)}
+
+	err := applyInput(m, Input{Date: "2026-09-24", Weight: fltptr(74), Waist: fltptr(0.8)})
+	requireValidationFields(t, err)
+
+	assert.Equal(t, date, m.Date)
+	require.NotNil(t, m.Weight)
+	assert.InDelta(t, 74, *m.Weight, 0)
+	assert.Nil(t, m.Waist)
+}
+
+func TestApplyInput_Date(t *testing.T) {
 	for name, tc := range map[string]struct {
 		date    string
 		wantMsg string
@@ -51,7 +76,7 @@ func TestBuildMeasurement_Date(t *testing.T) {
 		"impossible day":       {date: "2026-02-30", wantMsg: httpx.MsgDateFormat},
 	} {
 		t.Run(name, func(t *testing.T) {
-			_, err := buildMeasurement(uuid.New(), CreateInput{Date: tc.date, Weight: fltptr(70)})
+			err := apply(Input{Date: tc.date, Weight: fltptr(70)})
 
 			fields := requireValidationFields(t, err)
 			assert.Equal(t, tc.wantMsg, fields["date"])
@@ -60,8 +85,8 @@ func TestBuildMeasurement_Date(t *testing.T) {
 	}
 }
 
-func TestBuildMeasurement_RequiresAtLeastOneValue(t *testing.T) {
-	_, err := buildMeasurement(uuid.New(), CreateInput{Date: "2026-09-24"})
+func TestApplyInput_RequiresAtLeastOneValue(t *testing.T) {
+	err := apply(Input{Date: "2026-09-24"})
 
 	fields := requireValidationFields(t, err)
 	for _, name := range []string{"weight", "chest", "waist", "arm", "thigh", "hip"} {
@@ -69,23 +94,23 @@ func TestBuildMeasurement_RequiresAtLeastOneValue(t *testing.T) {
 	}
 }
 
-func TestBuildMeasurement_Bounds(t *testing.T) {
+func TestApplyInput_Bounds(t *testing.T) {
 	for name, tc := range map[string]struct {
-		input     CreateInput
+		input     Input
 		wantField string
 	}{
-		"weight in grams":    {input: CreateInput{Weight: fltptr(72500)}, wantField: "weight"},
-		"weight too low":     {input: CreateInput{Weight: fltptr(minWeightKG - 1)}, wantField: "weight"},
-		"waist in metres":    {input: CreateInput{Waist: fltptr(0.81)}, wantField: "waist"},
-		"negative arm":       {input: CreateInput{Arm: fltptr(-34)}, wantField: "arm"},
-		"chest too large":    {input: CreateInput{Chest: fltptr(maxCircumferenceCM + 1)}, wantField: "chest"},
-		"thigh in metres":    {input: CreateInput{Thigh: fltptr(0.56)}, wantField: "thigh"},
-		"hip in millimetres": {input: CreateInput{Hip: fltptr(990)}, wantField: "hip"},
+		"weight in grams":    {input: Input{Weight: fltptr(72500)}, wantField: "weight"},
+		"weight too low":     {input: Input{Weight: fltptr(minWeightKG - 1)}, wantField: "weight"},
+		"waist in metres":    {input: Input{Waist: fltptr(0.81)}, wantField: "waist"},
+		"negative arm":       {input: Input{Arm: fltptr(-34)}, wantField: "arm"},
+		"chest too large":    {input: Input{Chest: fltptr(maxCircumferenceCM + 1)}, wantField: "chest"},
+		"thigh in metres":    {input: Input{Thigh: fltptr(0.56)}, wantField: "thigh"},
+		"hip in millimetres": {input: Input{Hip: fltptr(990)}, wantField: "hip"},
 	} {
 		t.Run(name, func(t *testing.T) {
 			tc.input.Date = "2026-09-24"
 
-			_, err := buildMeasurement(uuid.New(), tc.input)
+			err := apply(tc.input)
 
 			fields := requireValidationFields(t, err)
 			assert.Contains(t, fields, tc.wantField)
@@ -94,8 +119,8 @@ func TestBuildMeasurement_Bounds(t *testing.T) {
 	}
 }
 
-func TestBuildMeasurement_BoundsAreInclusive(t *testing.T) {
-	_, err := buildMeasurement(uuid.New(), CreateInput{
+func TestApplyInput_BoundsAreInclusive(t *testing.T) {
+	err := apply(Input{
 		Date:   "2026-09-24",
 		Weight: fltptr(minWeightKG),
 		Chest:  fltptr(maxCircumferenceCM),
@@ -105,8 +130,8 @@ func TestBuildMeasurement_BoundsAreInclusive(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestBuildMeasurement_ReportsEveryBadFieldAtOnce(t *testing.T) {
-	_, err := buildMeasurement(uuid.New(), CreateInput{
+func TestApplyInput_ReportsEveryBadFieldAtOnce(t *testing.T) {
+	err := apply(Input{
 		Date:   "yesterday",
 		Weight: fltptr(1),
 		Waist:  fltptr(0.8),

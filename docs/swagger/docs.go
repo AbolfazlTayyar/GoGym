@@ -340,7 +340,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_measurement.createRequest"
+                            "$ref": "#/definitions/internal_measurement.measurementRequest"
                         }
                     }
                 ],
@@ -732,6 +732,140 @@ const docTemplate = `{
                         "description": "Bad Request",
                         "schema": {
                             "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.ValidationErrorEnvelope"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.UnauthorizedEnvelope"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.NotFoundEnvelope"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.InternalErrorEnvelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/measurements/{id}": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Replaces the date and every metric of a measurement, under the same rules as create: a metric left out is cleared, and at least one must be given. A measurement whose athlete belongs to another coach is reported as not found, the same as one that doesn't exist.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "measurements"
+                ],
+                "summary": "Update a measurement",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Measurement ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Measurement values",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_measurement.measurementRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.SuccessEnvelope"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/internal_measurement.measurementResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.ValidationErrorEnvelope"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.UnauthorizedEnvelope"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.NotFoundEnvelope"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.InternalErrorEnvelope"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Permanently removes a measurement from the athlete's history; data is null on success. There is no undo. A measurement whose athlete belongs to another coach is reported as not found, the same as one that doesn't exist.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "measurements"
+                ],
+                "summary": "Delete a measurement",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Measurement ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.NoContentEnvelope"
                         }
                     },
                     "401": {
@@ -1641,7 +1775,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_measurement.createRequest": {
+        "internal_measurement.measurementRequest": {
             "type": "object",
             "properties": {
                 "arm": {

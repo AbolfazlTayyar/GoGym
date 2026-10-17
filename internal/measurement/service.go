@@ -38,8 +38,9 @@ func (e *ValidationError) Error() string {
 	return fmt.Sprintf("measurement: validation failed for %d field(s)", len(e.Fields))
 }
 
-// CreateInput has no AthleteID: it comes from the path, after the service has checked who owns it.
-type CreateInput struct {
+// Input is a new measurement or an update's full replacement. It has no AthleteID: create takes it from
+// the path once the athlete is checked, and an update can't move a measurement to another athlete.
+type Input struct {
 	Date   string
 	Weight *float64
 	Chest  *float64
@@ -59,13 +60,13 @@ func NewService(repo *Repository, athletes *athlete.Service) *Service {
 }
 
 // Create checks ownership before validating, so another coach's athlete is a 404 whatever the body holds.
-func (s *Service) Create(ctx context.Context, coachID, athleteID uuid.UUID, input CreateInput) (*Measurement, error) {
+func (s *Service) Create(ctx context.Context, coachID, athleteID uuid.UUID, input Input) (*Measurement, error) {
 	if _, err := s.athletes.Get(ctx, coachID, athleteID); err != nil {
 		return nil, err
 	}
 
-	m, err := buildMeasurement(athleteID, input)
-	if err != nil {
+	m := &Measurement{ID: uuid.New(), AthleteID: athleteID}
+	if err := applyInput(m, input); err != nil {
 		return nil, err
 	}
 
@@ -85,6 +86,51 @@ func (s *Service) List(ctx context.Context, coachID, athleteID uuid.UUID) ([]Mea
 	return s.repo.ListByAthlete(ctx, athleteID)
 }
 
+// Update checks the measurement's athlete before validating, so another coach's measurement is a 404
+// whatever the body holds.
+func (s *Service) Update(ctx context.Context, coachID, id uuid.UUID, input Input) (*Measurement, error) {
+	m, err := s.owned(ctx, coachID, id)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := applyInput(m, input); err != nil {
+		return nil, err
+	}
+
+	if err := s.repo.Update(ctx, m); err != nil {
+		return nil, err
+	}
+
+	return m, nil
+}
+
+// Delete is permanent, unlike an athlete's or a movement's: nothing references a measurement, so a kept
+// row would only serve an undo that doesn't exist.
+func (s *Service) Delete(ctx context.Context, coachID, id uuid.UUID) error {
+	m, err := s.owned(ctx, coachID, id)
+	if err != nil {
+		return err
+	}
+
+	return s.repo.Delete(ctx, m)
+}
+
+// owned reaches tenant scoping through the measurement's athlete, so another coach's measurement, and one
+// whose athlete was deleted, come back as athlete.ErrNotFound.
+func (s *Service) owned(ctx context.Context, coachID, id uuid.UUID) (*Measurement, error) {
+	m, err := s.repo.FindByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	if _, err := s.athletes.Get(ctx, coachID, m.AthleteID); err != nil {
+		return nil, err
+	}
+
+	return m, nil
+}
+
 type metric struct {
 	name     string
 	value    *float64
@@ -92,8 +138,9 @@ type metric struct {
 	unit     string
 }
 
-// buildMeasurement collects every field error before returning, so a coach sees all mistakes at once.
-func buildMeasurement(athleteID uuid.UUID, input CreateInput) (*Measurement, error) {
+// applyInput collects every field error before returning, so a coach sees all mistakes at once, and
+// leaves m untouched unless the whole input is valid.
+func applyInput(m *Measurement, input Input) error {
 	fields := make(map[string]string)
 
 	rawDate := strings.TrimSpace(input.Date)
@@ -115,36 +162,34 @@ func buildMeasurement(athleteID uuid.UUID, input CreateInput) (*Measurement, err
 	}
 
 	anyValue := false
-	for _, m := range metrics {
-		if m.value == nil {
+	for _, mt := range metrics {
+		if mt.value == nil {
 			continue
 		}
 		anyValue = true
-		if *m.value < m.min || *m.value > m.max {
-			fields[m.name] = fmt.Sprintf("must be between %g and %g %s", m.min, m.max, m.unit)
+		if *mt.value < mt.min || *mt.value > mt.max {
+			fields[mt.name] = fmt.Sprintf("must be between %g and %g %s", mt.min, mt.max, mt.unit)
 		}
 	}
 
 	// An all-empty check-in would plot as a gap, so every metric field is flagged for the form to highlight.
 	if !anyValue {
-		for _, m := range metrics {
-			fields[m.name] = msgNoValues
+		for _, mt := range metrics {
+			fields[mt.name] = msgNoValues
 		}
 	}
 
 	if len(fields) > 0 {
-		return nil, &ValidationError{Fields: fields}
+		return &ValidationError{Fields: fields}
 	}
 
-	return &Measurement{
-		ID:        uuid.New(),
-		AthleteID: athleteID,
-		Date:      date,
-		Weight:    input.Weight,
-		Chest:     input.Chest,
-		Waist:     input.Waist,
-		Arm:       input.Arm,
-		Thigh:     input.Thigh,
-		Hip:       input.Hip,
-	}, nil
+	m.Date = date
+	m.Weight = input.Weight
+	m.Chest = input.Chest
+	m.Waist = input.Waist
+	m.Arm = input.Arm
+	m.Thigh = input.Thigh
+	m.Hip = input.Hip
+
+	return nil
 }

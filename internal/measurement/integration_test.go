@@ -136,6 +136,19 @@ func measurementsPath(athleteID string) string {
 	return "/api/v1/athletes/" + athleteID + "/measurements"
 }
 
+func measurementByIDPath(id string) string {
+	return "/api/v1/measurements/" + id
+}
+
+func findMeasurement(t *testing.T, db *gorm.DB, id string) measurement.Measurement {
+	t.Helper()
+
+	var m measurement.Measurement
+	require.NoError(t, db.First(&m, "id = ?", id).Error)
+
+	return m
+}
+
 func addMeasurement(t *testing.T, router *gin.Engine, token, athleteID, body string) measurementResponse {
 	t.Helper()
 
@@ -251,11 +264,108 @@ func TestMeasurements_SoftDeletedAthleteIsNotFound(t *testing.T) {
 	router, db := newTestRouter(t)
 	token := createCoach(t, router, db, "09121110105")
 	athleteID := createAthlete(t, router, token, "09121230105")
+	created := addMeasurement(t, router, token, athleteID, `{"date":"2026-09-01","weight":70}`)
 
 	require.NoError(t, db.Delete(&athlete.Athlete{}, "id = ?", athleteID).Error)
 
 	decodeEnvelope(t, do(t, router, http.MethodGet, measurementsPath(athleteID), token, ""), http.StatusNotFound)
 	decodeEnvelope(t, do(t, router, http.MethodPost, measurementsPath(athleteID), token, `{"date":"2026-09-01","weight":70}`), http.StatusNotFound)
+	decodeEnvelope(t, do(t, router, http.MethodPut, measurementByIDPath(created.ID), token, `{"date":"2026-09-01","weight":71}`), http.StatusNotFound)
+	decodeEnvelope(t, do(t, router, http.MethodDelete, measurementByIDPath(created.ID), token, ""), http.StatusNotFound)
+}
+
+func TestMeasurements_UpdateAndDelete(t *testing.T) {
+	router, db := newTestRouter(t)
+	token := createCoach(t, router, db, "09121110107")
+	athleteID := createAthlete(t, router, token, "09121230107")
+
+	created := addMeasurement(t, router, token, athleteID, `{"date":"2026-09-20","weight":71.5,"waist":80}`)
+	kept := addMeasurement(t, router, token, athleteID, `{"date":"2026-08-01","weight":74}`)
+	path := measurementByIDPath(created.ID)
+
+	t.Run("update replaces the date and every metric", func(t *testing.T) {
+		env := decodeEnvelope(t, do(t, router, http.MethodPut, path, token, `{"date":"2026-07-15","weight":70.9,"hip":98}`), http.StatusOK)
+
+		var updated measurementResponse
+		require.NoError(t, json.Unmarshal(env.Data, &updated))
+		assert.Equal(t, created.ID, updated.ID)
+		assert.Equal(t, athleteID, updated.AthleteID)
+		assert.Equal(t, "2026-07-15", updated.Date)
+		require.NotNil(t, updated.Weight)
+		assert.InDelta(t, 70.9, *updated.Weight, 0)
+		require.NotNil(t, updated.Hip)
+		assert.InDelta(t, 98, *updated.Hip, 0)
+		assert.Nil(t, updated.Waist, "a metric left out is cleared")
+
+		stored := findMeasurement(t, db, created.ID)
+		assert.Nil(t, stored.Waist)
+		assert.True(t, stored.UpdatedAt.After(stored.CreatedAt), "updated_at moves on an edit")
+
+		assert.Equal(t, []string{"2026-07-15", "2026-08-01"}, dates(listMeasurements(t, router, token, athleteID)),
+			"the history re-sorts by the new date")
+	})
+
+	t.Run("update validates like create", func(t *testing.T) {
+		env := decodeEnvelope(t, do(t, router, http.MethodPut, path, token, `{"date":"2026-07-15"}`), http.StatusBadRequest)
+		require.NotNil(t, env.Error)
+		assert.Equal(t, httpx.CodeValidationFailed, env.Error.Code)
+		assert.Contains(t, env.Error.Fields, "weight")
+
+		stored := findMeasurement(t, db, created.ID)
+		require.NotNil(t, stored.Weight)
+		assert.InDelta(t, 70.9, *stored.Weight, 0, "a rejected update writes nothing")
+	})
+
+	t.Run("delete removes the row for good", func(t *testing.T) {
+		env := decodeEnvelope(t, do(t, router, http.MethodDelete, path, token, ""), http.StatusOK)
+		assert.True(t, env.Success)
+		assert.Equal(t, "null", string(env.Data))
+
+		var rows int64
+		require.NoError(t, db.Model(&measurement.Measurement{}).Where("id = ?", created.ID).Count(&rows).Error)
+		assert.Zero(t, rows, "a hard delete leaves no row behind")
+
+		assert.Equal(t, []string{kept.Date}, dates(listMeasurements(t, router, token, athleteID)))
+	})
+
+	t.Run("a deleted measurement is gone", func(t *testing.T) {
+		decodeEnvelope(t, do(t, router, http.MethodPut, path, token, `{"date":"2026-07-15","weight":70}`), http.StatusNotFound)
+		decodeEnvelope(t, do(t, router, http.MethodDelete, path, token, ""), http.StatusNotFound)
+	})
+}
+
+// Another coach's measurement gets the same 404 as one that doesn't exist, whatever the body holds.
+func TestMeasurements_OnlyTheOwnerMayChangeAMeasurement(t *testing.T) {
+	router, db := newTestRouter(t)
+
+	owner := createCoach(t, router, db, "09121110108")
+	intruder := createCoach(t, router, db, "09121110109")
+	athleteID := createAthlete(t, router, owner, "09121230108")
+
+	created := addMeasurement(t, router, owner, athleteID, `{"date":"2026-09-01","weight":70}`)
+	path := measurementByIDPath(created.ID)
+
+	t.Run("update and delete are 404, not 403", func(t *testing.T) {
+		for _, rec := range []*httptest.ResponseRecorder{
+			do(t, router, http.MethodPut, path, intruder, `{"date":"2026-09-02","weight":99}`),
+			do(t, router, http.MethodPut, path, intruder, `{}`),
+			do(t, router, http.MethodDelete, path, intruder, ""),
+		} {
+			env := decodeEnvelope(t, rec, http.StatusNotFound)
+			require.NotNil(t, env.Error)
+			assert.Equal(t, httpx.CodeNotFound, env.Error.Code)
+		}
+
+		stored := findMeasurement(t, db, created.ID)
+		require.NotNil(t, stored.Weight)
+		assert.InDelta(t, 70, *stored.Weight, 0, "neither changed nor deleted")
+	})
+
+	t.Run("an id that doesn't exist reads the same", func(t *testing.T) {
+		unknown := measurementByIDPath(uuid.NewString())
+		decodeEnvelope(t, do(t, router, http.MethodPut, unknown, owner, `{"date":"2026-09-02","weight":71}`), http.StatusNotFound)
+		decodeEnvelope(t, do(t, router, http.MethodDelete, unknown, owner, ""), http.StatusNotFound)
+	})
 }
 
 func TestMeasurements_RejectsBadInputWithFieldErrors(t *testing.T) {
