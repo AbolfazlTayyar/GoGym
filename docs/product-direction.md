@@ -126,6 +126,8 @@ These were the original gap list. The first five are now scheduled in [tasks/](t
 - **No audit log, and no error tracking** (Sentry or equivalent).
 - **No product metric.** "Plans built per coach per week" is the number that tells you whether
   anyone actually uses this.
+- **No undelete.** Once soft-deleted, a movement can't be brought back through the API. It's only
+  kept so existing plans still show it (see [ADR 0022](adr/0022-delete-movement-in-use.md)).
 
 ### 7. Who you sell to changes the schema
 
