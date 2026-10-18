@@ -8,7 +8,26 @@ fast).
 These are static mockups to pick a direction, not specs. Athlete names are made up. The plan content
 follows her real plans.
 
-## Round 2 — current options
+## Round 3 — current options
+
+Asked for after round 2: two looks taken from outside references. Both keep round 2's rules: no
+per-athlete colors, tapping an athlete opens the plan, and a new plan starts from a copy.
+
+| | 6 — Blush | 7 — Sport |
+|---|---|---|
+| Board | [concept-6-blush.png](concept-6-blush.png) | [concept-7-sport.png](concept-7-sport.png) |
+| Reference | [appetit.fit](https://appetit.fit/): its palette (hot pink `#FF0057`, blush `#FFEFF2`–`#FFD3DB`, cream `#F7F3EF`), pill buttons with a pink glow, large radii | [openGym](https://github.com/DuarteSantos8/openGym): true black, gray iOS-style cards, one green (`#30D158`), big titles, week strip, set steppers, floating centre button |
+| Idea | Concept 5's flow in a soft, light, pink look | A sports-tracker look made for a dark gym: big type, high contrast |
+| Theme | Light, blush pink; yellow for "no plan", since red would get lost next to the pink | Dark, black and green; orange for "no plan", blue for cardio |
+| Home | Pink header with a greeting, white athlete cards (initial, name, plan), ~7 on screen | Big title with today's date, two tiles (private, no plan), grouped list, ~6 on screen; a green centre button starts a new plan |
+| App → the day she needs | 2 taps (card, day) | 2 taps (row, day) |
+| Day view | One white sheet: pink numbers, sets × reps under each movement; the whole day fits one screenshot | The week strip with A–E and movement counts, then one grouped list; the whole day fits one screen |
+| Builder | The day view made editable: a tapped line opens in blush with type, +/− and presets | Written movements as short rows, the open one as a big card with large steppers; values carry over from the previous movement |
+| Adding a movement | Type at the bottom, tap a suggestion; the new line copies the previous line's values | A picker where one tap adds a result with the values chosen above the list ("مثل قبلی" by default) |
+| Start from an earlier plan | A first step that asks where to start, with a preview of the copied days | Starts as a copy (card at the top of the builder) |
+| Trade-off | Warm and friendly, and good-looking in a screenshot, but light and pink go against the spec's dark/neutral, high-contrast default for gym light; small pink text only passes contrast in the deeper shade (`#D6004A`) | Easiest to read in a dark gym, but the tiles and big title leave the fewest names on home, and it looks more like an athlete's tracker than a coach's notebook |
+
+## Round 2
 
 Asked for after round 1: one design close to the earlier `gym-trainer-app.jsx`, and one simpler
 design. Neither uses per-athlete colors.
@@ -53,8 +72,8 @@ drops.
 | Start from an earlier plan | Copy of the whole plan | Copy day by day, from any plan | Copy of the whole plan |
 | Trade-off | Light theme may glare less but stands out less in a dark gym; colors only help if she keeps them consistent | Most efficient but most "tool-like"; the table looks less polished in a screenshot sent to a public athlete | Familiar and polished, but cards take space and it's the slowest to scan |
 
-Parts can be mixed across both rounds: e.g. concept 2's day buttons on concept 5's plain list, or
-concept 2's number pad in any builder.
+Parts can be mixed across rounds: e.g. concept 2's day buttons on concept 5's plain list, concept
+2's number pad in any builder, or concept 7's one-tap picker in concept 6's look.
 
 ## What her plans showed
 
@@ -105,6 +124,6 @@ google-chrome-stable --headless=new --hide-scrollbars --window-size=1860,1300 \
   "file://$PWD/docs/design/src/concept-4-classic.html"
 ```
 
-Round 1 boards are 1440 wide (three phones), round 2 boards 1860 (four phones).
+Round 1 boards are 1440 wide (three phones), round 2 and 3 boards 1860 (four phones).
 
 The fonts (Vazirmatn, Inter, JetBrains Mono) load from Google Fonts, so rendering needs a network connection.
