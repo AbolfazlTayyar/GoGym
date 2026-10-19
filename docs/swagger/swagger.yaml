@@ -144,6 +144,33 @@ definitions:
         example: false
         type: boolean
     type: object
+  internal_athlete.athleteRequest:
+    properties:
+      athlete_type:
+        example: private
+        type: string
+      experience_level:
+        example: beginner
+        type: string
+      first_name:
+        example: Sara
+        type: string
+      goal:
+        example: lose 5kg
+        type: string
+      height:
+        example: 172
+        type: number
+      injuries:
+        example: left shoulder impingement
+        type: string
+      last_name:
+        example: Ahmadi
+        type: string
+      phone:
+        example: "09372144430"
+        type: string
+    type: object
   internal_athlete.athleteResponse:
     properties:
       athlete_type:
@@ -178,33 +205,6 @@ definitions:
         type: string
       updated_at:
         example: "2026-09-24T09:30:00Z"
-        type: string
-    type: object
-  internal_athlete.createRequest:
-    properties:
-      athlete_type:
-        example: private
-        type: string
-      experience_level:
-        example: beginner
-        type: string
-      first_name:
-        example: Sara
-        type: string
-      goal:
-        example: lose 5kg
-        type: string
-      height:
-        example: 172
-        type: number
-      injuries:
-        example: left shoulder impingement
-        type: string
-      last_name:
-        example: Ahmadi
-        type: string
-      phone:
-        example: "09372144430"
         type: string
     type: object
   internal_athlete.listMeta:
@@ -629,7 +629,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/internal_athlete.createRequest'
+          $ref: '#/definitions/internal_athlete.athleteRequest'
       produces:
       - application/json
       responses:
@@ -660,6 +660,43 @@ paths:
       tags:
       - athletes
   /api/v1/athletes/{id}:
+    delete:
+      description: Soft-deletes the athlete; data is null on success. Afterwards the
+        athlete is gone from the list and from GET /athletes/{id}, and their plans
+        and measurements are reported as not found. Nothing else is deleted. An athlete
+        that belongs to another coach is reported as not found, the same as one that
+        doesn't exist.
+      parameters:
+      - description: Athlete ID
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.NoContentEnvelope'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.UnauthorizedEnvelope'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.NotFoundEnvelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.InternalErrorEnvelope'
+      security:
+      - BearerAuth: []
+      summary: Delete an athlete
+      tags:
+      - athletes
     get:
       description: Returns the athlete's full profile. An athlete that belongs to
         another coach is reported as not found, the same as one that doesn't exist.
@@ -697,6 +734,60 @@ paths:
       security:
       - BearerAuth: []
       summary: Get an athlete
+      tags:
+      - athletes
+    put:
+      consumes:
+      - application/json
+      description: 'Replaces every editable field under the same rules as create:
+        an optional field left out is cleared. athlete_type is required here, unlike
+        on create, so an edit that forgets it can''t move a public athlete to private.
+        An athlete that belongs to another coach is reported as not found, the same
+        as one that doesn''t exist.'
+      parameters:
+      - description: Athlete ID
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Athlete details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_athlete.athleteRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.SuccessEnvelope'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_athlete.athleteResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.ValidationErrorEnvelope'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.UnauthorizedEnvelope'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.NotFoundEnvelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.InternalErrorEnvelope'
+      security:
+      - BearerAuth: []
+      summary: Update an athlete
       tags:
       - athletes
   /api/v1/athletes/{id}/measurements:

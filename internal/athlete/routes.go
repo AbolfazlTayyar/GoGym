@@ -7,4 +7,6 @@ func RegisterRoutes(protected *gin.RouterGroup, h *Handler) {
 	athletes.POST("", h.Create)
 	athletes.GET("", h.List)
 	athletes.GET("/:"+paramID, h.Get)
+	athletes.PUT("/:"+paramID, h.Update)
+	athletes.DELETE("/:"+paramID, h.Delete)
 }

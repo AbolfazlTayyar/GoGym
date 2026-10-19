@@ -61,8 +61,9 @@ type listMeta struct {
 	Offset int   `json:"offset" example:"0"`
 }
 
-// createRequest has no binding tags on purpose: the service owns every rule, presence included.
-type createRequest struct {
+// athleteRequest serves create and update; it has no binding tags on purpose: the service owns every
+// rule, presence included.
+type athleteRequest struct {
 	FirstName       string   `json:"first_name" example:"Sara"`
 	LastName        string   `json:"last_name" example:"Ahmadi"`
 	Phone           string   `json:"phone" example:"09372144430"`
@@ -71,6 +72,22 @@ type createRequest struct {
 	Goal            *string  `json:"goal" example:"lose 5kg"`
 	Height          *float64 `json:"height" example:"172"`
 	AthleteType     *string  `json:"athlete_type" example:"private"`
+}
+
+func (r athleteRequest) toInput() Input {
+	input := Input{
+		FirstName:       r.FirstName,
+		LastName:        r.LastName,
+		Phone:           r.Phone,
+		ExperienceLevel: r.ExperienceLevel,
+		Injuries:        r.Injuries,
+		Goal:            r.Goal,
+		Height:          r.Height,
+	}
+	if r.AthleteType != nil {
+		input.AthleteType = *r.AthleteType
+	}
+	return input
 }
 
 type Handler struct {
@@ -89,7 +106,7 @@ func NewHandler(svc *Service) *Handler {
 //	@Accept			json
 //	@Produce		json
 //	@Security		BearerAuth
-//	@Param			request	body		createRequest	true	"Athlete details"
+//	@Param			request	body		athleteRequest	true	"Athlete details"
 //	@Success		201		{object}	httpx.SuccessEnvelope{data=athleteResponse}
 //	@Failure		400		{object}	httpx.ValidationErrorEnvelope
 //	@Failure		401		{object}	httpx.UnauthorizedEnvelope
@@ -102,26 +119,13 @@ func (h *Handler) Create(c *gin.Context) {
 		return
 	}
 
-	var req createRequest
+	var req athleteRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		httpx.ErrorFields(c, http.StatusBadRequest, httpx.CodeValidationFailed, httpx.MsgInvalidRequest, httpx.ValidationFields(err))
 		return
 	}
 
-	input := CreateInput{
-		FirstName:       req.FirstName,
-		LastName:        req.LastName,
-		Phone:           req.Phone,
-		ExperienceLevel: req.ExperienceLevel,
-		Injuries:        req.Injuries,
-		Goal:            req.Goal,
-		Height:          req.Height,
-	}
-	if req.AthleteType != nil {
-		input.AthleteType = *req.AthleteType
-	}
-
-	created, err := h.svc.Create(c.Request.Context(), coachID, input)
+	created, err := h.svc.Create(c.Request.Context(), coachID, req.toInput())
 	if err != nil {
 		writeServiceError(c, err)
 		return
@@ -212,6 +216,82 @@ func (h *Handler) Get(c *gin.Context) {
 	}
 
 	httpx.OK(c, newAthleteResponse(found))
+}
+
+// Update replaces one of the coach's athletes.
+//
+//	@Summary		Update an athlete
+//	@Description	Replaces every editable field under the same rules as create: an optional field left out is cleared. athlete_type is required here, unlike on create, so an edit that forgets it can't move a public athlete to private. An athlete that belongs to another coach is reported as not found, the same as one that doesn't exist.
+//	@Tags			athletes
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			id		path		string			true	"Athlete ID"	format(uuid)
+//	@Param			request	body		athleteRequest	true	"Athlete details"
+//	@Success		200		{object}	httpx.SuccessEnvelope{data=athleteResponse}
+//	@Failure		400		{object}	httpx.ValidationErrorEnvelope
+//	@Failure		401		{object}	httpx.UnauthorizedEnvelope
+//	@Failure		404		{object}	httpx.NotFoundEnvelope
+//	@Failure		500		{object}	httpx.InternalErrorEnvelope
+//	@Router			/api/v1/athletes/{id} [put]
+func (h *Handler) Update(c *gin.Context) {
+	coachID, ok := tenant.CoachIDFromContext(c)
+	if !ok {
+		httpx.Error(c, http.StatusUnauthorized, httpx.CodeUnauthorized, httpx.MsgUnauthorized)
+		return
+	}
+
+	id, ok := httpx.PathUUID(c, paramID)
+	if !ok {
+		return
+	}
+
+	var req athleteRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		httpx.ErrorFields(c, http.StatusBadRequest, httpx.CodeValidationFailed, httpx.MsgInvalidRequest, httpx.ValidationFields(err))
+		return
+	}
+
+	updated, err := h.svc.Update(c.Request.Context(), coachID, id, req.toInput())
+	if err != nil {
+		writeServiceError(c, err)
+		return
+	}
+
+	httpx.OK(c, newAthleteResponse(updated))
+}
+
+// Delete removes one of the coach's athletes.
+//
+//	@Summary		Delete an athlete
+//	@Description	Soft-deletes the athlete; data is null on success. Afterwards the athlete is gone from the list and from GET /athletes/{id}, and their plans and measurements are reported as not found. Nothing else is deleted. An athlete that belongs to another coach is reported as not found, the same as one that doesn't exist.
+//	@Tags			athletes
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			id	path		string	true	"Athlete ID"	format(uuid)
+//	@Success		200	{object}	httpx.NoContentEnvelope
+//	@Failure		401	{object}	httpx.UnauthorizedEnvelope
+//	@Failure		404	{object}	httpx.NotFoundEnvelope
+//	@Failure		500	{object}	httpx.InternalErrorEnvelope
+//	@Router			/api/v1/athletes/{id} [delete]
+func (h *Handler) Delete(c *gin.Context) {
+	coachID, ok := tenant.CoachIDFromContext(c)
+	if !ok {
+		httpx.Error(c, http.StatusUnauthorized, httpx.CodeUnauthorized, httpx.MsgUnauthorized)
+		return
+	}
+
+	id, ok := httpx.PathUUID(c, paramID)
+	if !ok {
+		return
+	}
+
+	if err := h.svc.Delete(c.Request.Context(), coachID, id); err != nil {
+		writeServiceError(c, err)
+		return
+	}
+
+	httpx.NoContent(c)
 }
 
 // intParam returns 0 for a missing param, which the service treats as unset.

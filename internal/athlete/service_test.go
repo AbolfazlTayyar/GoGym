@@ -14,8 +14,8 @@ import (
 func strptr(s string) *string   { return &s }
 func fltptr(f float64) *float64 { return &f }
 
-func validInput() CreateInput {
-	return CreateInput{
+func validInput() Input {
+	return Input{
 		FirstName: "Sara",
 		LastName:  "Ahmadi",
 		Phone:     "09372144430",
@@ -41,7 +41,7 @@ func TestBuildAthlete_Valid(t *testing.T) {
 	input.Height = fltptr(172)
 	input.AthleteType = TypePublic
 
-	a, err := buildAthlete(coachID, input)
+	a, err := buildAthlete(coachID, input, false)
 	require.NoError(t, err)
 
 	assert.Equal(t, coachID, a.CoachID, "the owning coach comes from the caller, never the input")
@@ -56,13 +56,13 @@ func TestBuildAthlete_Valid(t *testing.T) {
 }
 
 func TestBuildAthlete_ReportsEveryBadFieldAtOnce(t *testing.T) {
-	_, err := buildAthlete(uuid.New(), CreateInput{
+	_, err := buildAthlete(uuid.New(), Input{
 		FirstName:       "  ",
 		Phone:           "+15550001111",
 		ExperienceLevel: strptr("expert"),
 		Height:          fltptr(1.72),
 		AthleteType:     "vip",
-	})
+	}, false)
 
 	fields := requireValidationFields(t, err)
 	assert.Equal(t, httpx.MsgFieldRequired, fields["first_name"], "whitespace-only is not a name")
@@ -78,14 +78,14 @@ func TestBuildAthlete_MissingPhoneIsRequiredNotMalformed(t *testing.T) {
 	input := validInput()
 	input.Phone = "   "
 
-	_, err := buildAthlete(uuid.New(), input)
+	_, err := buildAthlete(uuid.New(), input, false)
 
 	fields := requireValidationFields(t, err)
 	assert.Equal(t, httpx.MsgFieldRequired, fields["phone"])
 }
 
 func TestBuildAthlete_DefaultsToPrivate(t *testing.T) {
-	a, err := buildAthlete(uuid.New(), validInput())
+	a, err := buildAthlete(uuid.New(), validInput(), false)
 	require.NoError(t, err)
 
 	assert.Equal(t, TypePrivate, a.AthleteType)
@@ -97,7 +97,7 @@ func TestBuildAthlete_BlankOptionalsBecomeNull(t *testing.T) {
 	input.Injuries = strptr("   ")
 	input.Goal = strptr("")
 
-	a, err := buildAthlete(uuid.New(), input)
+	a, err := buildAthlete(uuid.New(), input, false)
 	require.NoError(t, err)
 
 	assert.Nil(t, a.ExperienceLevel)
@@ -121,7 +121,7 @@ func TestBuildAthlete_HeightBounds(t *testing.T) {
 			input := validInput()
 			input.Height = fltptr(tc.height)
 
-			_, err := buildAthlete(uuid.New(), input)
+			_, err := buildAthlete(uuid.New(), input, false)
 			if !tc.wantErr {
 				require.NoError(t, err)
 				return
@@ -140,12 +140,12 @@ func TestBuildAthlete_NameLengthCountsRunes(t *testing.T) {
 	input := validInput()
 	input.FirstName = persian
 
-	a, err := buildAthlete(uuid.New(), input)
+	a, err := buildAthlete(uuid.New(), input, false)
 	require.NoError(t, err)
 	assert.Equal(t, persian, a.FirstName)
 
 	input.FirstName = persian + "ش"
-	_, err = buildAthlete(uuid.New(), input)
+	_, err = buildAthlete(uuid.New(), input, false)
 
 	fields := requireValidationFields(t, err)
 	assert.Contains(t, fields, "first_name")
@@ -155,7 +155,7 @@ func TestBuildAthlete_NotesLengthBounded(t *testing.T) {
 	input := validInput()
 	input.Goal = strptr(strings.Repeat("a", maxNotesLength+1))
 
-	_, err := buildAthlete(uuid.New(), input)
+	_, err := buildAthlete(uuid.New(), input, false)
 
 	fields := requireValidationFields(t, err)
 	assert.Contains(t, fields, "goal")
@@ -213,4 +213,34 @@ func TestNormalizeListOptions_TrimsQuery(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, "ada", got.Query)
+}
+
+func TestBuildAthlete_TypeRequiredOnUpdate(t *testing.T) {
+	a, err := buildAthlete(uuid.New(), validInput(), false)
+	require.NoError(t, err)
+	assert.Equal(t, TypePrivate, a.AthleteType, "create defaults a missing type to private")
+
+	_, err = buildAthlete(uuid.New(), validInput(), true)
+	fields := requireValidationFields(t, err)
+	assert.Equal(t, map[string]string{"athlete_type": httpx.MsgFieldRequired}, fields,
+		"an update that forgets the type must not move a public athlete to private")
+
+	input := validInput()
+	input.AthleteType = TypePublic
+	a, err = buildAthlete(uuid.New(), input, true)
+	require.NoError(t, err)
+	assert.Equal(t, TypePublic, a.AthleteType)
+}
+
+func TestBuildAthlete_UpdateValidatesLikeCreate(t *testing.T) {
+	input := validInput()
+	input.AthleteType = TypePublic
+	input.Phone = "12345"
+	input.Height = fltptr(400)
+
+	_, err := buildAthlete(uuid.New(), input, true)
+
+	fields := requireValidationFields(t, err)
+	assert.Equal(t, validate.MsgIranMobile, fields["phone"])
+	assert.Contains(t, fields["height"], "between")
 }

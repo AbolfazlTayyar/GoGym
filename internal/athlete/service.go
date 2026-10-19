@@ -40,8 +40,8 @@ func (e *ValidationError) Error() string {
 	return fmt.Sprintf("athlete: validation failed for %d field(s)", len(e.Fields))
 }
 
-// CreateInput deliberately has no CoachID, so a request body can never choose the owning coach.
-type CreateInput struct {
+// Input deliberately has no CoachID, so a request body can never choose the owning coach.
+type Input struct {
 	FirstName       string
 	LastName        string
 	Phone           string
@@ -49,7 +49,7 @@ type CreateInput struct {
 	Injuries        *string
 	Goal            *string
 	Height          *float64
-	// AthleteType empty means TypePrivate.
+	// AthleteType empty means TypePrivate on create, and is a field error on update.
 	AthleteType string
 }
 
@@ -70,8 +70,8 @@ func NewService(repo *Repository) *Service {
 }
 
 // Create validates here rather than via binding tags so the rules hold for every caller, not just HTTP.
-func (s *Service) Create(ctx context.Context, coachID uuid.UUID, input CreateInput) (*Athlete, error) {
-	a, err := buildAthlete(coachID, input)
+func (s *Service) Create(ctx context.Context, coachID uuid.UUID, input Input) (*Athlete, error) {
+	a, err := buildAthlete(coachID, input, false)
 	if err != nil {
 		return nil, err
 	}
@@ -81,6 +81,41 @@ func (s *Service) Create(ctx context.Context, coachID uuid.UUID, input CreateInp
 	}
 
 	return a, nil
+}
+
+// Update replaces every editable field: an optional field left out is cleared. athlete_type is required
+// here, unlike on create, so an edit that forgets it can't quietly move a public athlete to private.
+func (s *Service) Update(ctx context.Context, coachID, id uuid.UUID, input Input) (*Athlete, error) {
+	a, err := s.repo.FindByID(ctx, coachID, id)
+	if err != nil {
+		return nil, err
+	}
+
+	edited, err := buildAthlete(coachID, input, true)
+	if err != nil {
+		return nil, err
+	}
+
+	a.FirstName = edited.FirstName
+	a.LastName = edited.LastName
+	a.Phone = edited.Phone
+	a.ExperienceLevel = edited.ExperienceLevel
+	a.Injuries = edited.Injuries
+	a.Goal = edited.Goal
+	a.Height = edited.Height
+	a.AthleteType = edited.AthleteType
+
+	if err := s.repo.Update(ctx, coachID, a); err != nil {
+		return nil, err
+	}
+
+	return a, nil
+}
+
+// Delete is soft (docs/adr/0008): the athlete's plans and measurements stay, but every lookup of them
+// goes through this athlete and so turns into ErrNotFound.
+func (s *Service) Delete(ctx context.Context, coachID, id uuid.UUID) error {
+	return s.repo.Delete(ctx, coachID, id)
 }
 
 // Get returns ErrNotFound for another coach's athlete, exactly as for one that doesn't exist.
@@ -121,7 +156,8 @@ func (s *Service) List(ctx context.Context, coachID uuid.UUID, opts ListOptions)
 }
 
 // buildAthlete collects every field error before returning, so a coach sees all mistakes at once.
-func buildAthlete(coachID uuid.UUID, input CreateInput) (*Athlete, error) {
+// typeRequired is set for an update, where a missing athlete_type must not default to private.
+func buildAthlete(coachID uuid.UUID, input Input, typeRequired bool) (*Athlete, error) {
 	fields := make(map[string]string)
 
 	firstName := requiredName(fields, "first_name", input.FirstName)
@@ -157,6 +193,9 @@ func buildAthlete(coachID uuid.UUID, input CreateInput) (*Athlete, error) {
 	athleteType := strings.TrimSpace(input.AthleteType)
 	switch athleteType {
 	case "":
+		if typeRequired {
+			fields["athlete_type"] = httpx.MsgFieldRequired
+		}
 		athleteType = TypePrivate
 	case TypePrivate, TypePublic:
 	default:

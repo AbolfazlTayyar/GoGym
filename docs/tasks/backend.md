@@ -1000,7 +1000,7 @@ $ curl -s -H "Authorization: Bearer $TOKEN" localhost:8080/api/v1/plans/current
 
 ### Athlete update and delete
 
-⬜ **Not started** — before the frontend's profile screen.
+✅ **Done**
 
 **Description:** The profile's pencil opens the athlete form filled in ([concept-8-2-athlete.png](../design/concept-8-2-athlete.png)), and moving an athlete between private and public is an edit too. `internal/athlete` only has create, list and get. Athletes already have a `deleted_at` column ([ADR 0008](../adr/0008-soft-delete.md)), but no endpoint sets it.
 

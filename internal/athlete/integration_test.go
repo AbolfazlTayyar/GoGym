@@ -12,6 +12,9 @@ import (
 
 	"github.com/AbolfazlTayyar/gogym/internal/athlete"
 	"github.com/AbolfazlTayyar/gogym/internal/coach"
+	"github.com/AbolfazlTayyar/gogym/internal/measurement"
+	"github.com/AbolfazlTayyar/gogym/internal/movement"
+	"github.com/AbolfazlTayyar/gogym/internal/plan"
 	"github.com/AbolfazlTayyar/gogym/internal/platform/httpx"
 	"github.com/AbolfazlTayyar/gogym/internal/platform/testutil"
 	"github.com/gin-gonic/gin"
@@ -22,13 +25,15 @@ import (
 
 const athletesPath = "/api/v1/athletes"
 
-// newTestRouter wires the coach module too, since athlete requests need a real coach's token.
+// newTestRouter wires the coach module too, since athlete requests need a real coach's token, and the
+// plan and measurement modules, to check what an athlete's delete does to them.
 func newTestRouter(t *testing.T) (*gin.Engine, *gorm.DB) {
 	t.Helper()
 
 	db := testutil.NewDB(t)
 
 	coachSvc := coach.NewService(coach.NewRepository(db), "test-secret", time.Hour)
+	athleteSvc := athlete.NewService(athlete.NewRepository(db))
 
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
@@ -38,7 +43,9 @@ func newTestRouter(t *testing.T) (*gin.Engine, *gorm.DB) {
 	protected.Use(coach.AuthMiddleware(coachSvc))
 
 	coach.RegisterRoutes(v1, protected, coach.NewHandler(coachSvc, false))
-	athlete.RegisterRoutes(protected, athlete.NewHandler(athlete.NewService(athlete.NewRepository(db))))
+	athlete.RegisterRoutes(protected, athlete.NewHandler(athleteSvc))
+	measurement.RegisterRoutes(protected, measurement.NewHandler(measurement.NewService(measurement.NewRepository(db), athleteSvc)))
+	plan.RegisterRoutes(protected, plan.NewHandler(plan.NewService(plan.NewRepository(db), athleteSvc, movement.NewService(movement.NewRepository(db)))))
 
 	return router, db
 }
@@ -49,6 +56,8 @@ type athleteResponse struct {
 	LastName        string   `json:"last_name"`
 	Phone           string   `json:"phone"`
 	ExperienceLevel *string  `json:"experience_level"`
+	Goal            *string  `json:"goal"`
+	Injuries        *string  `json:"injuries"`
 	Height          *float64 `json:"height"`
 	AthleteType     string   `json:"athlete_type"`
 }
@@ -398,4 +407,127 @@ func TestList_ExcludesSoftDeletedAthletes(t *testing.T) {
 	require.NoError(t, db.Unscoped().Model(&athlete.Athlete{}).
 		Where("id = ? AND deleted_at IS NOT NULL", removed.ID).Count(&stillStored).Error)
 	assert.Equal(t, int64(1), stillStored, "soft delete preserves the row")
+}
+
+func athletePath(id string) string {
+	return athletesPath + "/" + id
+}
+
+func TestUpdate_RoundTripsAndClearsOmittedOptionalFields(t *testing.T) {
+	router, db := newTestRouter(t)
+	token := createCoach(t, router, db, "09121110401")
+	created := createAthlete(t, router, token,
+		`{"first_name":"Sara","last_name":"Ahmadi","phone":"09121230401","goal":"lose 5kg","height":168,"experience_level":"beginner","injuries":"knee"}`)
+
+	body := `{"first_name":"Sara","last_name":"Karimi","phone":"09121230499","goal":"tone","athlete_type":"private"}`
+	env := decodeEnvelope(t, do(t, router, http.MethodPut, athletePath(created.ID), token, body), http.StatusOK)
+	var updated athleteResponse
+	require.NoError(t, json.Unmarshal(env.Data, &updated))
+
+	got := decodeEnvelope(t, do(t, router, http.MethodGet, athletePath(created.ID), token, ""), http.StatusOK)
+	var fetched athleteResponse
+	require.NoError(t, json.Unmarshal(got.Data, &fetched))
+
+	for _, a := range []athleteResponse{updated, fetched} {
+		assert.Equal(t, "Karimi", a.LastName)
+		assert.Equal(t, "09121230499", a.Phone)
+		require.NotNil(t, a.Goal)
+		assert.Equal(t, "tone", *a.Goal)
+		assert.Nil(t, a.Height, "an omitted optional field is cleared")
+		assert.Nil(t, a.ExperienceLevel)
+		assert.Nil(t, a.Injuries)
+	}
+}
+
+func TestUpdate_RejectsBadInputAndAMissingType(t *testing.T) {
+	router, db := newTestRouter(t)
+	token := createCoach(t, router, db, "09121110402")
+	created := createAthlete(t, router, token, `{"first_name":"Sara","last_name":"Ahmadi","phone":"09121230402","athlete_type":"public"}`)
+
+	env := decodeEnvelope(t, do(t, router, http.MethodPut, athletePath(created.ID), token,
+		`{"first_name":"Sara","last_name":"Ahmadi","phone":"123"}`), http.StatusBadRequest)
+	require.NotNil(t, env.Error)
+	assert.Equal(t, httpx.CodeValidationFailed, env.Error.Code)
+	assert.Equal(t, httpx.MsgFieldRequired, env.Error.Fields["athlete_type"])
+	assert.Contains(t, env.Error.Fields, "phone")
+
+	got := decodeEnvelope(t, do(t, router, http.MethodGet, athletePath(created.ID), token, ""), http.StatusOK)
+	var fetched athleteResponse
+	require.NoError(t, json.Unmarshal(got.Data, &fetched))
+	assert.Equal(t, "public", fetched.AthleteType, "a rejected update changes nothing")
+}
+
+func TestUpdate_SwitchingToPublicMovesBetweenLists(t *testing.T) {
+	router, db := newTestRouter(t)
+	token := createCoach(t, router, db, "09121110403")
+	created := createAthlete(t, router, token, `{"first_name":"Sara","last_name":"Ahmadi","phone":"09121230403"}`)
+
+	private, _ := listAthletes(t, router, token, "")
+	require.Len(t, private, 1)
+
+	decodeEnvelope(t, do(t, router, http.MethodPut, athletePath(created.ID), token,
+		`{"first_name":"Sara","last_name":"Ahmadi","phone":"09121230403","athlete_type":"public"}`), http.StatusOK)
+
+	private, _ = listAthletes(t, router, token, "")
+	assert.Empty(t, private, "gone from the default private list")
+	public, _ := listAthletes(t, router, token, "?athlete_type=public")
+	require.Len(t, public, 1)
+	assert.Equal(t, created.ID, public[0].ID)
+}
+
+func TestDelete_AthleteAndEverythingUnderItBecomeNotFound(t *testing.T) {
+	router, db := newTestRouter(t)
+	token := createCoach(t, router, db, "09121110404")
+	created := createAthlete(t, router, token, `{"first_name":"Sara","last_name":"Ahmadi","phone":"09121230404"}`)
+
+	planEnv := decodeEnvelope(t, do(t, router, http.MethodPost, "/api/v1/plans", token,
+		fmt.Sprintf(`{"athlete_id":%q,"title":"Mehr","start_date":"2026-09-23"}`, created.ID)), http.StatusCreated)
+	var p struct {
+		ID string `json:"id"`
+	}
+	require.NoError(t, json.Unmarshal(planEnv.Data, &p))
+	mEnv := decodeEnvelope(t, do(t, router, http.MethodPost, athletePath(created.ID)+"/measurements", token,
+		`{"date":"2026-09-23","weight":70}`), http.StatusCreated)
+	var m struct {
+		ID string `json:"id"`
+	}
+	require.NoError(t, json.Unmarshal(mEnv.Data, &m))
+
+	env := decodeEnvelope(t, do(t, router, http.MethodDelete, athletePath(created.ID), token, ""), http.StatusOK)
+	assert.True(t, env.Success)
+	assert.Equal(t, "null", string(env.Data))
+
+	for _, path := range []string{
+		athletePath(created.ID),
+		athletePath(created.ID) + "/plans",
+		"/api/v1/plans/" + p.ID,
+		athletePath(created.ID) + "/measurements",
+	} {
+		decodeEnvelope(t, do(t, router, http.MethodGet, path, token, ""), http.StatusNotFound)
+	}
+	decodeEnvelope(t, do(t, router, http.MethodPut, "/api/v1/measurements/"+m.ID, token,
+		`{"date":"2026-09-23","weight":71}`), http.StatusNotFound)
+
+	list, _ := listAthletes(t, router, token, "?athlete_type=all")
+	assert.Empty(t, list)
+
+	var rows int64
+	require.NoError(t, db.Table("plan").Where("id = ?", p.ID).Count(&rows).Error)
+	assert.Equal(t, int64(1), rows, "nothing else is deleted")
+}
+
+func TestUpdateAndDelete_AnotherCoachsAthleteIsNotFound(t *testing.T) {
+	router, db := newTestRouter(t)
+	owner := createCoach(t, router, db, "09121110405")
+	intruder := createCoach(t, router, db, "09121110406")
+	created := createAthlete(t, router, owner, `{"first_name":"Sara","last_name":"Ahmadi","phone":"09121230405"}`)
+
+	body := `{"first_name":"X","last_name":"Y","phone":"09121230405","athlete_type":"private"}`
+	decodeEnvelope(t, do(t, router, http.MethodPut, athletePath(created.ID), intruder, body), http.StatusNotFound)
+	decodeEnvelope(t, do(t, router, http.MethodDelete, athletePath(created.ID), intruder, ""), http.StatusNotFound)
+
+	got := decodeEnvelope(t, do(t, router, http.MethodGet, athletePath(created.ID), owner, ""), http.StatusOK)
+	var fetched athleteResponse
+	require.NoError(t, json.Unmarshal(got.Data, &fetched))
+	assert.Equal(t, "Sara", fetched.FirstName, "the owner's athlete is untouched")
 }

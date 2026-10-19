@@ -44,6 +44,37 @@ func (r *Repository) FindByID(ctx context.Context, coachID, id uuid.UUID) (*Athl
 	return &a, nil
 }
 
+// editableColumns are the ones Update writes, nil values included, so a cleared optional field becomes NULL.
+var editableColumns = []string{
+	"first_name", "last_name", "phone", "experience_level", "injuries", "goal", "height", "athlete_type", "updated_at",
+}
+
+func (r *Repository) Update(ctx context.Context, coachID uuid.UUID, a *Athlete) error {
+	result := tenant.Scope(r.db.WithContext(ctx), coachID).
+		Model(a).
+		Select(editableColumns).
+		Updates(a)
+	if result.Error != nil {
+		return fmt.Errorf("athlete: failed to update: %w", result.Error)
+	}
+	if result.RowsAffected == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
+// Delete is soft: deleted_at hides the athlete from every tenant-scoped query.
+func (r *Repository) Delete(ctx context.Context, coachID, id uuid.UUID) error {
+	result := tenant.Scope(r.db.WithContext(ctx), coachID).Delete(&Athlete{}, "id = ?", id)
+	if result.Error != nil {
+		return fmt.Errorf("athlete: failed to delete: %w", result.Error)
+	}
+	if result.RowsAffected == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
 // IDs returns every one of the coach's athletes, private and public, newest first, unpaginated.
 func (r *Repository) IDs(ctx context.Context, coachID uuid.UUID) ([]uuid.UUID, error) {
 	ids := make([]uuid.UUID, 0)

@@ -125,7 +125,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_athlete.createRequest"
+                            "$ref": "#/definitions/internal_athlete.athleteRequest"
                         }
                     }
                 ],
@@ -211,6 +211,138 @@
                                     }
                                 }
                             ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.UnauthorizedEnvelope"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.NotFoundEnvelope"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.InternalErrorEnvelope"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Replaces every editable field under the same rules as create: an optional field left out is cleared. athlete_type is required here, unlike on create, so an edit that forgets it can't move a public athlete to private. An athlete that belongs to another coach is reported as not found, the same as one that doesn't exist.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "athletes"
+                ],
+                "summary": "Update an athlete",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Athlete ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Athlete details",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_athlete.athleteRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.SuccessEnvelope"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/internal_athlete.athleteResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.ValidationErrorEnvelope"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.UnauthorizedEnvelope"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.NotFoundEnvelope"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.InternalErrorEnvelope"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Soft-deletes the athlete; data is null on success. Afterwards the athlete is gone from the list and from GET /athletes/{id}, and their plans and measurements are reported as not found. Nothing else is deleted. An athlete that belongs to another coach is reported as not found, the same as one that doesn't exist.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "athletes"
+                ],
+                "summary": "Delete an athlete",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Athlete ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.NoContentEnvelope"
                         }
                     },
                     "401": {
@@ -1690,6 +1822,43 @@
                 }
             }
         },
+        "internal_athlete.athleteRequest": {
+            "type": "object",
+            "properties": {
+                "athlete_type": {
+                    "type": "string",
+                    "example": "private"
+                },
+                "experience_level": {
+                    "type": "string",
+                    "example": "beginner"
+                },
+                "first_name": {
+                    "type": "string",
+                    "example": "Sara"
+                },
+                "goal": {
+                    "type": "string",
+                    "example": "lose 5kg"
+                },
+                "height": {
+                    "type": "number",
+                    "example": 172
+                },
+                "injuries": {
+                    "type": "string",
+                    "example": "left shoulder impingement"
+                },
+                "last_name": {
+                    "type": "string",
+                    "example": "Ahmadi"
+                },
+                "phone": {
+                    "type": "string",
+                    "example": "09372144430"
+                }
+            }
+        },
         "internal_athlete.athleteResponse": {
             "type": "object",
             "properties": {
@@ -1736,43 +1905,6 @@
                 "updated_at": {
                     "type": "string",
                     "example": "2026-09-24T09:30:00Z"
-                }
-            }
-        },
-        "internal_athlete.createRequest": {
-            "type": "object",
-            "properties": {
-                "athlete_type": {
-                    "type": "string",
-                    "example": "private"
-                },
-                "experience_level": {
-                    "type": "string",
-                    "example": "beginner"
-                },
-                "first_name": {
-                    "type": "string",
-                    "example": "Sara"
-                },
-                "goal": {
-                    "type": "string",
-                    "example": "lose 5kg"
-                },
-                "height": {
-                    "type": "number",
-                    "example": 172
-                },
-                "injuries": {
-                    "type": "string",
-                    "example": "left shoulder impingement"
-                },
-                "last_name": {
-                    "type": "string",
-                    "example": "Ahmadi"
-                },
-                "phone": {
-                    "type": "string",
-                    "example": "09372144430"
                 }
             }
         },
