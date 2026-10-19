@@ -14,3 +14,8 @@ export type MovementInput = {
 };
 
 export const createMovement = (input: MovementInput) => api.post<Movement>("/movements", input);
+
+export const updateMovement = (id: string, input: MovementInput) =>
+  api.put<Movement>(`/movements/${id}`, input);
+
+export const deleteMovement = (id: string) => api.delete(`/movements/${id}`);

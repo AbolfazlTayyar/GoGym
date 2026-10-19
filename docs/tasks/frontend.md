@@ -528,7 +528,7 @@ finding each field's last value.
 
 ### Movement library
 
-⬜ **Not started**
+✅ **Done**
 
 **Description:** The coach's movements and the built-in ones in one alphabetical list, with search and category chips. Built-in movements are read-only ([concept-8-3](../design/concept-8-3-search-movements-sign-in.png), second and third phones). Most movements are created from the builder's search, so this screen is mainly for tidying up.
 
