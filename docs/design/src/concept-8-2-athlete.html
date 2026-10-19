@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Concept 8.2 — Athlete</title>
+<link rel="stylesheet" href="board.css">
+<link rel="stylesheet" href="blush.css">
+<style>
+  .info { margin: 0 18px; background: #fff; border-radius: 22px; padding: 12px 14px; box-shadow: var(--soft); flex: none; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chips span { font-size: 12.5px; font-weight: 700; padding: 4px 11px; border-radius: 999px; background: var(--cream); }
+  .chips .pk { background: var(--blush2); color: var(--pinkText); }
+  .inj { display: flex; align-items: center; gap: 6px; margin-top: 9px; background: var(--lemon); color: var(--amber); font-size: 12.5px; font-weight: 700; padding: 6px 10px; border-radius: 12px; }
+
+  .plist { padding: 0 18px; display: flex; flex-direction: column; gap: 10px; flex: none; }
+  .pc { background: #fff; border-radius: 22px; padding: 12px 14px; box-shadow: var(--soft); border: 2px solid transparent; }
+  .pc.cur { border-color: var(--pink); box-shadow: 0 10px 26px rgba(255,0,87,0.16); }
+  .pc .top { display: flex; align-items: center; gap: 8px; }
+  .pc .top b { font-size: 16px; font-weight: 800; }
+  .pc .sub { font-size: 12.5px; color: var(--dim); }
+  .badge { font-size: 11px; font-weight: 800; padding: 2px 10px; border-radius: 999px; }
+  .badge.now { background: var(--pink); color: #fff; }
+  .badge.soon { background: var(--cream); color: #8A7666; }
+  .lbl { font-size: 12.5px; font-weight: 700; color: var(--dim); padding: 14px 26px 6px; flex: none; }
+  .hist { margin: 0 14px; background: #fff; border-radius: 22px; padding: 0 14px; box-shadow: var(--soft); flex: 1; min-height: 0; overflow: hidden; }
+  .hr { display: flex; align-items: center; gap: 10px; height: 54px; border-bottom: 1px solid var(--line); }
+  .hr .nm { flex: 1; min-width: 0; }
+  .hr b { font-size: 14.5px; font-weight: 700; display: block; }
+  .hr span { font-size: 12px; color: var(--dim); display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .chart { margin: 0 14px; background: #fff; border-radius: 22px; padding: 12px 14px 6px; box-shadow: var(--soft); flex: none; }
+  .cv { display: flex; align-items: baseline; gap: 6px; }
+  .cv b { font-size: 26px; font-weight: 800; }
+  .cv span { font-size: 13px; color: var(--dim); font-weight: 600; }
+  .cv .delta { margin-right: auto; background: var(--blush); color: var(--pinkText); font-size: 12px; font-weight: 800; padding: 3px 10px; border-radius: 999px; }
+  .chart text { font: 600 10.5px "Vazirmatn", sans-serif; fill: var(--dim); }
+
+  .mgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+  .mf { background: #fff; border-radius: 18px; padding: 8px 12px; box-shadow: var(--soft); border: 1.5px solid transparent; }
+  .mf.on { border-color: var(--pink); }
+  .mf label { font-size: 12px; font-weight: 700; color: var(--dim); display: flex; justify-content: space-between; }
+  .mf .v { font-size: 22px; font-weight: 800; display: flex; align-items: center; gap: 8px; height: 34px; }
+  .mf .v.empty { color: var(--faint); }
+  .mf .prev { font-size: 11px; color: var(--dim); }
+  .hint { font-size: 12px; color: var(--dim); text-align: center; margin: 12px 0 10px; }
+
+  .form { padding: 2px 18px 0; display: flex; flex-direction: column; gap: 11px; flex: none; }
+  .two { display: flex; gap: 10px; }
+  .two > .fl { flex: 1; min-width: 0; }
+  .fl .seg { margin-top: 5px; box-shadow: var(--soft); }
+  .fl .seg div { padding: 9px 0; font-size: 14px; }
+</style>
+</head>
+<body>
+<div class="board">
+  <h1>Concept 8 · 2 — Athlete</h1>
+  <p class="pitch">The athlete's own page and the forms behind it. The profile holds everything about one athlete except the plan itself: who they are, their plans over time, and their measurements.</p>
+  <div class="tags"><span class="tag">Profile: plans and measurements</span><span class="tag">Measurements in a sheet</span><span class="tag">One form for new and edit</span></div>
+
+  <div class="row">
+    <div class="col">
+      <div class="phone"><div class="screen" dir="rtl">
+        <div class="status"><span>9:41</span><span>●●● 100%</span></div>
+        <div data-fill="head" style="display:contents"></div>
+        <div class="pills2"><div class="on">برنامه‌ها ۶</div><div>اندازه‌ها ۵</div></div>
+        <div class="plist" data-fill="plans"></div>
+        <div class="lbl">برنامه‌های قبلی</div>
+        <div class="hist" data-fill="past"></div>
+        <div class="bottom"><div class="big">+ برنامه جدید</div></div>
+      </div></div>
+      <h2>Profile — plans</h2>
+      <ul>
+        <li>The person icon in the day view opens this. On top is what she checks before writing a plan: level, height, goal, and injuries in yellow. The phone number under the name calls.</li>
+        <li>Plans newest first. The current one is outlined in pink, and its day letters open that day. A plan that hasn't started yet is marked بعدی. Other plans show only their start date: the plan list has no day counts.</li>
+        <li>Tapping an older plan opens it in the day view. "+ برنامه جدید" starts the copy-first flow.</li>
+      </ul>
+    </div>
+
+    <div class="col">
+      <div class="phone"><div class="screen" dir="rtl">
+        <div class="status"><span>9:41</span><span>●●● 100%</span></div>
+        <div data-fill="head" style="display:contents"></div>
+        <div class="pills2"><div>برنامه‌ها ۶</div><div class="on">اندازه‌ها ۵</div></div>
+        <div class="chiprow" data-fill="metrics"></div>
+        <div class="chart" data-fill="chart"></div>
+        <div class="lbl">تاریخچه</div>
+        <div class="hist" data-fill="checkins"></div>
+        <div class="bottom"><div class="big">+ ثبت اندازه</div></div>
+      </div></div>
+      <h2>Profile — measurements</h2>
+      <ul>
+        <li>One measurement at a time: weight first, the chips switch to the other five. The latest value and the change since the first check-in sit above the line.</li>
+        <li>Time runs right to left, like the text. Worth checking with her: some people read charts left to right even in Persian.</li>
+        <li>Check-ins newest first. Tapping one opens it to edit or delete.</li>
+      </ul>
+    </div>
+
+    <div class="col">
+      <div class="phone"><div class="screen" dir="rtl">
+        <div class="status"><span>9:41</span><span>●●● 100%</span></div>
+        <div data-fill="head" style="display:contents"></div>
+        <div class="pills2"><div>برنامه‌ها ۶</div><div class="on">اندازه‌ها ۵</div></div>
+        <div class="chiprow" data-fill="metrics"></div>
+        <div class="chart" data-fill="chart"></div>
+        <div class="dim"></div>
+        <div class="bs">
+          <div class="grab"></div>
+          <div class="bsh"><b>ثبت اندازه</b><div class="rb">ICON_x</div></div>
+          <div class="fl"><label>تاریخ</label><div class="in"><span>۲۵ مهر ۱۴۰۵</span>ICON_calendar</div></div>
+          <div class="mgrid" data-fill="mfields"></div>
+          <div class="hint">فقط اندازه‌هایی را که گرفتید وارد کنید</div>
+          <div class="big">ثبت</div>
+        </div>
+      </div></div>
+      <h2>Add measurement — a sheet</h2>
+      <ul>
+        <li>Opens over the profile with today's Jalali date. Six fields, each with the last value under it, so the change shows while she types.</li>
+        <li>She fills only what she measured: the API needs at least one value. Persian digits and "٫" are converted before sending.</li>
+        <li>The same sheet edits a check-in, with a delete button.</li>
+      </ul>
+    </div>
+
+    <div class="col">
+      <div class="phone"><div class="screen" dir="rtl">
+        <div class="status"><span>9:41</span><span>●●● 100%</span></div>
+        <div class="hdr">
+          <div class="rb">ICON_x</div>
+          <div class="t"><b>شاگرد جدید</b></div>
+          <span class="pbtn">ذخیره</span>
+        </div>
+        <div class="form">
+          <div class="two">
+            <div class="fl"><label>نام</label><div class="in"><span>نیلوفر</span></div></div>
+            <div class="fl"><label>نام خانوادگی</label><div class="in"><span>اکبری</span></div></div>
+          </div>
+          <div class="fl"><label>موبایل</label><div class="in"><span class="ph">۰۹۳۵ ۱۲۴ ۸۸۰۲</span></div></div>
+          <div class="fl"><label>نوع</label><div class="seg"><div class="on">خصوصی</div><div>عمومی</div></div></div>
+          <div class="fl"><label>سطح <i>· اختیاری</i></label><div class="seg"><div class="on">مبتدی</div><div>متوسط</div><div>حرفه‌ای</div></div></div>
+          <div class="two">
+            <div class="fl" style="flex:2"><label>هدف <i>· اختیاری</i></label><div class="in"><span>کاهش وزن</span></div></div>
+            <div class="fl"><label>قد <i>· اختیاری</i></label><div class="in"><span>۱۶۴</span><span style="color:var(--dim);font-size:13px">سانتی‌متر</span></div></div>
+          </div>
+          <div class="fl"><label>آسیب‌دیدگی <i>· اختیاری</i></label><div class="in area ph0"><span>مثلاً درد زانو، دیسک کمر…</span></div></div>
+        </div>
+      </div></div>
+      <h2>New athlete — one form</h2>
+      <ul>
+        <li>Name, surname and mobile are required. The rest says اختیاری.</li>
+        <li>Private or public starts on the tab she came from, and level is three buttons, so the only typing is names, phone, goal, height and injuries.</li>
+        <li>The profile's pencil opens the same form, filled in. Editing an athlete has no endpoint yet (see Gaps in the README).</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<script src="data.js"></script>
+<script>
+  // One athlete's history: made-up plans and check-ins (oldest first) around the boards' "today", 25 Mehr 1405.
+  const num = (v) => fa(v).replace(".", "٫");
+  const CHECKINS = [
+    { date: "۳ خرداد ۱۴۰۵", short: "۳ خرداد", weight: 73.4, chest: 94, waist: 82, arm: 29, thigh: 58, hip: 102 },
+    { date: "۵ تیر ۱۴۰۵", short: "۵ تیر", weight: 72, chest: 93.5, waist: 80.5, arm: 29, thigh: 57.5, hip: 101 },
+    { date: "۲ مرداد ۱۴۰۵", short: "۲ مرداد", weight: 71.2, chest: 93, waist: 79.5, arm: 28.5, thigh: 57, hip: 100.5 },
+    { date: "۳۰ مرداد ۱۴۰۵", short: "۳۰ مرداد", weight: 70.4, chest: 92.5, waist: 79, arm: 28.5, thigh: 56.5, hip: 100 },
+    { date: "۲۸ شهریور ۱۴۰۵", short: "۲۸ شهریور", weight: 69.6, chest: 92, waist: 78, arm: 28, thigh: 56, hip: 99.5 },
+  ];
+  const METRICS = [["weight", "وزن", "کیلو"], ["chest", "سینه", "سانت"], ["waist", "کمر", "سانت"], ["arm", "بازو", "سانت"], ["thigh", "ران", "سانت"], ["hip", "باسن", "سانت"]];
+  const PAST_PLANS = [["برنامه شهریور", "۱ شهریور ۱۴۰۵"], ["برنامه مرداد", "۱ مرداد ۱۴۰۵"], ["برنامه تیر", "۱ تیر ۱۴۰۵"], ["برنامه خرداد", "۱ خرداد ۱۴۰۵"]];
+
+  // Oldest check-in on the right: time follows the text direction.
+  const lineChart = (values, labels) => {
+    const W = 334, H = 118, padX = 22, top = 12, bottom = 26;
+    const lo = Math.min(...values) - 0.6, hi = Math.max(...values) + 0.6;
+    const pts = values.map((v, i) => [W - padX - i * (W - 2 * padX) / (values.length - 1), top + (hi - v) / (hi - lo) * (H - top - bottom)]);
+    const line = pts.map(([x, y], i) => `${i ? "L" : "M"}${x.toFixed(1)} ${y.toFixed(1)}`).join(" ");
+    const base = H - bottom;
+    return `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">
+      <defs><linearGradient id="area" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FF0057" stop-opacity="0.22"/><stop offset="1" stop-color="#FF0057" stop-opacity="0"/></linearGradient></defs>
+      ${[0, 1, 2].map((k) => `<line x1="0" x2="${W}" y1="${top + k * (base - top) / 2}" y2="${top + k * (base - top) / 2}" stroke="#F7E8EC"/>`).join("")}
+      <path d="${line} L${pts.at(-1)[0]} ${base} L${pts[0][0]} ${base} Z" fill="url(#area)"/>
+      <path d="${line}" fill="none" stroke="#FF0057" stroke-width="2.5" stroke-linejoin="round"/>
+      ${pts.map(([x, y], i) => `<circle cx="${x}" cy="${y}" r="${i === pts.length - 1 ? 5.5 : 3.5}" fill="${i === pts.length - 1 ? "#FF0057" : "#fff"}" stroke="#FF0057" stroke-width="2"/>`).join("")}
+      ${pts.map(([x], i) => `<text x="${x}" y="${H - 8}" text-anchor="middle">${labels[i]}</text>`).join("")}
+    </svg>`;
+  };
+
+  fill({
+    head: () => `<div class="hdr">
+        <div class="rb">${ICON.back}</div>
+        <div class="t"><b>سارا کریمی</b><span class="s ph">${ICON.phone}۰۹۱۲ ۳۴۵ ۶۷۸۹</span></div>
+        <div class="rb pink">${ICON.edit}</div>
+      </div>
+      <div class="info">
+        <div class="chips"><span class="pk">خصوصی</span><span>متوسط</span><span>قد ۱۶۸</span><span>هدف: فرم‌دهی بدن</span></div>
+        <div class="inj">${ICON.alert}آسیب‌دیدگی: درد زانوی چپ، لانژ عمیق نه</div>
+      </div>`,
+    plans: () => `<div class="pc"><div class="top"><b>برنامه آبان</b><span class="badge soon">بعدی</span></div>
+        <span class="sub">شروع ۱ آبان ۱۴۰۵</span></div>
+      <div class="pc cur"><div class="top"><b>برنامه مهر</b><span class="badge now">فعلی</span></div>
+        <span class="sub">شروع ۱ مهر ۱۴۰۵ · ۵ روز · ۴۳ حرکت</span>
+        <div class="mini">${[["A", 9], ["B", 8], ["C", 9], ["D", 8], ["E", 9]].map(([d, n]) => `<div><b>${d}</b><span>${fa(n)} حرکت</span></div>`).join("")}</div></div>`,
+    past: () => PAST_PLANS.map(([t, d]) => `<div class="hr"><div class="nm"><b>${t}</b><span>شروع ${d}</span></div><span class="go">${ICON.chevL}</span></div>`).join(""),
+    metrics: () => METRICS.map(([, label], i) => `<div class="${i ? "" : "on"}">${label}</div>`).join(""),
+    chart: () => {
+      const w = CHECKINS.map((c) => c.weight);
+      const change = w.at(-1) - w[0];
+      return `<div class="cv"><b>${num(w.at(-1))}</b><span>کیلو</span><span class="delta">${num(Math.abs(change).toFixed(1))} ${change < 0 ? "کمتر" : "بیشتر"} از ${CHECKINS[0].short}</span></div>`
+        + lineChart(w, CHECKINS.map((c) => c.short));
+    },
+    checkins: () => CHECKINS.slice().reverse().map((c) => `<div class="hr"><div class="nm"><b>${c.date}</b>`
+      + `<span>${METRICS.map(([k, label]) => `${label} ${num(c[k])}`).join(" · ")}</span></div><span class="go">${ICON.chevL}</span></div>`).join(""),
+    mfields: () => {
+      const last = CHECKINS.at(-1);
+      const typed = { weight: 68.5, waist: 77 };
+      return METRICS.map(([k, label, unit]) => {
+        const v = typed[k];
+        return `<div class="mf ${k === "waist" ? "on" : ""}"><label><span>${label}</span><span>${unit}</span></label>`
+          + `<div class="v ${v ? "" : "empty"}">${v ? num(v) : "—"}${k === "waist" ? '<span class="caret"></span>' : ""}</div>`
+          + `<span class="prev">قبلی ${num(last[k])}</span></div>`;
+      }).join("");
+    },
+  });
+  fillIcons();
+</script>
+</body>
+</html>

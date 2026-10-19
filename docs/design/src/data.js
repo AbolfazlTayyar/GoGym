@@ -70,12 +70,21 @@ const ICON = {
   check: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4"><path d="m5 12 5 5 9-10"/></svg>',
   calendar: '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg>',
   user: '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg>',
+  phone: '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a1 1 0 0 1-1 1A16 16 0 0 1 4 5a1 1 0 0 1 1-1z"/></svg>',
+  lock: '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>',
+  eye: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>',
+  spark: '<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M12 2c.5 4.5 2.5 6.6 7 7-4.5.5-6.5 2.5-7 7-.5-4.5-2.5-6.5-7-7 4.5-.4 6.5-2.5 7-7z"/><path d="M19 14c.2 1.9 1 2.8 3 3-2 .2-2.8 1-3 3-.2-2-1-2.8-3-3 2-.2 2.8-1.1 3-3z"/></svg>',
 };
 
 // Fields the athlete cards in the classic concept show under the name (made-up values).
 const GOALS = ["کاهش وزن", "فرم‌دهی بدن", "افزایش حجم", "افزایش قدرت", "حجم پایین‌تنه"];
 const LEVELS = ["مبتدی", "متوسط", "حرفه‌ای"];
 const CATEGORIES = ["گرم کردن", "قدرتی", "هوازی"];
+
+// Swaps every ICON_<key> placeholder in the page's markup for ICON[key], e.g. ICON_chevL.
+function fillIcons() {
+  document.body.innerHTML = document.body.innerHTML.replace(/ICON_(\w+)/g, (m, key) => ICON[key] ?? m);
+}
 
 // Fills every element carrying data-fill="<name>" from the matching render function.
 function fill(renderers) {

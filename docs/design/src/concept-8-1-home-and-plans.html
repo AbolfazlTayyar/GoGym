@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Concept 8.1 — Home and plans</title>
+<link rel="stylesheet" href="board.css">
+<link rel="stylesheet" href="blush.css">
+</head>
+<body>
+<div class="board">
+  <h1>Concept 8 · 1 — Home and plans</h1>
+  <p class="pitch">The chosen direction: concept 6's look and screens, with concept 2's home. Every athlete row carries her plan's day letters, so the day an athlete names is one tap from opening the app. Day view, new plan and builder are concept 6's.</p>
+  <div class="tags"><span class="tag">Light, blush pink</span><span class="tag">Home → any day: 1 tap</span><span class="tag">No per-athlete colors</span><span class="tag">Whole day on one screen</span></div>
+
+  <div class="row">
+    <div class="col">
+      <div class="phone"><div class="screen" dir="rtl">
+        <div class="status"><span>9:41</span><span>●●● 100%</span></div>
+        <div class="hdr">
+          <div class="t"><span class="hi">ICON_SPARK سلام مربی</span><h3>شاگردهای من</h3></div>
+          <div class="rb pink">ICON_PLUS</div>
+        </div>
+        <div class="search">ICON_SEARCH<span>جستجوی نام شاگرد…</span></div>
+        <div class="pills2"><div class="on">خصوصی ۱۵</div><div>عمومی ۹</div></div>
+        <div class="roster" data-fill="roster"></div>
+        <div class="nav"><div class="on">ICON_USERS شاگردها</div><div>ICON_DUMBBELL حرکات</div></div>
+      </div></div>
+      <h2>Home — names with their days</h2>
+      <ul>
+        <li>The athlete says "B" → she taps B on that row and lands on day B. Tapping the name opens the plan.</li>
+        <li>Rows share one white sheet instead of separate cards, so about nine athletes fit. No avatar and no per-athlete color: the letters need the width.</li>
+        <li>Letters keep their columns, so a four-day plan leaves E's place empty. A row with no plan gets the yellow pill and a button to write one.</li>
+      </ul>
+    </div>
+
+    <div class="col">
+      <div class="phone"><div class="screen" dir="rtl">
+        <div class="status"><span>9:41</span><span>●●● 100%</span></div>
+        <div class="hdr">
+          <div class="rb">ICON_BACK</div>
+          <div class="t"><b>سارا کریمی</b><span class="s">برنامه مهر · شروع ۱ مهر ۱۴۰۵</span></div>
+          <div class="rb">ICON_USER</div>
+          <div class="rb pink">ICON_EDIT</div>
+        </div>
+        <div class="days"><div>A</div><div class="on">B</div><div>C</div><div>D</div><div>E</div></div>
+        <div class="sheet" data-fill="day"></div>
+      </div></div>
+      <h2>Day view — one white sheet</h2>
+      <ul>
+        <li>Opens on the day tapped on home. Day letters as pills; the open day glows pink.</li>
+        <li>The day is one white sheet: pink number, movement, and under it sets × reps in her wording. A superset gets a "سوپرست" tag and a pink edge.</li>
+        <li>Warm-up and cool-down are cream strips outside the numbering. The nine-movement day fits one screen, so one screenshot is the whole day.</li>
+      </ul>
+    </div>
+
+    <div class="col">
+      <div class="phone"><div class="screen" dir="rtl">
+        <div class="status"><span>9:41</span><span>●●● 100%</span></div>
+        <div class="hdr">
+          <div class="rb">ICON_X</div>
+          <div class="t"><b>برنامه جدید</b><span class="s">سارا کریمی</span></div>
+        </div>
+        <div class="q">از کجا شروع کنیم؟</div>
+        <div class="choices">
+          <div class="ch on"><span class="radio on"></span><div class="ct"><b>کپی «برنامه مهر» سارا<span class="rec">پیشنهادی</span></b><span>۵ روز · ۴۳ حرکت · فقط تغییرات را وارد کنید</span>
+            <div class="mini" data-fill="mini"></div></div></div>
+          <div class="ch"><span class="radio"></span><div class="ct"><b>کپی برنامه یک شاگرد دیگر</b><span>شاگرد و برنامه را انتخاب کنید</span></div><span class="faint">ICON_CHEVL</span></div>
+          <div class="ch"><span class="radio"></span><div class="ct"><b>برنامه خالی</b><span>از صفر بنویسید</span></div></div>
+        </div>
+        <div class="fields">
+          <div class="fl"><label>عنوان</label><div class="in"><span>برنامه آبان</span></div></div>
+          <div class="fl"><label>تاریخ شروع</label><div class="in"><span>۱ آبان ۱۴۰۵</span>ICON_CALENDAR</div></div>
+        </div>
+        <div class="bottom"><div class="big">ادامه</div></div>
+      </div></div>
+      <h2>New plan — copy first</h2>
+      <ul>
+        <li>Every new plan asks where to start, with her last plan for this athlete picked. Its day letters and movement counts show what she's copying.</li>
+        <li>She can also copy another athlete's plan, or start empty.</li>
+        <li>Title and Jalali start date are pre-filled with next month.</li>
+      </ul>
+    </div>
+
+    <div class="col">
+      <div class="phone"><div class="screen" dir="rtl">
+        <div class="status"><span>9:41</span><span>●●● 100%</span></div>
+        <div class="hdr">
+          <div class="rb">ICON_BACK</div>
+          <div class="t"><b>برنامه آبان</b><span class="s">سارا کریمی · کپی از برنامه مهر</span></div>
+          <span class="pbtn">ذخیره</span>
+        </div>
+        <div class="days"><div>A</div><div>B</div><div class="on">C</div><div>D</div><div>E</div><div class="add">ICON_PLUS</div></div>
+        <div class="sheet" data-fill="builder"></div>
+        <div class="adder">
+          <div class="sug" data-fill="sug"></div>
+          <div class="field">ICON_SEARCH<span>پلان</span><span class="caret"></span></div>
+        </div>
+      </div></div>
+      <h2>Builder — the day, editable</h2>
+      <ul>
+        <li>The same sheet as the day view. Tap a line and it opens in blush: type, +/− for reps and sets, her presets, superset and move.</li>
+        <li>Type at the bottom, tap a suggestion: the new line copies the previous line's sets × reps.</li>
+        <li>"ذخیره" stays in the header as a pink pill.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<script src="data.js"></script>
+<script>
+  document.body.innerHTML = document.body.innerHTML
+    .replaceAll("ICON_SEARCH", ICON.search).replaceAll("ICON_BACK", ICON.back).replaceAll("ICON_EDIT", ICON.edit)
+    .replaceAll("ICON_PLUS", ICON.plus).replaceAll("ICON_USERS", ICON.users).replaceAll("ICON_DUMBBELL", ICON.dumbbell)
+    .replaceAll("ICON_USER", ICON.user).replaceAll("ICON_X", ICON.x).replaceAll("ICON_CALENDAR", ICON.calendar)
+    .replaceAll("ICON_CHEVL", ICON.chevL).replaceAll("ICON_SPARK", ICON.spark);
+
+  const line = (it, i) => {
+    const ss = it.parts.length > 1;
+    return `<div class="mv"><span class="num">${fa(i + 1)}</span><div class="mb ${ss ? "ss" : ""}">`
+      + it.parts.map((p, j) => `<div class="nm">${j ? '<i class="plus">+</i>' : ""}${p.n}${!j && ss ? '<span class="tag">سوپرست</span>' : ""}</div>`).join("")
+      + `<div class="rx">${rx(it)}</div></div></div>`;
+  };
+  const cardio = (label, text) => `<div class="cardio">${ICON.clock}<span>${label}</span><b>${text}</b></div>`;
+  const dayHead = (letter, count) => `<div class="dh"><b>روز ${letter}</b><span>${fa(count)} حرکت</span></div>`;
+
+  const LETTERS = "ABCDE";
+
+  fill({
+    roster: () => PRIVATE.slice(0, 10).map((a, i) => {
+      const noPlan = i === 3;
+      const days = noPlan
+        ? `<div class="new">${ICON.plus}برنامه جدید</div>`
+        : LETTERS.slice(0, a.days).split("").map((d) => `<div class="${a.first === "سارا" && d === "B" ? "tap" : ""}">${d}</div>`).join("");
+      return `<div class="ath"><div class="nm"><b>${a.first} ${a.last}</b>`
+        + (noPlan ? `<span class="none">بدون برنامه</span>` : `<span>برنامه مهر</span>`)
+        + `</div><div class="dl">${days}</div></div>`;
+    }).join(""),
+    // Day A's content stands in for day B: the board follows the B tapped on home.
+    day: () => dayHead("B", DAY_A.items.length) + cardio("گرم کردن", DAY_A.warm) + DAY_A.items.map(line).join("") + cardio("سرد کردن", DAY_A.cool),
+    mini: () => [["A", 9], ["B", 8], ["C", 9], ["D", 8], ["E", 9]].map(([d, n]) => `<div><b>${d}</b><span>${fa(n)} حرکت</span></div>`).join(""),
+    builder: () => {
+      const open = DAY_C_DRAFT.items[4];
+      return dayHead("C", DAY_C_DRAFT.items.length) + cardio("گرم کردن", DAY_C_DRAFT.warm) + DAY_C_DRAFT.items.slice(0, 4).map(line).join("")
+        + `<div class="open"><div class="oh"><span class="num">${fa(5)}</span><b>${open.parts[0].n}</b><span class="del">${ICON.trash}</span></div>
+          <div class="seg"><div>تکرار</div><div class="on">هرپا</div><div>هرسمت</div><div>ثانیه</div></div>
+          <div class="nums"><div><label>تکرار هرپا</label><div class="ctl"><i class="p">+</i><b>${fa(12)}</b><i>−</i></div></div>
+            <div><label>ست</label><div class="ctl"><i class="p">+</i><b>${fa(3)}</b><i>−</i></div></div></div>
+          <div class="presets">${PRESETS.map((p, i) => `<div class="${i ? "" : "on"}">${p}</div>`).join("")}</div>
+          <div class="links"><span>+ سوپرست</span><span>↑ بالا</span><span>↓ پایین</span></div></div>`;
+    },
+    sug: () => SEARCH_HITS.slice(0, 3).map((h) => `<div>${h}</div>`).join(""),
+  });
+</script>
+</body>
+</html>

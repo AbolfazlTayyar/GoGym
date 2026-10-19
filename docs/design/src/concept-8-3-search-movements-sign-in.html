@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Concept 8.3 — Search, movements and sign-in</title>
+<link rel="stylesheet" href="board.css">
+<link rel="stylesheet" href="blush.css">
+<style>
+  .search.on { border: 1.5px solid var(--pink); color: var(--ink); font-weight: 600; }
+  .clr { margin-right: auto; width: 24px; height: 24px; border-radius: 50%; background: var(--blush); display: flex; align-items: center; justify-content: center; }
+  .clr svg { width: 13px; height: 13px; }
+  .res { margin-top: 12px; }
+  .gl { font-size: 12px; font-weight: 800; color: var(--dim); padding: 10px 2px 0; }
+  .ath em { font-style: normal; color: var(--pinkText); background: var(--blush2); border-radius: 4px; }
+
+  .mvr { display: flex; align-items: center; gap: 10px; height: 54px; border-bottom: 1px solid var(--line); }
+  .mvr .nm { flex: 1; min-width: 0; }
+  .mvr b { font-size: 15px; font-weight: 700; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mvr .nm span { font-size: 12px; color: var(--dim); }
+  .uni { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 700; color: #8A7666; background: var(--cream); padding: 3px 9px; border-radius: 999px; flex: none; }
+  .search + .chiprow { margin-top: 12px; }
+  .bs .chiprow { padding: 5px 0 0; }
+  .bs .chiprow .new { background: none; box-shadow: none; border: 1.5px dashed var(--petal); color: var(--pinkText); }
+  .acts { display: flex; gap: 10px; margin-top: 18px; }
+  .del { display: flex; align-items: center; gap: 6px; background: #fff; color: var(--rose); border: 1.5px solid var(--petal); font-size: 15px; font-weight: 800; padding: 0 22px; border-radius: 999px; }
+  .acts .big { flex: 1; }
+
+  .login { flex: 1; display: flex; flex-direction: column; padding: 0 22px 26px; }
+  .logo { margin: 96px auto 0; width: 88px; height: 88px; border-radius: 28px; background: var(--pink); color: #fff; display: flex; align-items: center; justify-content: center; box-shadow: var(--glow); }
+  .logo svg { width: 46px; height: 46px; }
+  .brand { text-align: center; font: 800 32px "Inter", sans-serif; letter-spacing: -0.02em; margin-top: 16px; direction: ltr; }
+  .brand + p { text-align: center; color: var(--dim); font-size: 14.5px; font-weight: 600; }
+  .login .fields { padding: 44px 0 0; }
+  .login .bottom { padding: 0; }
+</style>
+</head>
+<body>
+<div class="board">
+  <h1>Concept 8 · 3 — Search, movements and sign-in</h1>
+  <p class="pitch">The remaining screens: finding any athlete by name, the movement library behind the builder's search, and signing in.</p>
+  <div class="tags"><span class="tag">Search covers private and public</span><span class="tag">Built-in movements are read-only</span><span class="tag">No signup</span></div>
+
+  <div class="row">
+    <div class="col">
+      <div class="phone"><div class="screen" dir="rtl">
+        <div class="status"><span>9:41</span><span>●●● 100%</span></div>
+        <div class="hdr">
+          <div class="t"><span class="hi">ICON_spark سلام مربی</span><h3>شاگردهای من</h3></div>
+          <div class="rb pink">ICON_plus</div>
+        </div>
+        <div class="search on">ICON_search<span>سا</span><span class="caret"></span><span class="clr">ICON_x</span></div>
+        <div class="roster res" data-fill="results"></div>
+        <div class="nav"><div class="on">ICON_users شاگردها</div><div>ICON_dumbbell حرکات</div></div>
+      </div></div>
+      <h2>Search — every athlete</h2>
+      <ul>
+        <li>Typing searches private and public athletes together: public athletes are mostly found by name, when they message about a movement. Results come grouped, with the match in pink.</li>
+        <li>Public rows work like private ones: the day letters open their plan, ready for "which movement is this?".</li>
+        <li>Clearing the search brings back the private/public switch.</li>
+      </ul>
+    </div>
+
+    <div class="col">
+      <div class="phone"><div class="screen" dir="rtl">
+        <div class="status"><span>9:41</span><span>●●● 100%</span></div>
+        <div data-fill="library" style="display:contents"></div>
+        <div class="nav"><div>ICON_users شاگردها</div><div class="on">ICON_dumbbell حرکات</div></div>
+      </div></div>
+      <h2>Movement library</h2>
+      <ul>
+        <li>Her movements and the 20 built-in ones in one list, alphabetical, with search and category chips. Built-in ones carry a lock: usable in any plan, not editable.</li>
+        <li>Most of her movements are created from the builder: when a search finds nothing, the last suggestion is "+ افزودن «…»". This screen is for tidying up.</li>
+        <li>"+" adds a movement; tapping one opens it.</li>
+      </ul>
+    </div>
+
+    <div class="col">
+      <div class="phone"><div class="screen" dir="rtl">
+        <div class="status"><span>9:41</span><span>●●● 100%</span></div>
+        <div data-fill="library" style="display:contents"></div>
+        <div class="dim"></div>
+        <div class="bs">
+          <div class="grab"></div>
+          <div class="bsh"><b>ویرایش حرکت</b><div class="rb">ICON_x</div></div>
+          <div class="fields" style="padding:0">
+            <div class="fl"><label>نام</label><div class="in"><span>هیپ تراست تک پا صفحه</span></div></div>
+            <div class="fl"><label>دسته‌بندی <i>· اختیاری</i></label><div class="chiprow"><div>گرم کردن</div><div class="on">قدرتی</div><div>هوازی</div><div class="new">+ دسته جدید</div></div></div>
+            <div class="fl"><label>توضیح <i>· اختیاری</i></label><div class="in area"><span>پای جلو روی صفحه؛ بالا یک ثانیه مکث</span></div></div>
+          </div>
+          <div class="acts"><div class="del">ICON_trash حذف</div><div class="big">ذخیره</div></div>
+        </div>
+      </div></div>
+      <h2>Add or edit a movement — a sheet</h2>
+      <ul>
+        <li>Name, category and a short note. Category chips are the ones already in use; "+ دسته جدید" adds her own.</li>
+        <li>Delete works even when a plan uses the movement: plans that use it keep showing it.</li>
+        <li>A built-in movement opens the same sheet read-only, with no save or delete.</li>
+      </ul>
+    </div>
+
+    <div class="col">
+      <div class="phone"><div class="screen" dir="rtl">
+        <div class="status"><span>9:41</span><span>●●● 100%</span></div>
+        <div class="login">
+          <div class="logo">ICON_dumbbell</div>
+          <div class="brand">GoGym</div>
+          <p>ورود مربی</p>
+          <div class="fields">
+            <div class="fl"><label>موبایل</label><div class="in"><span class="ph">۰۹۱۲ ۱۱۱ ۲۲۳۳</span></div></div>
+            <div class="fl"><label>رمز عبور</label><div class="in"><span>••••••••••</span><span style="color:var(--dim);display:flex">ICON_eye</span></div></div>
+          </div>
+          <div class="bottom"><div class="big">ورود</div></div>
+        </div>
+      </div></div>
+      <h2>Sign in</h2>
+      <ul>
+        <li>Mobile and password. There is no signup: coach accounts are made with a CLI, so this is the only screen before home.</li>
+        <li>She stays signed in, so the home-screen icon opens straight to her athletes.</li>
+        <li>Signing out is the one item in a small sheet behind "سلام مربی" on home.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<script src="data.js"></script>
+<script>
+  const QUERY = "سا";
+  const PUBLIC = [["سارا", "محمدی", 4], ["ساناز", "طاهری", 3], ["نیلوفر", "حسامی", 4]];
+  // Her movements come from her real plans; the built-in ones are the seeded universal movements.
+  const OWN = [...DAY_A.items, ...DAY_C_DRAFT.items].flatMap((it) => it.parts.map((p) => [p.n, "قدرتی", false]));
+  const BUILT_IN = [
+    ["جامپینگ جک", "گرم کردن"], ["باز کردن کش", "گرم کردن"], ["اسکات با وزن بدن", "گرم کردن"], ["اسکات هالتر", "قدرتی"],
+    ["ددلیفت رومانیایی", "قدرتی"], ["پرس سینه هالتر", "قدرتی"], ["بارفیکس", "قدرتی"], ["پرس سرشانه هالتر", "قدرتی"],
+    ["پشت بازو سیمکش", "قدرتی"], ["پلانک", "قدرتی"], ["دوچرخه ثابت", "هوازی"], ["طناب زدن", "هوازی"],
+  ].map(([n, c]) => [n, c, true]);
+  const LETTERS = "ABCDE";
+
+  const row = (name, sub, days) => `<div class="ath"><div class="nm"><b>${name.replaceAll(QUERY, `<em>${QUERY}</em>`)}</b><span>${sub}</span></div>`
+    + `<div class="dl">${LETTERS.slice(0, days).split("").map((d) => `<div>${d}</div>`).join("")}</div></div>`;
+
+  fill({
+    results: () => {
+      const mine = PRIVATE.filter((a) => `${a.first} ${a.last}`.includes(QUERY));
+      return `<div class="gl">خصوصی · ${fa(mine.length)}</div>` + mine.map((a) => row(`${a.first} ${a.last}`, "برنامه مهر", a.days)).join("")
+        + `<div class="gl">عمومی · ${fa(PUBLIC.length)}</div>` + PUBLIC.map(([f, l, d]) => row(`${f} ${l}`, "برنامه شهریور", d)).join("");
+    },
+    library: () => `<div class="hdr">
+        <div class="t"><span class="hi">۲۸ حرکت شما · ۲۰ پیش‌فرض</span><h3>حرکات</h3></div>
+        <div class="rb pink">${ICON.plus}</div>
+      </div>
+      <div class="search">${ICON.search}<span>جستجوی حرکت…</span></div>
+      <div class="chiprow"><div class="on">همه ۴۸</div>${CATEGORIES.map((c) => `<div>${c}</div>`).join("")}</div>
+      <div class="roster">${[...OWN, ...BUILT_IN].sort((a, b) => a[0].localeCompare(b[0], "fa")).slice(0, 10).map(([n, c, builtIn]) =>
+        `<div class="mvr"><div class="nm"><b>${n}</b><span>${c}</span></div>`
+        + (builtIn ? `<span class="uni">${ICON.lock}پیش‌فرض</span>` : `<span class="go">${ICON.chevL}</span>`) + `</div>`).join("")}</div>`,
+  });
+  fillIcons();
+</script>
+</body>
+</html>

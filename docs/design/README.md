@@ -1,19 +1,32 @@
 # GoGym — Design concepts
 
-The design direction for the frontend, built on [stakeholder-brief.md](../stakeholder-brief.md)
-and on two of her real plans. The board shows the screens the brief's two main needs run through:
-**home** (find the athlete), **day view** (read the next movement) and **builder** (write a plan
-fast).
+The frontend design, built on [stakeholder-brief.md](../stakeholder-brief.md) and on two of her
+real plans. Three boards cover every v1 screen: [spec.md](../spec.md)'s six features plus sign-in.
 
-It is a static mockup to set the direction, not a spec. Athlete names are made up. The plan content
-follows her real plans. The options it was chosen from are in [archive/](archive/README.md).
+They are static mockups to set the direction, not specs. Athlete names are made up. The plan content
+follows her real plans. The options this design was chosen from are in [archive/](archive/README.md).
 
 ## Chosen direction
 
-[concept-8-blush-day-buttons.png](concept-8-blush-day-buttons.png) is the design to build from:
-concept 6's look, day view, new plan and builder, with concept 2's home (both in
+Concept 8: concept 6's look, day view, new plan and builder, with concept 2's home (both in
 [archive/](archive/README.md)). Why, and what was rejected, is in
 [ADR 0029](../adr/0029-blush-theme-day-buttons-home.md).
+
+| Board | Screens |
+|---|---|
+| [concept-8-1-home-and-plans.png](concept-8-1-home-and-plans.png) | Home, day view, new plan (copy first), builder |
+| [concept-8-2-athlete.png](concept-8-2-athlete.png) | Profile with plans, profile with measurements, add measurement, new or edit athlete |
+| [concept-8-3-search-movements-sign-in.png](concept-8-3-search-movements-sign-in.png) | Search, movement library, add or edit movement, sign in |
+
+How they connect:
+
+- **Home:** a day letter opens that day, the name opens the current plan, "+" adds an athlete, and
+  typing in search shows private and public results together. Sign-out sits in a small sheet behind
+  the greeting.
+- **Day view:** the person icon opens the profile, the pencil opens the builder on this plan.
+- **Profile:** a plan opens its day view, "+ برنامه جدید" starts the copy-first flow into the
+  builder, "+ ثبت اندازه" opens the measurement sheet, and the pencil opens the athlete form.
+- **Bottom bar:** athletes and movements, the only two top-level pages.
 
 What the home takes from concept 2, adapted to the blush look:
 
@@ -64,17 +77,32 @@ don't:
 Already supported: the same movement twice in one block ("10 with weight + 10 without").
 `block_movement` has no uniqueness on `(block_id, movement_id)`, and `load` tells the two apart.
 
+Found while drawing the other screens:
+
+- **Home needs each athlete's current plan.** `GET /athletes` returns no plan, so the plan title and
+  day letters on every row would take a plan-list and a plan-detail request per athlete. Each list
+  item needs its current plan's id, title and days (id and label).
+- **Athletes can't be edited or deleted.** There is no `PUT` or `DELETE /athletes/{id}`. The
+  profile's pencil needs it, and so does moving an athlete between private and public.
+
+The profile's plan list shows day counts only for the current plan, whose detail it loads anyway:
+`GET /athletes/{id}/plans` has no counts, and they aren't worth a request per plan. Search across
+both groups (`athlete_type=all` with `q`), editing and deleting check-ins and movements are already
+supported, and sign-out is part of the *Browser auth via httpOnly cookie* task.
+
 ## Regenerating the images
 
-The boards are HTML in [src/](src/) and [archive/src/](archive/src/) (`src/data.js` holds the
-shared mock data). Re-render one with:
+The boards are HTML in [src/](src/) and [archive/src/](archive/src/). `src/data.js` holds the
+shared mock data and icons, and `src/blush.css` the styles every concept 8 board shares. Re-render
+one with:
 
 ```
 google-chrome-stable --headless=new --hide-scrollbars --window-size=1860,1300 \
-  --virtual-time-budget=8000 --screenshot=docs/design/concept-8-blush-day-buttons.png \
-  "file://$PWD/docs/design/src/concept-8-blush-day-buttons.html"
+  --virtual-time-budget=8000 --screenshot=docs/design/concept-8-1-home-and-plans.png \
+  "file://$PWD/docs/design/src/concept-8-1-home-and-plans.html"
 ```
 
-Round 1 boards are 1440 wide (three phones), round 2 and 3 boards and concept 8 1860 (four phones).
+On Windows, `msedge.exe` takes the same flags. Round 1 boards are 1440 wide (three phones), round 2
+and 3 boards and concept 8 1860 (four phones).
 
 The fonts (Vazirmatn, Inter, JetBrains Mono) load from Google Fonts, so rendering needs a network connection.
