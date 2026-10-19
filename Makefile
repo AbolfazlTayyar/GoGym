@@ -2,7 +2,7 @@ BINARY := bin/api
 MIGRATIONS_DIR := migrations
 SWAG_VERSION := v1.16.6
 
-.PHONY: build run debug test test-unit lint migrate-up migrate-down swagger
+.PHONY: build run debug test test-unit lint migrate-up migrate-down swagger web-dev web-build web-test
 
 build:
 	go build -o $(BINARY) ./cmd/api
@@ -43,3 +43,13 @@ swagger:
 	sed -i 's/"x-null-example": true/"example": null/' docs/swagger/docs.go docs/swagger/swagger.json
 	sed -i 's/x-null-example: true/example: null/' docs/swagger/swagger.yaml
 	! grep -rq x-null-example docs/swagger
+
+# web-*: the React app in web/ (docs/adr/0030); web-dev proxies /api and /healthz to the API on :8080.
+web-dev:
+	cd web && npm run dev
+
+web-build:
+	cd web && npm run build
+
+web-test:
+	cd web && npm test

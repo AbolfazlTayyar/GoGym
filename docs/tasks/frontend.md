@@ -27,7 +27,7 @@ Several screens need a backend task from Phase 2 of [backend.md](backend.md) fir
 
 ### Scaffold the web app
 
-⬜ **Not started**
+✅ **Done**
 
 **Description:** An empty React app in `web/` that builds, lints and tests, and talks to the local API through Vite's proxy. In development the browser then sees one origin, the same as behind Caddy in production, so the auth cookie works without CORS.
 
@@ -64,10 +64,11 @@ package layout. Later frontend tasks add to that section instead of starting new
 **Expected output:**
 ```
 $ make web-build
-vite v… building for production...
-✓ built in …
+vite v8.3.4 building client environment for production...
+✓ built in 221ms
 dist/index.html
-dist/assets/index-…js
+dist/assets/index-….css
+dist/assets/index-….js
 ```
 
 **In short:** there's an empty app on the phone that can reach the API.

@@ -14,6 +14,9 @@ internal/
     config/ db/ httpx/ search/ tenant/ testutil/ validate/
 ```
 
+The React frontend lives in `web/` at the repo root, a separate npm project built to static files
+(see [ADR 0030](adr/0030-react-spa-same-origin.md)); nothing under `internal/` knows about it.
+
 Features sit directly under `internal/`. Code that features share and that knows no feature goes
 in `internal/platform/`. **A `platform` package never imports a feature package.** That rule is
 what keeps `platform/` from becoming a miscellaneous folder. `server` imports every feature to

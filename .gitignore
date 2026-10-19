@@ -19,3 +19,7 @@ vendor/
 # IDE
 .idea/
 .vscode/
+
+# Frontend
+web/node_modules/
+web/dist/

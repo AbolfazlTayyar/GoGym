@@ -6,6 +6,14 @@ There's one exception: something that is cheap to add now and expensive to add l
 
 If a task or prompt seems to call for more machinery than this load needs, say so and propose the simpler version before building it.
 
+## Frontend conventions
+
+The React app lives in `web/` (Vite, React, TypeScript strict, npm), next to the Go module and built separately — see [ADR 0030](docs/adr/0030-react-spa-same-origin.md). `make web-dev`, `make web-build` and `make web-test` run it from the repo root; `npm run lint`, `typecheck`, `test` and `build` in `web/` are the checks that must pass. Node is pinned in `web/.nvmrc` and `package.json` `engines`; dependencies are pinned exactly in `package.json`.
+
+Mobile first: the coach does everything on a phone, so every screen is built and checked at 360–430px wide first. Wider screens get the same phone-width column, centered, not a desktop layout.
+
+In development Vite proxies `/api` and `/healthz` to the API on `:8080`, so the browser sees one origin as it does behind Caddy, and the auth cookie needs no CORS. `npm run dev -- --host` serves it on the LAN for testing on a real phone.
+
 ## Commit conventions
 
 Conventional Commits: `<type>: <short summary>`, imperative mood, no trailing period. One logical change per commit — don't bundle unrelated files.
