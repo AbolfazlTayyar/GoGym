@@ -188,7 +188,7 @@ messages come from codes.ts.
 
 ### Persian digits and Jalali dates
 
-⬜ **Not started**
+✅ **Done**
 
 **Description:** A Persian phone keyboard types ۱۲, not 12, and the API rejects it. The coach reads dates as ۱ مهر ۱۴۰۵, while the API speaks `2026-09-23`. These helpers are used by every form and every date on screen ([stakeholder-brief.md](../stakeholder-brief.md) §5).
 

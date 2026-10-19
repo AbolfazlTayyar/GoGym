@@ -1,0 +1,74 @@
+.year {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 46px;
+  border-radius: 999px;
+  background: #fff;
+  padding: 0 4px;
+  box-shadow: var(--soft);
+}
+
+.year b {
+  font-size: 19px;
+  font-weight: 800;
+}
+
+/* The builder's +/- stepper buttons (.ctl i), with a 44px tap. */
+.step {
+  position: relative;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--blush2);
+  color: var(--pinkText);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.step::after {
+  content: "";
+  position: absolute;
+  inset: -3px;
+}
+
+.months {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.months button {
+  height: 44px;
+  border-radius: 999px;
+  background: #fff;
+  color: var(--dim);
+  font-size: 13.5px;
+  font-weight: 700;
+  box-shadow: var(--soft);
+}
+
+.days {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.days button {
+  height: 44px;
+  border-radius: 12px;
+  background: var(--blush);
+  color: var(--pinkText);
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.months .on,
+.days .on {
+  background: var(--pink);
+  color: #fff;
+  box-shadow: var(--glow);
+}

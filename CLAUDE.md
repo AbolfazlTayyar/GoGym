@@ -20,6 +20,8 @@ Mobile-first rules: the base styles are the phone layout, with no media queries;
 
 Every API call goes through `web/src/api/` (`api.get/post/put/delete` in `client.ts`, one file of plain async functions per resource); screens never call `fetch`. It unwraps the envelope and throws `ApiError` (`status`, `code`, `fields`) for every failure, including a dropped connection or a body that isn't an envelope. What the coach reads comes from `codes.ts` for codes and `fields.ts` for field messages, never from the server's English `error.message`; a new `httpx.Code*` gets a row in `codes.ts`. Payload types in `types.ts` are hand-written from the handlers' json tags, with nullable fields as `T | null`. Query keys come from `queryKeys` in `keys.ts`, so a save invalidates by prefix.
 
+Persian everywhere: UI text is Persian in the components, with no i18n library. Every number or phone a coach types goes through `toLatinDigits` / `parseNumber` (`web/src/lib/digits.ts`) before it's sent; numbers on screen go through `toPersianDigits`. Dates travel as ISO `YYYY-MM-DD` and show as Jalali through `web/src/lib/jalali.ts` (`formatJalali`, `todayISO` in the phone's local time, never UTC). Sheets are `BottomSheet` opened through `useSheet`, which gives each open sheet a history entry so the phone's back button closes it.
+
 In development Vite proxies `/api` and `/healthz` to the API on `:8080`, so the browser sees one origin as it does behind Caddy, and the auth cookie needs no CORS. `npm run dev -- --host` serves it on the LAN for testing on a real phone.
 
 ## Commit conventions

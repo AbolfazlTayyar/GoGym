@@ -1,0 +1,77 @@
+/* The measurement sheet from concept-8-2's third phone: a dimmed page and a panel sliding up from the bottom. */
+.dialog {
+  width: 100%;
+  max-width: none;
+  height: 100dvh;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  display: none;
+  flex-direction: column;
+  justify-content: flex-end;
+  overflow: hidden;
+}
+
+.dialog[open] {
+  display: flex;
+}
+
+.dialog::backdrop {
+  background: rgba(43, 26, 32, 0.38);
+  animation: fade 0.2s ease-out;
+}
+
+.panel {
+  width: 100%;
+  max-width: 480px;
+  max-height: calc(100dvh - 40px);
+  margin-inline: auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: #fff8f9;
+  color: var(--ink);
+  border-radius: 30px 30px 0 0;
+  padding: 8px 18px calc(22px + env(safe-area-inset-bottom));
+  box-shadow: 0 -10px 30px rgba(43, 26, 32, 0.15);
+  animation: up 0.22s ease-out;
+}
+
+/* The part that can be dragged down to close; the rest scrolls normally. */
+.handle {
+  touch-action: none;
+}
+
+.grab {
+  width: 40px;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--petal);
+  margin: 0 auto 10px;
+}
+
+.bsh {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.bsh b {
+  flex: 1;
+  font-size: 19px;
+  font-weight: 800;
+}
+
+@keyframes up {
+  from {
+    transform: translateY(100%);
+  }
+}
+
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+}
