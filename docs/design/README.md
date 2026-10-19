@@ -3,7 +3,8 @@
 The frontend design, built on [stakeholder-brief.md](../stakeholder-brief.md) and on two of her
 real plans. Three boards cover every v1 screen: [spec.md](../spec.md)'s six features plus sign-in.
 
-They are static mockups to set the direction, not specs. Athlete names are made up. The plan content
+The app is built to look like them: [tasks/frontend.md](../tasks/frontend.md) ports each
+screen from its HTML in [src/](src/) and lists the few places the app differs, and why. Athlete names are made up. The plan content
 follows her real plans. The options this design was chosen from are in [archive/](archive/README.md).
 
 ## Chosen direction

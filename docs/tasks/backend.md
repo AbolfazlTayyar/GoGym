@@ -833,7 +833,7 @@ $ curl -s -X DELETE -H "Authorization: Bearer $TOKEN" localhost:8080/api/v1/move
 
 ### Frontend stack decision
 
-⬜ **Not started**
+✅ **Done** — a React SPA served on the API's origin, see [ADR 0030](../adr/0030-react-spa-same-origin.md)
 
 **Description:** Not a build task — a checkpoint to actually make the frontend call (React SPA vs. Go templates + htmx, per prestart-roadmap.md's open question) now that the backend API shape from the feature tasks above is real and can inform the decision.
 
