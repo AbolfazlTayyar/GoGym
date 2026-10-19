@@ -61,6 +61,27 @@
   font-weight: 500;
 }
 
+.area {
+  height: 70px;
+  align-items: flex-start;
+  padding-top: 12px;
+  border-radius: 22px;
+}
+
+.area textarea {
+  resize: none;
+  height: 100%;
+  padding-bottom: 8px;
+}
+
+/* A unit after the number, such as سانتی‌متر. */
+.unit {
+  color: var(--dim);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
 .ltr {
   direction: ltr;
   text-align: end;

@@ -1,0 +1,45 @@
+/* blush.css .seg: a white pill of equal choices, the chosen one pink. */
+.seg {
+  display: flex;
+  margin-top: 10px;
+  background: #fff;
+  border-radius: 999px;
+  padding: 3px;
+}
+
+.seg button {
+  position: relative;
+  flex: 1;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 6px 0;
+  border-radius: 999px;
+  color: var(--dim);
+}
+
+.seg button::after {
+  content: "";
+  position: absolute;
+  inset: -6px 0;
+}
+
+.seg .on {
+  background: var(--pink);
+  color: #fff;
+}
+
+/* As a form field (concept-8-2's athlete form): under its label, taller, with the field shadow. */
+.field {
+  margin-top: 5px;
+  box-shadow: var(--soft);
+}
+
+.field button {
+  padding: 9px 0;
+  font-size: 14px;
+}
+
+.field button::after {
+  inset: -3px 0;
+}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseNumber, toLatinDigits, toPersianDigits } from "./digits";
+import { parseNumber, toLatinDigits, toPersianDigits, toPhone } from "./digits";
 
 describe("toLatinDigits", () => {
   it.each([
@@ -32,5 +32,11 @@ describe("parseNumber", () => {
     ["1.2.3", null],
   ])("%j → %j", (input, expected) => {
     expect(parseNumber(input)).toBe(expected);
+  });
+});
+
+describe("toPhone", () => {
+  it("drops grouping and converts digits", () => {
+    expect(toPhone("۰۹۱۲ ۳۴۵-۶۷۸۹")).toBe("09123456789");
   });
 });

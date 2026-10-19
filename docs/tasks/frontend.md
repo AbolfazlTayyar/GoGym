@@ -305,7 +305,7 @@ empty.
 
 ### Athlete form: new and edit
 
-⬜ **Not started** — editing and deleting need *Athlete update and delete* in [backend.md](backend.md).
+✅ **Done**
 
 **Description:** One form for a new athlete and for editing one ([concept-8-2](../design/concept-8-2-athlete.png), fourth phone). Name, surname and mobile are required. Everything else is optional, and type and level are buttons, so the only typing is names, phone, goal, height and injuries.
 

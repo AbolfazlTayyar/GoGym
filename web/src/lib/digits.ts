@@ -21,3 +21,8 @@ export function parseNumber(text: string): number | null {
   const latin = toLatinDigits(text.trim());
   return /^\d+(\.\d+)?$/.test(latin) ? Number(latin) : null;
 }
+
+// A phone as the API wants it: Latin digits, without the spaces or dashes a coach may type to group it.
+export function toPhone(text: string): string {
+  return toLatinDigits(text).replace(/[\s-]/g, "");
+}

@@ -1,0 +1,32 @@
+/* concept-8-2's fourth phone: the form under a header with × and the pink ذخیره. */
+.form {
+  padding: 2px 18px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+}
+
+.two {
+  display: flex;
+  gap: 10px;
+}
+
+.two > * {
+  flex: 1;
+  min-width: 0;
+}
+
+.two > .wide {
+  flex: 2;
+}
+
+.del {
+  margin-top: 14px;
+}
+
+.del button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}

@@ -1,5 +1,11 @@
-import type { InputHTMLAttributes, ReactNode } from "react";
+import type { InputHTMLAttributes, ReactNode, TextareaHTMLAttributes } from "react";
 import f from "./Field.module.css";
+
+type FieldFrameProps = {
+  label: string;
+  optional?: boolean;
+  error?: string;
+};
 
 type TextFieldProps = InputHTMLAttributes<HTMLInputElement> & {
   label: string;
@@ -24,6 +30,24 @@ export function TextField({ label, optional, error, trailing, ltr, ...input }: T
           {...input}
         />
         {trailing}
+      </span>
+      {error && <span className={f.error}>{error}</span>}
+    </label>
+  );
+}
+
+type TextAreaFieldProps = TextareaHTMLAttributes<HTMLTextAreaElement> & FieldFrameProps;
+
+// The boards' taller rounded field (.in.area) for a sentence or two, such as injuries or a description.
+export function TextAreaField({ label, optional, error, ...textarea }: TextAreaFieldProps) {
+  return (
+    <label className={f.fl}>
+      <span className={f.label}>
+        {label}
+        {optional && <i className={f.optional}> · اختیاری</i>}
+      </span>
+      <span className={error ? `${f.in} ${f.area} ${f.invalid}` : `${f.in} ${f.area}`}>
+        <textarea className={f.input} aria-invalid={error ? true : undefined} {...textarea} />
       </span>
       {error && <span className={f.error}>{error}</span>}
     </label>
