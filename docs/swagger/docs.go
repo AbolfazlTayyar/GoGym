@@ -33,7 +33,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Case-insensitive partial match on first or last name",
+                        "description": "Case-insensitive partial match on the full name (first, a space, last)",
                         "name": "q",
                         "in": "query"
                     },

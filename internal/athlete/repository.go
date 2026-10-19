@@ -11,8 +11,9 @@ import (
 	"gorm.io/gorm"
 )
 
-// ESCAPE '\' is Postgres's default, stated explicitly because search.ContainsPattern escapes with it.
-const nameSearchClause = `(first_name ILIKE @pattern ESCAPE '\' OR last_name ILIKE @pattern ESCAPE '\')`
+// The full name, so a coach typing "Sara Ahmadi" finds her, not only "Sara" or "Ahmadi". ESCAPE '\' is
+// Postgres's default, stated explicitly because search.ContainsPattern escapes with it.
+const nameSearchClause = `(first_name || ' ' || last_name) ILIKE @pattern ESCAPE '\'`
 
 // ErrNotFound also covers another coach's athlete, so callers can 404 without revealing it exists.
 var ErrNotFound = errors.New("athlete: not found")

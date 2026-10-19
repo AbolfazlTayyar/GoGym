@@ -208,6 +208,13 @@ func TestAthleteLifecycle(t *testing.T) {
 		assert.Equal(t, "Reza", athletes[0].FirstName)
 	})
 
+	t.Run("search matches across the first and last name", func(t *testing.T) {
+		athletes, _ := listAthletes(t, router, coachA, "?q=reza%20kar")
+
+		require.Len(t, athletes, 1)
+		assert.Equal(t, "Karimi", athletes[0].LastName)
+	})
+
 	t.Run("another coach's athletes never appear", func(t *testing.T) {
 		athletes, meta := listAthletes(t, router, coachB, "")
 

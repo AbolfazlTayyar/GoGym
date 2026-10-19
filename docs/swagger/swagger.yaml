@@ -617,7 +617,8 @@ paths:
         athletes are one-off plan-link deliveries; pass athlete_type to widen that.
         Paginated: meta carries the total, limit and offset.'
       parameters:
-      - description: Case-insensitive partial match on first or last name
+      - description: Case-insensitive partial match on the full name (first, a space,
+          last)
         in: query
         name: q
         type: string

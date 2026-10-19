@@ -141,7 +141,7 @@ func (h *Handler) Create(c *gin.Context) {
 //	@Tags			athletes
 //	@Produce		json
 //	@Security		BearerAuth
-//	@Param			q				query		string	false	"Case-insensitive partial match on first or last name"
+//	@Param			q				query		string	false	"Case-insensitive partial match on the full name (first, a space, last)"
 //	@Param			athlete_type	query		string	false	"Which athletes to include; defaults to private"	Enums(private, public, all)
 //	@Param			limit			query		int		false	"Page size, 1-100"									default(20)
 //	@Param			offset			query		int		false	"Rows to skip"										default(0)
