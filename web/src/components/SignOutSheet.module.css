@@ -1,0 +1,15 @@
+.phone {
+  font-size: 13px;
+  color: var(--dim);
+  direction: ltr;
+  text-align: end;
+  margin: -6px 0 18px;
+}
+
+.error {
+  margin-top: 10px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--pinkText);
+}

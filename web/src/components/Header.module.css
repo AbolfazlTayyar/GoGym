@@ -20,6 +20,21 @@
   gap: 4px;
 }
 
+/* The greeting is a button (it opens the sign-out sheet), tall enough to tap. */
+.kickerButton {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: inherit;
+}
+
+.kickerButton::after {
+  content: "";
+  position: absolute;
+  inset: -12px -8px;
+}
+
 .h3 {
   font-size: 27px;
   font-weight: 800;

@@ -24,6 +24,15 @@ export function HeaderTitle({ title, subtitle, kicker }: HeaderTitleProps) {
   );
 }
 
+// A kicker the coach can tap, such as the greeting that opens the sign-out sheet.
+export function KickerButton({ children, onClick }: { children: ReactNode; onClick: () => void }) {
+  return (
+    <button type="button" className={s.kickerButton} onClick={onClick}>
+      {children}
+    </button>
+  );
+}
+
 type RoundButtonProps = {
   label: string;
   children: ReactNode;

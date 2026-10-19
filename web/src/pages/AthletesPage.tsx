@@ -1,17 +1,21 @@
 import { EmptyState } from "../components/EmptyState";
-import { Header, HeaderTitle, RoundButton } from "../components/Header";
+import { Header, HeaderTitle, KickerButton, RoundButton } from "../components/Header";
 import { PlusIcon, SparkIcon, UsersIcon } from "../components/icons";
 import { ScreenContent } from "../components/Screen";
+import { SignOutSheet } from "../components/SignOutSheet";
+import { useSheet } from "../components/useSheet";
 
 export function AthletesPage() {
+  const account = useSheet("account");
+
   return (
     <>
       <Header>
         <HeaderTitle
           kicker={
-            <>
+            <KickerButton onClick={account.show}>
               <SparkIcon /> سلام مربی
-            </>
+            </KickerButton>
           }
           title="شاگردهای من"
         />
@@ -26,6 +30,7 @@ export function AthletesPage() {
           text="با دکمه + اولین شاگرد را اضافه کنید."
         />
       </ScreenContent>
+      <SignOutSheet open={account.open} onClose={account.close} />
     </>
   );
 }

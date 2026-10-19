@@ -1,0 +1,32 @@
+/* The boards' full-width pink action (.big) and the bar that pins it to the bottom (.bottom). */
+.bottom {
+  margin-top: auto;
+  padding: 12px 18px calc(22px + env(safe-area-inset-bottom));
+  flex: none;
+}
+
+.big {
+  display: block;
+  width: 100%;
+  background: var(--pink);
+  color: #fff;
+  text-align: center;
+  font-size: 16px;
+  font-weight: 800;
+  padding: 15px 0;
+  border-radius: 999px;
+  box-shadow: var(--glow);
+}
+
+.big:disabled {
+  opacity: 0.6;
+}
+
+/* The movement sheet's delete (.del): white with a rose outline. */
+.outline {
+  background: #fff;
+  color: var(--rose);
+  border: 1.5px solid var(--petal);
+  box-shadow: none;
+  padding: 13.5px 0;
+}

@@ -1,0 +1,69 @@
+/* The fourth phone of concept-8-3: logo, wordmark, two fields and the pink button at the bottom. */
+.login {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 0 22px calc(26px + env(safe-area-inset-bottom));
+  overflow-y: auto;
+}
+
+.logo {
+  margin: 96px auto 0;
+  width: 88px;
+  height: 88px;
+  border-radius: 28px;
+  background: var(--pink);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--glow);
+  flex: none;
+}
+
+.logo svg {
+  width: 46px;
+  height: 46px;
+}
+
+.brand {
+  text-align: center;
+  font: 800 32px var(--inter);
+  letter-spacing: -0.02em;
+  margin-top: 16px;
+  direction: ltr;
+}
+
+.sub {
+  text-align: center;
+  color: var(--dim);
+  font-size: 14.5px;
+  font-weight: 600;
+}
+
+.fields {
+  padding-top: 44px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.eye {
+  position: relative;
+  display: flex;
+  margin-inline-end: -8px;
+  padding: 13px 8px;
+}
+
+.formError {
+  margin-top: 14px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--pinkText);
+}
+
+.bottom {
+  margin-top: auto;
+  padding-top: 24px;
+}

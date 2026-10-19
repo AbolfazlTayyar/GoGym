@@ -4,8 +4,8 @@
   min-width: 0;
 }
 
+/* Inline, as on the boards: its line then takes the field's 16px line height, which spaces it from the pill. */
 .label {
-  display: block;
   font-size: 12.5px;
   color: var(--dim);
   font-weight: 700;
@@ -45,13 +45,29 @@
     0 0 0 1.5px var(--pink);
 }
 
-.in svg {
-  color: var(--pinkText);
+/* The input inside an .in pill, so a pill can also hold a unit or a button. */
+.input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  background: none;
+  font: inherit;
+  outline: none;
 }
 
-.in::placeholder {
+.input::placeholder {
   color: var(--faint);
   font-weight: 500;
+}
+
+.ltr {
+  direction: ltr;
+  text-align: end;
+}
+
+.in svg {
+  color: var(--pinkText);
 }
 
 .invalid {

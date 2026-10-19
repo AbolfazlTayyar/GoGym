@@ -222,7 +222,7 @@ Asia/Tehran; next month across the Esfand → Farvardin year boundary.
 
 ### Sign in and sign out
 
-⬜ **Not started** — needs *Browser auth via httpOnly cookie* in [backend.md](backend.md).
+✅ **Done**
 
 **Description:** The one screen before home: mobile and password ([concept-8-3](../design/concept-8-3-search-movements-sign-in.png), fourth phone). There's no signup, since coach accounts are made with `coachctl`. The coach stays signed in, and signing out is the one item in a small sheet behind the home greeting.
 
