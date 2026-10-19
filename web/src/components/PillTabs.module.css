@@ -1,0 +1,33 @@
+/* blush.css .pills2: a white pill holding two or more choices, the chosen one pink. */
+.pills2 {
+  display: flex;
+  margin: 12px 18px;
+  background: #fff;
+  border-radius: 999px;
+  padding: 4px;
+  flex: none;
+  box-shadow: var(--soft);
+}
+
+.pills2 button {
+  position: relative;
+  flex: 1;
+  text-align: center;
+  padding: 8px 0;
+  border-radius: 999px;
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--dim);
+}
+
+.pills2 button::after {
+  content: "";
+  position: absolute;
+  inset: -4px 0;
+}
+
+.pills2 .on {
+  background: var(--pink);
+  color: #fff;
+  box-shadow: var(--glow);
+}

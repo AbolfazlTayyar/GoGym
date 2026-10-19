@@ -64,6 +64,10 @@ export type PlanSummary = {
   note: string | null;
   start_date: string;
   is_current: boolean;
+  // In day order; [] for an empty plan.
+  day_labels: string[];
+  // Numbered lines across all days: a superset counts once.
+  block_count: number;
   created_at: string;
   updated_at: string;
 };

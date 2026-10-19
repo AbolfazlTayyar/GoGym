@@ -1,7 +1,7 @@
 import { createBrowserRouter } from "react-router";
 import { RequireAuth } from "./components/RequireAuth";
 import { TabLayout } from "./components/TabLayout";
-import { AthletesPage } from "./pages/AthletesPage";
+import { HomePage } from "./pages/HomePage";
 import { LoginPage } from "./pages/LoginPage";
 import { MovementsPage } from "./pages/MovementsPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
@@ -14,7 +14,7 @@ export const router = createBrowserRouter([
       {
         element: <TabLayout />,
         children: [
-          { path: "/", element: <AthletesPage /> },
+          { path: "/", element: <HomePage /> },
           { path: "/movements", element: <MovementsPage /> },
         ],
       },

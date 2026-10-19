@@ -22,6 +22,8 @@ Every API call goes through `web/src/api/` (`api.get/post/put/delete` in `client
 
 The app never reads or stores the auth token: the API keeps it in an httpOnly cookie ([ADR 0031](docs/adr/0031-auth-token-in-httponly-cookie.md)). Whether the coach is signed in comes from `useCoach()` (`GET /coaches/me`); every route except `/login` sits under `RequireAuth`, and a 401 from any call but login sends the coach to `/login?next=<page>`.
 
+Links and navigation build their URLs with `paths` in `web/src/lib/paths.ts`, never a hand-written route string, so the router and every link agree. A list that scrolls inside its own box (not the window) uses `useScrollMemory`, so back returns to the same place.
+
 Persian everywhere: UI text is Persian in the components, with no i18n library. Every number or phone a coach types goes through `toLatinDigits` / `parseNumber` (`web/src/lib/digits.ts`) before it's sent; numbers on screen go through `toPersianDigits`. Dates travel as ISO `YYYY-MM-DD` and show as Jalali through `web/src/lib/jalali.ts` (`formatJalali`, `todayISO` in the phone's local time, never UTC). Sheets are `BottomSheet` opened through `useSheet`, which gives each open sheet a history entry so the phone's back button closes it.
 
 In development Vite proxies `/api` and `/healthz` to the API on `:8080`, so the browser sees one origin as it does behind Caddy, and the auth cookie needs no CORS. `npm run dev -- --host` serves it on the LAN for testing on a real phone.

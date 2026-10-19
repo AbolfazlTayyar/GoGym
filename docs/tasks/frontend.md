@@ -262,7 +262,7 @@ Ordered so the plan builder can be tried with a real plan on a phone as early as
 
 ### Home: athletes with their day letters
 
-⬜ **Not started** — needs *Current plans for the athlete list* in [backend.md](backend.md).
+✅ **Done**
 
 **Description:** The screen the app opens on, and the most-used one: every private athlete with their current plan's day letters, so the day an athlete names is one tap away ([concept-8-1](../design/concept-8-1-home-and-plans.png), first phone). Typing in search finds private and public athletes together ([concept-8-3](../design/concept-8-3-search-movements-sign-in.png), first phone).
 

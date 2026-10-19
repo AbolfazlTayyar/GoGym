@@ -1,0 +1,104 @@
+/* Concept 2's home rows on one white sheet (blush.css .ath, .dl). */
+.ath {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 58px;
+  border-bottom: 1px solid var(--line);
+}
+
+.nm {
+  flex: 1;
+  min-width: 0;
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.nm b {
+  font-size: 15.5px;
+  font-weight: 700;
+  display: block;
+  line-height: 1.35;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.nm span {
+  font-size: 12px;
+  color: var(--dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.nm em {
+  font-style: normal;
+  color: var(--pinkText);
+  background: var(--blush2);
+  border-radius: 4px;
+}
+
+.nm .none {
+  align-self: flex-start;
+  display: inline-block;
+  background: var(--lemon);
+  color: var(--amber);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 1px 9px;
+  border-radius: 999px;
+}
+
+/* Five columns of 34px fill the board's 190px; a 6- or 7-day plan narrows every row's letters to fit. */
+.dl {
+  display: grid;
+  grid-template-columns: repeat(var(--columns, 5), 1fr);
+  gap: 5px;
+  width: 190px;
+  flex: none;
+}
+
+.dl.dense {
+  gap: 3px;
+}
+
+.letter {
+  position: relative;
+  height: 38px;
+  border-radius: 12px;
+  background: var(--blush);
+  color: var(--pinkText);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font: 800 15px var(--inter);
+}
+
+/* 44px tall to tap; as wide as the board's pitch allows without overlapping the next letter. */
+.letter::after {
+  content: "";
+  position: absolute;
+  inset: -3px -2.5px;
+}
+
+.letter:active {
+  background: var(--pink);
+  color: #fff;
+  box-shadow: var(--glow);
+}
+
+.new {
+  grid-column: 1 / -1;
+  height: 38px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border: 1.5px dashed var(--petal);
+  color: var(--pinkText);
+  font: 700 13px var(--vazir);
+}

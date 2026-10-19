@@ -1,0 +1,36 @@
+/* The rows share one white sheet (blush.css .roster), which scrolls between the header and the bottom bar. */
+.roster {
+  margin: 0 14px;
+  background: #fff;
+  border-radius: 26px;
+  padding: 2px 14px;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  box-shadow: var(--soft);
+}
+
+/* Search results sit right under the search box, with no switch in between. */
+.res {
+  margin-top: 12px;
+}
+
+.gl {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--dim);
+  padding: 10px 2px 0;
+}
+
+.note {
+  padding: 24px 0;
+  text-align: center;
+  font-size: 13px;
+  color: var(--dim);
+}
+
+.fill {
+  flex: 1;
+  min-height: 0;
+}
