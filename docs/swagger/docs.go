@@ -824,7 +824,144 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/days/{id}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Deletes the day and its blocks; data is null on success. The plan's other days keep their labels and order_index slots; nothing is renumbered. A day whose plan's athlete belongs to another coach is reported as not found.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "plans"
+                ],
+                "summary": "Delete a day",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Day ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.NoContentEnvelope"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.UnauthorizedEnvelope"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.NotFoundEnvelope"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.InternalErrorEnvelope"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/days/{id}/blocks": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Replaces every block of the day with the blocks in the array, in one transaction: all of them are saved, or none and the day is unchanged. Order comes from array position, for blocks and for each block's movements. An empty array clears the day. A block needs sets (1-50) and at least one movement (at most 10); rest_seconds (0-3600) and notes are optional. Each movement needs movement_id; reps (1-1000), duration_seconds (1-14400) and load are optional. A movement must be in the coach's library, own or universal, or already used in this day (a movement deleted from the library since still saves). At most 40 blocks. Errors are reported together, keyed by position, e.g. \"[2].sets\" or \"[2].movements[1].movement_id\". Block and block movement ids are new on every save, so a client must not hold on to them. Two saves of the same day at once: the later one wins whole. The response is the saved day in the plan detail's day shape. A day whose plan's athlete belongs to another coach is reported as not found.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "plans"
+                ],
+                "summary": "Save a day: replace its blocks",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Day ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "The day's blocks, in order",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/internal_plan.saveBlockRequest"
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.SuccessEnvelope"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/internal_plan.dayResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.ValidationErrorEnvelope"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.UnauthorizedEnvelope"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.NotFoundEnvelope"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.InternalErrorEnvelope"
+                        }
+                    }
+                }
+            },
             "post": {
                 "security": [
                     {
@@ -2498,6 +2635,50 @@ const docTemplate = `{
                 "updated_at": {
                     "type": "string",
                     "example": "2026-09-10T18:00:00Z"
+                }
+            }
+        },
+        "internal_plan.saveBlockRequest": {
+            "type": "object",
+            "properties": {
+                "movements": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/internal_plan.saveMovementRequest"
+                    }
+                },
+                "notes": {
+                    "type": "string",
+                    "example": "superset"
+                },
+                "rest_seconds": {
+                    "type": "integer",
+                    "example": 60
+                },
+                "sets": {
+                    "type": "integer",
+                    "example": 3
+                }
+            }
+        },
+        "internal_plan.saveMovementRequest": {
+            "type": "object",
+            "properties": {
+                "duration_seconds": {
+                    "type": "integer",
+                    "example": 45
+                },
+                "load": {
+                    "type": "string",
+                    "example": "bodyweight"
+                },
+                "movement_id": {
+                    "type": "string",
+                    "example": "8e9f0a1b-2c3d-4e5f-8a6b-7c8d9e0f1a2b"
+                },
+                "reps": {
+                    "type": "integer",
+                    "example": 12
                 }
             }
         },

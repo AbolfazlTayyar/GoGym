@@ -497,6 +497,260 @@ func TestUpdateAndDeletePlan_AnotherCoachsPlanIsNotFound(t *testing.T) {
 	assert.Equal(t, "Mehr", got.Title)
 }
 
+func saveDayPath(dayID uuid.UUID) string {
+	return "/api/v1/days/" + dayID.String() + "/blocks"
+}
+
+// line builds one block of a save body: one movement per id, each with its reps.
+func line(sets int, movements ...any) map[string]any {
+	parts := make([]map[string]any, 0, len(movements)/2)
+	for i := 0; i < len(movements); i += 2 {
+		parts = append(parts, map[string]any{"movement_id": movements[i], "reps": movements[i+1]})
+	}
+	return map[string]any{"sets": sets, "movements": parts}
+}
+
+func saveBody(t *testing.T, lines ...map[string]any) string {
+	t.Helper()
+
+	if lines == nil {
+		return "[]"
+	}
+	raw, err := json.Marshal(lines)
+	require.NoError(t, err)
+	return string(raw)
+}
+
+// dayLines reads a day back as one string per line, e.g. "3: lunge 12 + bridge 15".
+func dayLines(t *testing.T, router *gin.Engine, token string, planID uuid.UUID, label string) []string {
+	t.Helper()
+
+	got, _ := getPlan(t, router, token, planID.String())
+	for _, d := range got.Days {
+		if d.Label != label {
+			continue
+		}
+		out := make([]string, 0, len(d.Blocks))
+		for _, b := range d.Blocks {
+			parts := make([]string, 0, len(b.Movements))
+			for _, m := range b.Movements {
+				parts = append(parts, fmt.Sprintf("%s %d", m.Name, *m.Reps))
+			}
+			out = append(out, fmt.Sprintf("%d: %s", b.Sets, strings.Join(parts, " + ")))
+		}
+		return out
+	}
+	t.Fatalf("no day %s", label)
+	return nil
+}
+
+type saveFixture struct {
+	router                        *gin.Engine
+	db                            *gorm.DB
+	token                         string
+	planID, dayID                 uuid.UUID
+	lunge, bridge, squat, rowerID uuid.UUID
+}
+
+func newSaveFixture(t *testing.T, coachPhone, athletePhone string) saveFixture {
+	t.Helper()
+
+	router, db := newTestRouter(t)
+	token := createCoach(t, router, db, coachPhone)
+	planID := insertPlan(t, db, createAthlete(t, router, token, athletePhone), "Mehr", daysFromToday(-5))
+	dayID, err := insertDay(db, planID, "C", 2)
+	require.NoError(t, err)
+
+	return saveFixture{
+		router: router, db: db, token: token, planID: planID, dayID: dayID,
+		lunge:   insertMovement(t, db, "lunge", "strength"),
+		bridge:  insertMovement(t, db, "bridge", "strength"),
+		squat:   insertMovement(t, db, "squat", "strength"),
+		rowerID: insertMovement(t, db, "rower", "cardio"),
+	}
+}
+
+func (f saveFixture) save(t *testing.T, body string, wantStatus int) envelope {
+	t.Helper()
+	return decodeEnvelope(t, do(t, f.router, http.MethodPut, saveDayPath(f.dayID), f.token, body), wantStatus)
+}
+
+func TestSaveDay_ReplacesTheBlocksInOrder(t *testing.T) {
+	f := newSaveFixture(t, "09121110601", "09121230601")
+
+	f.save(t, saveBody(t,
+		line(3, f.lunge, 12), line(3, f.bridge, 15), line(4, f.squat, 8), line(1, f.rowerID, 20),
+	), http.StatusOK)
+	require.Equal(t, []string{"3: lunge 12", "3: bridge 15", "4: squat 8", "1: rower 20"},
+		dayLines(t, f.router, f.token, f.planID, "C"))
+
+	// Line 3 removed, 1 and 2 swapped, line 4 turned into a two-movement superset.
+	env := f.save(t, saveBody(t,
+		line(3, f.bridge, 15), line(3, f.lunge, 12), line(2, f.rowerID, 20, f.squat, 10),
+	), http.StatusOK)
+
+	assert.Equal(t, []string{"3: bridge 15", "3: lunge 12", "2: rower 20 + squat 10"},
+		dayLines(t, f.router, f.token, f.planID, "C"))
+
+	var day struct {
+		Label  string `json:"label"`
+		Blocks []struct {
+			OrderIndex int `json:"order_index"`
+			Movements  []struct {
+				Name         string `json:"name"`
+				OrderInBlock int    `json:"order_in_block"`
+			} `json:"movements"`
+		} `json:"blocks"`
+	}
+	require.NoError(t, json.Unmarshal(env.Data, &day))
+	assert.Equal(t, "C", day.Label, "the response is the saved day")
+	require.Len(t, day.Blocks, 3)
+	assert.Equal(t, 2, day.Blocks[2].OrderIndex)
+	assert.Equal(t, "squat", day.Blocks[2].Movements[1].Name)
+	assert.Equal(t, 1, day.Blocks[2].Movements[1].OrderInBlock)
+}
+
+func TestSaveDay_AnEmptyArrayClearsTheDay(t *testing.T) {
+	f := newSaveFixture(t, "09121110602", "09121230602")
+	f.save(t, saveBody(t, line(3, f.lunge, 12)), http.StatusOK)
+
+	f.save(t, "[]", http.StatusOK)
+
+	assert.Empty(t, dayLines(t, f.router, f.token, f.planID, "C"))
+}
+
+func TestSaveDay_OneBadLineLeavesTheDayAsItWas(t *testing.T) {
+	f := newSaveFixture(t, "09121110603", "09121230603")
+	f.save(t, saveBody(t, line(3, f.lunge, 12), line(3, f.bridge, 15)), http.StatusOK)
+	var before int64
+	require.NoError(t, f.db.Table("block").Where("day_id = ?", f.dayID).Count(&before).Error)
+
+	other, err := coach.NewService(coach.NewRepository(f.db), "", 0).Create(context.Background(), coach.CreateInput{
+		FirstName: "Other", LastName: "Coach", Phone: "09121110604", Password: "correct-horse-battery-staple",
+	})
+	require.NoError(t, err)
+	theirs := uuid.New()
+	require.NoError(t, f.db.Create(&movement.Movement{ID: theirs, CoachID: &other.ID, Name: "theirs"}).Error)
+
+	env := f.save(t, saveBody(t,
+		line(3, f.squat, 8), line(3, f.lunge, 12), line(0, f.bridge, 15), line(3, f.rowerID, 20, theirs, 10),
+	), http.StatusBadRequest)
+
+	require.NotNil(t, env.Error)
+	assert.Equal(t, map[string]string{
+		"[2].sets":                     "must be between 1 and 50",
+		"[3].movements[1].movement_id": "not found",
+	}, env.Error.Fields, "every bad entry, by position, and another coach's movement reads as not found")
+
+	var after int64
+	require.NoError(t, f.db.Table("block").Where("day_id = ?", f.dayID).Count(&after).Error)
+	assert.Equal(t, before, after)
+	assert.Equal(t, []string{"3: lunge 12", "3: bridge 15"}, dayLines(t, f.router, f.token, f.planID, "C"))
+}
+
+func TestSaveDay_ShapeErrors(t *testing.T) {
+	f := newSaveFixture(t, "09121110605", "09121230605")
+
+	env := f.save(t, `[{"sets":3,"movements":[]},{"sets":3,"movements":[{"movement_id":"nope"}]}]`, http.StatusBadRequest)
+	assert.Equal(t, map[string]string{
+		"[0].movements":                "at least one movement is required",
+		"[1].movements[0].movement_id": "must be a UUID",
+	}, env.Error.Fields)
+
+	tooMany := make([]map[string]any, 41)
+	for i := range tooMany {
+		tooMany[i] = line(3, f.lunge, 12)
+	}
+	env = f.save(t, saveBody(t, tooMany...), http.StatusBadRequest)
+	assert.Equal(t, httpx.CodeValidationFailed, env.Error.Code)
+}
+
+func TestSaveDay_AMovementDeletedSinceStillSaves(t *testing.T) {
+	f := newSaveFixture(t, "09121110606", "09121230606")
+	f.save(t, saveBody(t, line(3, f.lunge, 12)), http.StatusOK)
+	require.NoError(t, f.db.Delete(&movement.Movement{}, "id = ?", f.lunge).Error)
+
+	f.save(t, saveBody(t, line(3, f.bridge, 15), line(4, f.lunge, 10)), http.StatusOK)
+	assert.Equal(t, []string{"3: bridge 15", "4: lunge 10"}, dayLines(t, f.router, f.token, f.planID, "C"))
+
+	t.Run("but a newly added deleted movement doesn't", func(t *testing.T) {
+		require.NoError(t, f.db.Delete(&movement.Movement{}, "id = ?", f.squat).Error)
+		env := f.save(t, saveBody(t, line(3, f.bridge, 15), line(3, f.squat, 8)), http.StatusBadRequest)
+		assert.Equal(t, map[string]string{"[1].movements[0].movement_id": "not found"}, env.Error.Fields)
+	})
+}
+
+func TestSaveDay_TakesTheSameQueriesForAShortOrLongDay(t *testing.T) {
+	f := newSaveFixture(t, "09121110607", "09121230607")
+	short := saveBody(t, line(3, f.lunge, 12), line(3, f.bridge, 15), line(3, f.squat, 8))
+	long := make([]map[string]any, 9)
+	for i := range long {
+		long[i] = line(3, f.lunge, 12, f.bridge, 10)
+	}
+
+	rec := recordSQL(f.db)
+	f.save(t, short, http.StatusOK)
+	forShort := len(rec.take())
+	f.save(t, saveBody(t, long...), http.StatusOK)
+	forLong := len(rec.take())
+
+	assert.Equal(t, forShort, forLong)
+}
+
+func TestSaveDay_ConcurrentSavesLeaveOneWholeDay(t *testing.T) {
+	f := newSaveFixture(t, "09121110611", "09121230611")
+	first := saveBody(t, line(3, f.lunge, 12), line(3, f.bridge, 15))
+	second := saveBody(t, line(4, f.squat, 8))
+
+	for range 10 {
+		var wg sync.WaitGroup
+		for _, body := range []string{first, second} {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				rec := do(t, f.router, http.MethodPut, saveDayPath(f.dayID), f.token, body)
+				assert.Equal(t, http.StatusOK, rec.Code, rec.Body.String())
+			}()
+		}
+		wg.Wait()
+
+		got := dayLines(t, f.router, f.token, f.planID, "C")
+		assert.Contains(t, [][]string{{"3: lunge 12", "3: bridge 15"}, {"4: squat 8"}}, got,
+			"one save wins whole; the day never holds both")
+	}
+}
+
+func TestDeleteDay_LeavesTheOtherSlotsAlone(t *testing.T) {
+	f := newSaveFixture(t, "09121110608", "09121230608")
+	_, err := insertDay(f.db, f.planID, "A", 0)
+	require.NoError(t, err)
+	_, err = insertDay(f.db, f.planID, "B", 1)
+	require.NoError(t, err)
+	f.save(t, saveBody(t, line(3, f.lunge, 12)), http.StatusOK)
+
+	env := decodeEnvelope(t, do(t, f.router, http.MethodDelete, "/api/v1/days/"+f.dayID.String(), f.token, ""), http.StatusOK)
+	assert.Equal(t, "null", string(env.Data))
+
+	got, _ := getPlan(t, f.router, f.token, f.planID.String())
+	require.Len(t, got.Days, 2)
+	assert.Equal(t, []string{"A", "B"}, []string{got.Days[0].Label, got.Days[1].Label})
+	assert.Equal(t, []int{0, 1}, []int{got.Days[0].OrderIndex, got.Days[1].OrderIndex})
+	var blocks int64
+	require.NoError(t, f.db.Table("block").Where("day_id = ?", f.dayID).Count(&blocks).Error)
+	assert.Zero(t, blocks)
+}
+
+func TestSaveAndDeleteDay_AnotherCoachsDayIsNotFound(t *testing.T) {
+	f := newSaveFixture(t, "09121110609", "09121230609")
+	f.save(t, saveBody(t, line(3, f.lunge, 12)), http.StatusOK)
+	intruder := createCoach(t, f.router, f.db, "09121110610")
+
+	decodeEnvelope(t, do(t, f.router, http.MethodPut, saveDayPath(f.dayID), intruder, "[]"), http.StatusNotFound)
+	decodeEnvelope(t, do(t, f.router, http.MethodDelete, "/api/v1/days/"+f.dayID.String(), intruder, ""), http.StatusNotFound)
+
+	assert.Equal(t, []string{"3: lunge 12"}, dayLines(t, f.router, f.token, f.planID, "C"))
+}
+
 // The insert helpers below bypass the builder endpoints for the same reason as insertPlan.
 
 func insertMovement(t *testing.T, db *gorm.DB, name, category string) uuid.UUID {

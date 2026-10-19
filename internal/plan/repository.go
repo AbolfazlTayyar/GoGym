@@ -154,9 +154,30 @@ func athleteIDOf(query *gorm.DB) (uuid.UUID, error) {
 // LoadDays issues one query per level (day, block, block_movement, movement), however big the plan is.
 func (r *Repository) LoadDays(ctx context.Context, planID uuid.UUID) ([]Day, error) {
 	days := make([]Day, 0)
-	if err := r.db.WithContext(ctx).
+	if err := withTree(r.db.WithContext(ctx)).
 		Where("plan_id = ?", planID).
 		Order("order_index, id").
+		Find(&days).Error; err != nil {
+		return nil, fmt.Errorf("plan: failed to load days: %w", err)
+	}
+	return days, nil
+}
+
+// LoadDay loads one day's tree the way LoadDays does, in the same fixed number of queries.
+func (r *Repository) LoadDay(ctx context.Context, dayID uuid.UUID) (*Day, error) {
+	var d Day
+	if err := withTree(r.db.WithContext(ctx)).First(&d, "id = ?", dayID).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrNotFound
+		}
+		return nil, fmt.Errorf("plan: failed to load day: %w", err)
+	}
+	return &d, nil
+}
+
+// withTree preloads a day's blocks and their movements in display order.
+func withTree(db *gorm.DB) *gorm.DB {
+	return db.
 		Preload("Blocks", func(db *gorm.DB) *gorm.DB {
 			return db.Order("order_index, created_at, id")
 		}).
@@ -166,11 +187,67 @@ func (r *Repository) LoadDays(ctx context.Context, planID uuid.UUID) ([]Day, err
 		// Unscoped: a soft-deleted movement still has to name itself in the plans that used it.
 		Preload("Blocks.Movements.Movement", func(db *gorm.DB) *gorm.DB {
 			return db.Unscoped()
-		}).
-		Find(&days).Error; err != nil {
-		return nil, fmt.Errorf("plan: failed to load days: %w", err)
+		})
+}
+
+// MovementIDsOfDay lists the movements the day's blocks use now, deleted from the library or not.
+func (r *Repository) MovementIDsOfDay(ctx context.Context, dayID uuid.UUID) ([]uuid.UUID, error) {
+	ids := make([]uuid.UUID, 0)
+	if err := r.db.WithContext(ctx).
+		Model(&BlockMovement{}).
+		Distinct("block_movement.movement_id").
+		Joins("JOIN block ON block.id = block_movement.block_id").
+		Where("block.day_id = ?", dayID).
+		Pluck("block_movement.movement_id", &ids).Error; err != nil {
+		return nil, fmt.Errorf("plan: failed to list the day's movements: %w", err)
 	}
-	return days, nil
+	return ids, nil
+}
+
+// ReplaceBlocks swaps the day's blocks for the given ones in one transaction, in a fixed number of
+// queries. It locks the day row first: without that, two concurrent saves could each delete only the
+// rows they saw and both insert, leaving the day with both. With it, the later save wins whole.
+func (r *Repository) ReplaceBlocks(ctx context.Context, dayID uuid.UUID, blocks []Block, movements []BlockMovement) error {
+	err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		var d Day
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Select("id").First(&d, "id = ?", dayID).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return ErrNotFound
+			}
+			return err
+		}
+		// The block_movement rows go with their blocks through ON DELETE CASCADE.
+		if err := tx.Where("day_id = ?", dayID).Delete(&Block{}).Error; err != nil {
+			return err
+		}
+		if len(blocks) > 0 {
+			if err := tx.Omit(clause.Associations).Create(&blocks).Error; err != nil {
+				return err
+			}
+		}
+		if len(movements) > 0 {
+			if err := tx.Omit(clause.Associations).Create(&movements).Error; err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	if err != nil && !errors.Is(err, ErrNotFound) {
+		return fmt.Errorf("plan: failed to replace the day's blocks: %w", err)
+	}
+	return err
+}
+
+// DeleteDay removes the day and, through the cascade, its blocks; the plan's other days keep their slots.
+func (r *Repository) DeleteDay(ctx context.Context, dayID uuid.UUID) error {
+	result := r.db.WithContext(ctx).Delete(&Day{}, "id = ?", dayID)
+	if result.Error != nil {
+		return fmt.Errorf("plan: failed to delete day: %w", result.Error)
+	}
+	if result.RowsAffected == 0 {
+		return ErrNotFound
+	}
+	return nil
 }
 
 func (r *Repository) Create(ctx context.Context, p *Plan) error {

@@ -2,6 +2,7 @@ package plan
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -19,8 +20,6 @@ const (
 	paramDayID   = "id"
 	paramBlockID = "id"
 )
-
-const msgNoMovements = "at least one movement is required"
 
 // planSummaryResponse is the one summary shape: the athlete's plan list and the current plans list both return it.
 type planSummaryResponse struct {
@@ -117,6 +116,21 @@ type addBlockRequest struct {
 	Sets        *int    `json:"sets" example:"3"`
 	RestSeconds *int    `json:"rest_seconds" example:"60"`
 	Notes       *string `json:"notes" example:"superset"`
+}
+
+// saveBlockRequest is one line of a saved day; its position in the array is its order.
+type saveBlockRequest struct {
+	Sets        *int                  `json:"sets" example:"3"`
+	RestSeconds *int                  `json:"rest_seconds" example:"60"`
+	Notes       *string               `json:"notes" example:"superset"`
+	Movements   []saveMovementRequest `json:"movements"`
+}
+
+type saveMovementRequest struct {
+	MovementID      string  `json:"movement_id" example:"8e9f0a1b-2c3d-4e5f-8a6b-7c8d9e0f1a2b"`
+	Reps            *int    `json:"reps" example:"12"`
+	DurationSeconds *int    `json:"duration_seconds" example:"45"`
+	Load            *string `json:"load" example:"bodyweight"`
 }
 
 // addMovementRequest gives every field an example: Swagger UI pre-fills a missing one with 0, which fails validation.
@@ -557,6 +571,91 @@ func (h *Handler) AddMovements(c *gin.Context) {
 	httpx.Created(c, items)
 }
 
+// SaveDay replaces a day's blocks with the builder's whole draft in one request.
+//
+//	@Summary		Save a day: replace its blocks
+//	@Description	Replaces every block of the day with the blocks in the array, in one transaction: all of them are saved, or none and the day is unchanged. Order comes from array position, for blocks and for each block's movements. An empty array clears the day. A block needs sets (1-50) and at least one movement (at most 10); rest_seconds (0-3600) and notes are optional. Each movement needs movement_id; reps (1-1000), duration_seconds (1-14400) and load are optional. A movement must be in the coach's library, own or universal, or already used in this day (a movement deleted from the library since still saves). At most 40 blocks. Errors are reported together, keyed by position, e.g. "[2].sets" or "[2].movements[1].movement_id". Block and block movement ids are new on every save, so a client must not hold on to them. Two saves of the same day at once: the later one wins whole. The response is the saved day in the plan detail's day shape. A day whose plan's athlete belongs to another coach is reported as not found.
+//	@Tags			plans
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			id		path		string				true	"Day ID"	format(uuid)
+//	@Param			request	body		[]saveBlockRequest	true	"The day's blocks, in order"
+//	@Success		200		{object}	httpx.SuccessEnvelope{data=dayResponse}
+//	@Failure		400		{object}	httpx.ValidationErrorEnvelope
+//	@Failure		401		{object}	httpx.UnauthorizedEnvelope
+//	@Failure		404		{object}	httpx.NotFoundEnvelope
+//	@Failure		500		{object}	httpx.InternalErrorEnvelope
+//	@Router			/api/v1/days/{id}/blocks [put]
+func (h *Handler) SaveDay(c *gin.Context) {
+	coachID, ok := tenant.CoachIDFromContext(c)
+	if !ok {
+		httpx.Error(c, http.StatusUnauthorized, httpx.CodeUnauthorized, httpx.MsgUnauthorized)
+		return
+	}
+
+	dayID, ok := httpx.PathUUID(c, paramDayID)
+	if !ok {
+		return
+	}
+
+	var req []saveBlockRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		httpx.ErrorFields(c, http.StatusBadRequest, httpx.CodeValidationFailed, httpx.MsgInvalidRequest, httpx.ValidationFields(err))
+		return
+	}
+
+	inputs := make([]SaveBlockInput, 0, len(req))
+	for _, b := range req {
+		movements := make([]SaveMovementInput, 0, len(b.Movements))
+		for _, m := range b.Movements {
+			movements = append(movements, SaveMovementInput(m))
+		}
+		inputs = append(inputs, SaveBlockInput{Sets: b.Sets, RestSeconds: b.RestSeconds, Notes: b.Notes, Movements: movements})
+	}
+
+	saved, err := h.svc.SaveDay(c.Request.Context(), coachID, dayID, inputs)
+	if err != nil {
+		writeServiceError(c, err)
+		return
+	}
+
+	httpx.OK(c, newDayResponse(saved))
+}
+
+// DeleteDay removes a day and its blocks from a plan.
+//
+//	@Summary		Delete a day
+//	@Description	Deletes the day and its blocks; data is null on success. The plan's other days keep their labels and order_index slots; nothing is renumbered. A day whose plan's athlete belongs to another coach is reported as not found.
+//	@Tags			plans
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			id	path		string	true	"Day ID"	format(uuid)
+//	@Success		200	{object}	httpx.NoContentEnvelope
+//	@Failure		401	{object}	httpx.UnauthorizedEnvelope
+//	@Failure		404	{object}	httpx.NotFoundEnvelope
+//	@Failure		500	{object}	httpx.InternalErrorEnvelope
+//	@Router			/api/v1/days/{id} [delete]
+func (h *Handler) DeleteDay(c *gin.Context) {
+	coachID, ok := tenant.CoachIDFromContext(c)
+	if !ok {
+		httpx.Error(c, http.StatusUnauthorized, httpx.CodeUnauthorized, httpx.MsgUnauthorized)
+		return
+	}
+
+	dayID, ok := httpx.PathUUID(c, paramDayID)
+	if !ok {
+		return
+	}
+
+	if err := h.svc.DeleteDay(c.Request.Context(), coachID, dayID); err != nil {
+		writeServiceError(c, err)
+		return
+	}
+
+	httpx.NoContent(c)
+}
+
 // writeServiceError hides unexpected errors behind a generic 500; the detail belongs in logs.
 func writeServiceError(c *gin.Context, err error) {
 	var verr *ValidationError
@@ -567,6 +666,11 @@ func writeServiceError(c *gin.Context, err error) {
 
 	if errors.Is(err, ErrNoMovements) {
 		httpx.Error(c, http.StatusBadRequest, httpx.CodeValidationFailed, msgNoMovements)
+		return
+	}
+
+	if errors.Is(err, ErrTooManyBlocks) {
+		httpx.Error(c, http.StatusBadRequest, httpx.CodeValidationFailed, fmt.Sprintf(msgTooMany, maxBlocksPerDay))
 		return
 	}
 

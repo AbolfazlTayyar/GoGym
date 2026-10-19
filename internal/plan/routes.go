@@ -14,5 +14,7 @@ func RegisterRoutes(protected *gin.RouterGroup, h *Handler) {
 	protected.DELETE("/plans/:"+paramPlanID, h.Delete)
 	protected.POST("/plans/:"+paramPlanID+"/days", h.AddDay)
 	protected.POST("/days/:"+paramDayID+"/blocks", h.AddBlock)
+	protected.PUT("/days/:"+paramDayID+"/blocks", h.SaveDay)
+	protected.DELETE("/days/:"+paramDayID, h.DeleteDay)
 	protected.POST("/blocks/:"+paramBlockID+"/movements", h.AddMovements)
 }

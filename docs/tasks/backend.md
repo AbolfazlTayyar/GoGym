@@ -1081,7 +1081,7 @@ $ curl -s -X DELETE -H "Authorization: Bearer $TOKEN" localhost:8080/api/v1/plan
 
 ### Save a day: replace its blocks
 
-⬜ **Not started** — before the frontend's builder screen.
+✅ **Done** — see [ADR 0033](../adr/0033-save-day-replaces-blocks.md)
 
 **Description:** The builder edits a whole day and saves it with one "ذخیره" button ([concept-8-1-home-and-plans.png](../design/concept-8-1-home-and-plans.png)). In between, the coach changes sets and reps, deletes lines, moves them up and down, and turns a line into a superset. The API can only add: `POST /days/:id/blocks` and `POST /blocks/:id/movements`, with no edit, delete or reorder. Separate endpoints for each would mean about ten of them, and a save sending one request per change. Replacing the day's blocks in one request is one endpoint and one transaction. It also matches what [er-diagram.md](../er-diagram.md) already says about day, block and block_movement: the builder deletes and recreates them, so they carry no `updated_at`.
 

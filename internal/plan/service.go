@@ -22,6 +22,13 @@ const (
 	maxLoadLength  = 100
 )
 
+// A saved day is bounded so one request can't insert thousands of rows; her days are 6-9 lines with at
+// most tri-sets, so these sit well above real use.
+const (
+	maxBlocksPerDay      = 40
+	maxMovementsPerBlock = 10
+)
+
 // Numeric bounds catch a unit mix-up such as milliseconds sent as seconds, and keep every value inside
 // Postgres INT, which would otherwise reject it as a 500; they don't judge the programming.
 const (
@@ -45,6 +52,8 @@ const (
 	msgDayLabel         = "must be one of A-G or day1-day7"
 	msgDaySlotTaken     = "is already used by another day in this plan"
 	msgMovementNotFound = "not found"
+	msgTooMany          = "must have at most %d items"
+	msgNoMovements      = "at least one movement is required"
 )
 
 // dayLabels names each of a plan's MaxDaysPerPlan slots, in either the letter or the numbered scheme.
@@ -64,6 +73,9 @@ func (e *ValidationError) Error() string {
 
 // ErrNoMovements has no field to point at: the body itself is the empty array.
 var ErrNoMovements = errors.New("plan: no movements given")
+
+// ErrTooManyBlocks has no field to point at either: the body is the over-long array.
+var ErrTooManyBlocks = fmt.Errorf("plan: a day holds at most %d blocks", maxBlocksPerDay)
 
 // ListResult's CurrentID is uuid.Nil when the athlete has no plan that has started yet.
 type ListResult struct {
@@ -85,6 +97,22 @@ type UpdateInput struct {
 	StartDate string
 	Title     string
 	Note      *string
+}
+
+// SaveBlockInput is one line of a saved day; its position in the request is its order.
+type SaveBlockInput struct {
+	Sets        *int
+	RestSeconds *int
+	Notes       *string
+	Movements   []SaveMovementInput
+}
+
+// SaveMovementInput is one movement of a line; its position in the block is its order_in_block.
+type SaveMovementInput struct {
+	MovementID      string
+	Reps            *int
+	DurationSeconds *int
+	Load            *string
 }
 
 // The int pointers below tell a missing value from 0, which is a valid order_index.
@@ -329,6 +357,136 @@ func (s *Service) AddMovements(ctx context.Context, coachID, blockID uuid.UUID, 
 	}
 
 	return movements, nil
+}
+
+// SaveDay replaces the day's blocks with the given ones, all or nothing, and returns the saved day.
+// Block and block movement ids are new on every save. Errors are keyed by position, "[2].sets" or
+// "[2].movements[1].movement_id", and reported together.
+func (s *Service) SaveDay(ctx context.Context, coachID, dayID uuid.UUID, inputs []SaveBlockInput) (*Day, error) {
+	athleteID, err := s.repo.AthleteIDOfDay(ctx, dayID)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := s.authorize(ctx, coachID, athleteID); err != nil {
+		return nil, err
+	}
+
+	if len(inputs) > maxBlocksPerDay {
+		return nil, ErrTooManyBlocks
+	}
+
+	fields := make(map[string]string)
+	blocks := make([]Block, 0, len(inputs))
+	var movements []BlockMovement
+	// movementKeys[k] is the field key of movements[k]'s movement_id.
+	var movementKeys []string
+
+	for i, input := range inputs {
+		block := Block{
+			ID:          uuid.New(),
+			DayID:       dayID,
+			OrderIndex:  i,
+			Sets:        requiredInt(fields, elementField(i, "sets"), input.Sets, 1, maxSets),
+			RestSeconds: input.RestSeconds,
+			Notes:       optionalText(fields, elementField(i, "notes"), input.Notes, maxNotesLength),
+		}
+		optionalInt(fields, elementField(i, "rest_seconds"), input.RestSeconds, 0, maxRestSeconds)
+
+		switch {
+		case len(input.Movements) == 0:
+			fields[elementField(i, "movements")] = msgNoMovements
+		case len(input.Movements) > maxMovementsPerBlock:
+			fields[elementField(i, "movements")] = fmt.Sprintf(msgTooMany, maxMovementsPerBlock)
+		}
+
+		for j, m := range input.Movements {
+			prefix := fmt.Sprintf("[%d].movements[%d]", i, j)
+			key := prefix + "." + fieldMovementID
+			optionalInt(fields, prefix+".reps", m.Reps, 1, maxReps)
+			optionalInt(fields, prefix+".duration_seconds", m.DurationSeconds, 1, maxDurationSeconds)
+			movements = append(movements, BlockMovement{
+				ID:              uuid.New(),
+				BlockID:         block.ID,
+				MovementID:      requiredUUID(fields, key, m.MovementID),
+				Reps:            m.Reps,
+				DurationSeconds: m.DurationSeconds,
+				Load:            optionalText(fields, prefix+".load", m.Load, maxLoadLength),
+				OrderInBlock:    j,
+			})
+			movementKeys = append(movementKeys, key)
+		}
+
+		blocks = append(blocks, block)
+	}
+
+	if err := s.checkDayMovements(ctx, coachID, dayID, movements, movementKeys, fields); err != nil {
+		return nil, err
+	}
+
+	if len(fields) > 0 {
+		return nil, &ValidationError{Fields: fields}
+	}
+
+	if err := s.repo.ReplaceBlocks(ctx, dayID, blocks, movements); err != nil {
+		return nil, err
+	}
+
+	return s.repo.LoadDay(ctx, dayID)
+}
+
+// checkDayMovements flags every movement the coach can't use, without saying whether it is unknown or
+// another coach's. A movement the day already uses passes even if it has left the library since, because
+// the plan keeps naming a deleted movement (docs/adr/0022): otherwise deleting one would make every day
+// that uses it impossible to save.
+func (s *Service) checkDayMovements(ctx context.Context, coachID, dayID uuid.UUID, movements []BlockMovement, keys []string, fields map[string]string) error {
+	ids := make([]uuid.UUID, 0, len(movements))
+	for k := range movements {
+		if _, flagged := fields[keys[k]]; !flagged {
+			ids = append(ids, movements[k].MovementID)
+		}
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+
+	usable := make(map[uuid.UUID]bool, len(ids))
+	visible, err := s.movements.Visible(ctx, coachID, ids)
+	if err != nil {
+		return err
+	}
+	for _, m := range visible {
+		usable[m.ID] = true
+	}
+	inDay, err := s.repo.MovementIDsOfDay(ctx, dayID)
+	if err != nil {
+		return err
+	}
+	for _, id := range inDay {
+		usable[id] = true
+	}
+
+	for k := range movements {
+		if _, flagged := fields[keys[k]]; !flagged && !usable[movements[k].MovementID] {
+			fields[keys[k]] = msgMovementNotFound
+		}
+	}
+	return nil
+}
+
+// DeleteDay removes a day and its blocks; the plan's other days keep their labels and slots, so the
+// home screen's letters keep their columns.
+func (s *Service) DeleteDay(ctx context.Context, coachID, dayID uuid.UUID) error {
+	athleteID, err := s.repo.AthleteIDOfDay(ctx, dayID)
+	if err != nil {
+		return err
+	}
+
+	if err := s.authorize(ctx, coachID, athleteID); err != nil {
+		return err
+	}
+
+	return s.repo.DeleteDay(ctx, dayID)
 }
 
 func (s *Service) ownedPlan(ctx context.Context, coachID, planID uuid.UUID) (*Plan, error) {
