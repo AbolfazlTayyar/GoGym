@@ -120,7 +120,7 @@ at 390x840, logical properties only, and the mobile-first rules.
 
 ### Frontend CI job
 
-⬜ **Not started**
+✅ **Done**
 
 **Description:** CI runs lint, the type check, tests and the build for `web/` on every push, so a broken frontend fails the run the same way broken Go does.
 
