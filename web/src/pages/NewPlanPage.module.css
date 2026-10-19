@@ -1,0 +1,90 @@
+/* concept-8-1's third phone: where the new plan starts from, then its title and start date. */
+.q {
+  font-size: 20px;
+  font-weight: 800;
+  padding: 4px 18px 12px;
+}
+
+.choices {
+  padding: 0 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ch {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  width: 100%;
+  background: #fff;
+  border-radius: 22px;
+  padding: 14px;
+  box-shadow: var(--soft);
+  border: 2px solid transparent;
+  text-align: start;
+}
+
+.ch.on {
+  border-color: var(--pink);
+  box-shadow: 0 10px 26px rgba(255, 0, 87, 0.16);
+}
+
+.radio {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid var(--petal);
+  flex: none;
+  margin-top: 2px;
+}
+
+.radio.on {
+  border: 7px solid var(--pink);
+}
+
+.ct {
+  flex: 1;
+  min-width: 0;
+}
+
+.ct b {
+  font-size: 15.5px;
+  font-weight: 700;
+  display: block;
+}
+
+.ct > span {
+  font-size: 12.5px;
+  color: var(--dim);
+}
+
+.rec {
+  font-size: 10.5px;
+  font-weight: 700;
+  background: var(--blush);
+  color: var(--pinkText);
+  padding: 2px 8px;
+  border-radius: 999px;
+  margin-inline-start: 6px;
+  vertical-align: 2px;
+}
+
+.faint {
+  color: var(--faint);
+  margin-top: 6px;
+}
+
+.error {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--pinkText);
+  padding-inline-start: 6px;
+}
+
+.fields {
+  padding: 18px 18px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}

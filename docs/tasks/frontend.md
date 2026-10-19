@@ -374,7 +374,7 @@ Unit test the prescription text: reps, seconds, minutes, load, and a three-movem
 
 ### New plan: copy first
 
-⬜ **Not started** — needs *New plan from a copy* in [backend.md](backend.md).
+✅ **Done**
 
 **Description:** Most plans are close to one the coach already wrote, so a new plan starts by choosing where it starts from: this athlete's last plan (suggested), another athlete's plan, or nothing ([concept-8-1](../design/concept-8-1-home-and-plans.png), third phone).
 

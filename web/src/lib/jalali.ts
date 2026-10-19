@@ -67,3 +67,8 @@ export function firstOfNextJalaliMonth(iso: string): string {
 export function jalaliMonthName(iso: string): string {
   return jalaliMonthNames[isoToJalali(iso).jm - 1];
 }
+
+// The coach's titles name the month: "برنامه آبان".
+export function planTitleFor(iso: string): string {
+  return `برنامه ${jalaliMonthName(iso)}`;
+}

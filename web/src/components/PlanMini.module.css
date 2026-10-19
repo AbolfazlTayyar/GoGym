@@ -1,0 +1,34 @@
+/* blush.css .mini: a plan's days as small blush boxes, each with its line count. */
+.mini {
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.mini > * {
+  flex: 1;
+  min-width: 0;
+  background: var(--blush);
+  border-radius: 12px;
+  padding: 5px 0;
+  text-align: center;
+}
+
+.mini b {
+  font: 800 14px var(--inter);
+  color: var(--pinkText);
+  display: block;
+}
+
+.mini span {
+  font-size: 10.5px;
+  color: var(--dim);
+}
+
+a.day {
+  position: relative;
+}
+
+a.day:active {
+  background: var(--petal);
+}

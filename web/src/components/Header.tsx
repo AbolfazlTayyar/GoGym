@@ -19,7 +19,7 @@ export function HeaderTitle({ title, subtitle, kicker }: HeaderTitleProps) {
     <div className={s.t}>
       {kicker !== undefined && <div className={s.hi}>{kicker}</div>}
       {kicker !== undefined ? <h1 className={s.h3}>{title}</h1> : <h1 className={s.b}>{title}</h1>}
-      {subtitle !== undefined && <div className={s.s}>{subtitle}</div>}
+      {subtitle !== undefined && <span className={s.s}>{subtitle}</span>}
     </div>
   );
 }

@@ -107,5 +107,8 @@ export type PlanDetail = {
   start_date: string;
   created_at: string;
   updated_at: string;
+  // The plan this one was copied from; null when it wasn't a copy or the source was deleted.
+  source_plan_id: string | null;
+  source_plan_title: string | null;
   days: Day[];
 };
