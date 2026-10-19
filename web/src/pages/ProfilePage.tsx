@@ -1,23 +1,27 @@
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router";
 import { getAthlete } from "../api/athletes";
 import { queryKeys } from "../api/keys";
 import { listMeasurements } from "../api/measurements";
 import { getPlan, listAthletePlans } from "../api/plans";
-import type { Athlete, PlanSummary } from "../api/types";
+import type { Athlete, Measurement, PlanSummary } from "../api/types";
 import { BigButton, BottomBar } from "../components/BigButton";
 import { EmptyState } from "../components/EmptyState";
 import { Header, HeaderTitle, RoundButton } from "../components/Header";
 import { AlertIcon, BackIcon, ChevLIcon, EditIcon, PhoneIcon } from "../components/icons";
+import { MeasurementSheet } from "../components/MeasurementSheet";
 import { PillTabs } from "../components/PillTabs";
 import { PlanMini } from "../components/PlanMini";
 import { Screen, ScreenContent } from "../components/Screen";
+import { useSheet } from "../components/useSheet";
 import { formatPhone, toPersianDigits } from "../lib/digits";
 import { formatJalali, todayISO } from "../lib/jalali";
 import { athleteTypeLabels, experienceLabels } from "../lib/labels";
 import { paths } from "../lib/paths";
 import { planSizeText } from "../lib/planSize";
 import { useGoBack } from "../lib/useGoBack";
+import { MeasurementsTab } from "./MeasurementsTab";
 import s from "./ProfilePage.module.css";
 
 type Tab = "plans" | "measurements";
@@ -29,6 +33,12 @@ export function ProfilePage() {
   // The tab is in the URL, so back from a plan returns to it.
   const tab: Tab = params.get(tabParam) === "measurements" ? "measurements" : "plans";
   const goBack = useGoBack(paths.home);
+  const measurementSheet = useSheet("measurement");
+  const [editing, setEditing] = useState<Measurement | null>(null);
+  const openMeasurement = (m: Measurement | null) => {
+    setEditing(m);
+    measurementSheet.show();
+  };
 
   const athlete = useQuery({
     queryKey: queryKeys.athletes("detail", id),
@@ -99,15 +109,24 @@ export function ProfilePage() {
           {tab === "plans" ? (
             <PlansTab plans={plans.data} />
           ) : (
-            <EmptyState title="هنوز اندازه‌ای ثبت نشده" />
+            <MeasurementsTab measurements={measurements.data ?? []} onOpen={openMeasurement} />
           )}
         </div>
       </ScreenContent>
-      {tab === "plans" && (
-        <BottomBar>
+      <BottomBar>
+        {tab === "plans" ? (
           <BigButton to={paths.newPlan(a.id)}>+ برنامه جدید</BigButton>
-        </BottomBar>
-      )}
+        ) : (
+          <BigButton onClick={() => openMeasurement(null)}>+ ثبت اندازه</BigButton>
+        )}
+      </BottomBar>
+      <MeasurementSheet
+        open={measurementSheet.open}
+        onClose={measurementSheet.close}
+        athleteId={a.id}
+        measurements={measurements.data ?? []}
+        editing={editing}
+      />
     </Screen>
   );
 }

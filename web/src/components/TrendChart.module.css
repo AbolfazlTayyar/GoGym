@@ -1,0 +1,54 @@
+/* concept-8-2's chart card: the latest value and its change above a line over the check-ins. */
+.chart {
+  margin: 0 14px;
+  background: #fff;
+  border-radius: 22px;
+  padding: 12px 14px 6px;
+  box-shadow: var(--soft);
+  flex: none;
+}
+
+.cv {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.cv b {
+  font-size: 26px;
+  font-weight: 800;
+}
+
+.cv span {
+  font-size: 13px;
+  color: var(--dim);
+  font-weight: 600;
+}
+
+.cv .delta {
+  margin-inline-start: auto;
+  background: var(--blush);
+  color: var(--pinkText);
+  font-size: 12px;
+  font-weight: 800;
+  padding: 3px 10px;
+  border-radius: 999px;
+}
+
+/* The board's 334px drawing, scaled to the card so it fits a 360px phone too. */
+.chart svg {
+  width: 100%;
+  height: auto;
+}
+
+.chart text {
+  font: 600 10.5px var(--vazir);
+  fill: var(--dim);
+}
+
+.note {
+  padding: 18px 0 14px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--dim);
+}

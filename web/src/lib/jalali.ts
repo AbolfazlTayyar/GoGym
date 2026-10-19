@@ -37,6 +37,17 @@ export function formatJalali(iso: string): string {
   return longFormat.format(isoToUTCDate(iso));
 }
 
+const shortFormat = new Intl.DateTimeFormat("fa-IR-u-ca-persian", {
+  day: "numeric",
+  month: "long",
+  timeZone: "UTC",
+});
+
+// 2026-09-23 → ۱ مهر, for chart labels.
+export function formatJalaliShort(iso: string): string {
+  return shortFormat.format(isoToUTCDate(iso));
+}
+
 export function isoToJalali(iso: string): JalaliDate {
   const [y, m, d] = iso.split("-").map(Number);
   return toJalaali(y, m, d);

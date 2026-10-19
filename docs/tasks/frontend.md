@@ -489,7 +489,7 @@ docs/design/src/concept-8-2-athlete.html and blush.css.
 
 ### Profile: measurements and the trend chart
 
-⬜ **Not started**
+✅ **Done**
 
 **Description:** One measurement at a time as a trend line, the history newest first, and a sheet to log or fix a check-in, which shows each field's last value while the coach types ([concept-8-2](../design/concept-8-2-athlete.png), second and third phones).
 

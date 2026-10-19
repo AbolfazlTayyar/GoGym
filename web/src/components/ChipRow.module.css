@@ -1,0 +1,45 @@
+/* blush.css .chiprow: a row of choices as chips, the chosen one pink. */
+.chiprow {
+  display: flex;
+  gap: 6px;
+  padding: 0 18px 10px;
+  flex: none;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.chiprow button {
+  position: relative;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: #fff;
+  color: var(--dim);
+  box-shadow: var(--soft);
+  white-space: nowrap;
+}
+
+.chiprow button::after {
+  content: "";
+  position: absolute;
+  inset: -6px 0;
+}
+
+.chiprow .on {
+  background: var(--pink);
+  color: #fff;
+  box-shadow: var(--glow);
+}
+
+/* Inside a sheet or a field: no side padding, and a dashed chip for adding a new choice. */
+.inline {
+  padding: 5px 0 0;
+}
+
+.chiprow .new {
+  background: none;
+  box-shadow: none;
+  border: 1.5px dashed var(--petal);
+  color: var(--pinkText);
+}

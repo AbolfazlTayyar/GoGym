@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   firstOfNextJalaliMonth,
   formatJalali,
+  formatJalaliShort,
   isoToJalali,
   jalaliMonthLength,
   jalaliMonthName,
@@ -26,6 +27,7 @@ describe("formatJalali", () => {
   it("shows the day, month name and year in Persian digits", () => {
     expect(formatJalali("2026-09-23")).toBe("۱ مهر ۱۴۰۵");
     expect(formatJalali("2025-03-20")).toBe("۳۰ اسفند ۱۴۰۳");
+    expect(formatJalaliShort("2026-05-24")).toBe("۳ خرداد");
   });
 });
 
