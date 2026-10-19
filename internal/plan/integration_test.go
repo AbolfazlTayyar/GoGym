@@ -406,6 +406,97 @@ func TestCurrentPlans_EmptyIsAnEmptyArray(t *testing.T) {
 	assert.JSONEq(t, `[]`, string(env.Data))
 }
 
+func TestUpdatePlan_RoundTripsAndClearsAnOmittedNote(t *testing.T) {
+	router, db := newTestRouter(t)
+	token := createCoach(t, router, db, "09121110501")
+	athleteID := createAthlete(t, router, token, "09121230501")
+	created := decodeEnvelope(t, do(t, router, http.MethodPost, "/api/v1/plans", token,
+		fmt.Sprintf(`{"athlete_id":%q,"title":"Mehr","start_date":"2026-09-23","note":"deload week 4"}`, athleteID)), http.StatusCreated)
+	var p struct {
+		ID string `json:"id"`
+	}
+	require.NoError(t, json.Unmarshal(created.Data, &p))
+	_, err := insertDay(db, uuid.MustParse(p.ID), "A", 0)
+	require.NoError(t, err)
+
+	env := decodeEnvelope(t, do(t, router, http.MethodPut, planPath(p.ID), token,
+		`{"title":"برنامه آبان","start_date":"2026-10-23"}`), http.StatusOK)
+	var updated struct {
+		Title     string  `json:"title"`
+		StartDate string  `json:"start_date"`
+		Note      *string `json:"note"`
+		Days      []any   `json:"days"`
+	}
+	require.NoError(t, json.Unmarshal(env.Data, &updated))
+	assert.Equal(t, "برنامه آبان", updated.Title)
+	assert.Equal(t, "2026-10-23", updated.StartDate)
+	assert.Nil(t, updated.Note, "an omitted note is cleared")
+	assert.Len(t, updated.Days, 1, "the response carries the plan's days")
+
+	got, _ := getPlan(t, router, token, p.ID)
+	assert.Equal(t, "برنامه آبان", got.Title)
+
+	bad := decodeEnvelope(t, do(t, router, http.MethodPut, planPath(p.ID), token, `{"title":" ","start_date":"23/10/2026"}`), http.StatusBadRequest)
+	require.NotNil(t, bad.Error)
+	assert.Equal(t, httpx.MsgFieldRequired, bad.Error.Fields["title"])
+	assert.Equal(t, httpx.MsgDateFormat, bad.Error.Fields["start_date"])
+}
+
+func TestUpdatePlan_MovingTheCurrentPlanAheadMakesThePreviousCurrent(t *testing.T) {
+	router, db := newTestRouter(t)
+	token := createCoach(t, router, db, "09121110502")
+	athleteID := createAthlete(t, router, token, "09121230502")
+	previous := insertPlan(t, db, athleteID, "Shahrivar", daysFromToday(-40))
+	current := insertPlan(t, db, athleteID, "Mehr", daysFromToday(-10))
+
+	body := fmt.Sprintf(`{"title":"Mehr","start_date":%q}`, daysFromToday(5).Format(time.DateOnly))
+	decodeEnvelope(t, do(t, router, http.MethodPut, planPath(current.String()), token, body), http.StatusOK)
+
+	for _, p := range listPlans(t, router, token, athleteID) {
+		assert.Equal(t, p.ID == previous.String(), p.IsCurrent, p.Title)
+	}
+}
+
+func TestDeletePlan_RemovesItsWholeTree(t *testing.T) {
+	router, db := newTestRouter(t)
+	token := createCoach(t, router, db, "09121110503")
+	athleteID := createAthlete(t, router, token, "09121230503")
+	planID := insertPlan(t, db, athleteID, "Mehr", daysFromToday(-10))
+	squat := insertMovement(t, db, "Back squat", "strength")
+	dayID, err := insertDay(db, planID, "A", 0)
+	require.NoError(t, err)
+	blockID := insertBlock(t, db, dayID, 0, 3, nil)
+	insertBlockMovement(t, db, blockID, squat, 10, 0)
+
+	env := decodeEnvelope(t, do(t, router, http.MethodDelete, planPath(planID.String()), token, ""), http.StatusOK)
+	assert.Equal(t, "null", string(env.Data))
+
+	decodeEnvelope(t, do(t, router, http.MethodGet, planPath(planID.String()), token, ""), http.StatusNotFound)
+	count := func(table, column string, id uuid.UUID) int64 {
+		var n int64
+		require.NoError(t, db.Table(table).Where(column+" = ?", id).Count(&n).Error)
+		return n
+	}
+	assert.Zero(t, count("day", "plan_id", planID))
+	assert.Zero(t, count("block", "day_id", dayID))
+	assert.Zero(t, count("block_movement", "block_id", blockID))
+	assert.Equal(t, int64(1), count("movement", "id", squat), "the library movement stays")
+}
+
+func TestUpdateAndDeletePlan_AnotherCoachsPlanIsNotFound(t *testing.T) {
+	router, db := newTestRouter(t)
+	owner := createCoach(t, router, db, "09121110504")
+	intruder := createCoach(t, router, db, "09121110505")
+	planID := insertPlan(t, db, createAthlete(t, router, owner, "09121230504"), "Mehr", daysFromToday(-10))
+
+	decodeEnvelope(t, do(t, router, http.MethodPut, planPath(planID.String()), intruder,
+		`{"title":"x","start_date":"2026-10-23"}`), http.StatusNotFound)
+	decodeEnvelope(t, do(t, router, http.MethodDelete, planPath(planID.String()), intruder, ""), http.StatusNotFound)
+
+	got, _ := getPlan(t, router, owner, planID.String())
+	assert.Equal(t, "Mehr", got.Title)
+}
+
 // The insert helpers below bypass the builder endpoints for the same reason as insertPlan.
 
 func insertMovement(t *testing.T, db *gorm.DB, name, category string) uuid.UUID {

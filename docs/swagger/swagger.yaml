@@ -534,6 +534,18 @@ definitions:
         example: "2026-09-10T18:00:00Z"
         type: string
     type: object
+  internal_plan.updateRequest:
+    properties:
+      note:
+        example: Deload every 4th week
+        type: string
+      start_date:
+        example: "2026-10-23"
+        type: string
+      title:
+        example: برنامه آبان
+        type: string
+    type: object
   internal_server.healthzErrorResponse:
     properties:
       reason:
@@ -1475,6 +1487,41 @@ paths:
       tags:
       - plans
   /api/v1/plans/{id}:
+    delete:
+      description: Deletes the plan with its days, blocks and block movements; data
+        is null on success. This can't be undone. A plan whose athlete belongs to
+        another coach is reported as not found.
+      parameters:
+      - description: Plan ID
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.NoContentEnvelope'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.UnauthorizedEnvelope'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.NotFoundEnvelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.InternalErrorEnvelope'
+      security:
+      - BearerAuth: []
+      summary: Delete a plan
+      tags:
+      - plans
     get:
       description: 'Returns the plan with its full nested tree in one response: days
         ordered by order_index (at most 7), each day''s blocks ordered by order_index,
@@ -1517,6 +1564,60 @@ paths:
       security:
       - BearerAuth: []
       summary: Get a plan with its days, blocks and movements
+      tags:
+      - plans
+    put:
+      consumes:
+      - application/json
+      description: 'Replaces title, note and start_date under the same rules as create:
+        an omitted note is cleared. The athlete can''t change; giving a plan to another
+        athlete is a copy. A new start_date can change which of the athlete''s plans
+        is current. The response is the plan detail with its days. A plan whose athlete
+        belongs to another coach is reported as not found.'
+      parameters:
+      - description: Plan ID
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Plan details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_plan.updateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.SuccessEnvelope'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_plan.planDetailResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.ValidationErrorEnvelope'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.UnauthorizedEnvelope'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.NotFoundEnvelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.InternalErrorEnvelope'
+      security:
+      - BearerAuth: []
+      summary: Update a plan
       tags:
       - plans
   /api/v1/plans/{id}/days:

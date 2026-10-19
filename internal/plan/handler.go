@@ -101,6 +101,12 @@ type createRequest struct {
 	Note      *string `json:"note" example:"Deload every 4th week"`
 }
 
+type updateRequest struct {
+	StartDate string  `json:"start_date" example:"2026-10-23"`
+	Title     string  `json:"title" example:"برنامه آبان"`
+	Note      *string `json:"note" example:"Deload every 4th week"`
+}
+
 type addDayRequest struct {
 	Label      string `json:"label" example:"A"`
 	OrderIndex *int   `json:"order_index" example:"0"`
@@ -333,6 +339,83 @@ func (h *Handler) Create(c *gin.Context) {
 	}
 
 	httpx.Created(c, newPlanDetailResponse(created))
+}
+
+// Update changes a plan's title, note and start date.
+//
+//	@Summary		Update a plan
+//	@Description	Replaces title, note and start_date under the same rules as create: an omitted note is cleared. The athlete can't change; giving a plan to another athlete is a copy. A new start_date can change which of the athlete's plans is current. The response is the plan detail with its days. A plan whose athlete belongs to another coach is reported as not found.
+//	@Tags			plans
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			id		path		string			true	"Plan ID"	format(uuid)
+//	@Param			request	body		updateRequest	true	"Plan details"
+//	@Success		200		{object}	httpx.SuccessEnvelope{data=planDetailResponse}
+//	@Failure		400		{object}	httpx.ValidationErrorEnvelope
+//	@Failure		401		{object}	httpx.UnauthorizedEnvelope
+//	@Failure		404		{object}	httpx.NotFoundEnvelope
+//	@Failure		500		{object}	httpx.InternalErrorEnvelope
+//	@Router			/api/v1/plans/{id} [put]
+func (h *Handler) Update(c *gin.Context) {
+	coachID, ok := tenant.CoachIDFromContext(c)
+	if !ok {
+		httpx.Error(c, http.StatusUnauthorized, httpx.CodeUnauthorized, httpx.MsgUnauthorized)
+		return
+	}
+
+	planID, ok := httpx.PathUUID(c, paramPlanID)
+	if !ok {
+		return
+	}
+
+	var req updateRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		httpx.ErrorFields(c, http.StatusBadRequest, httpx.CodeValidationFailed, httpx.MsgInvalidRequest, httpx.ValidationFields(err))
+		return
+	}
+
+	updated, err := h.svc.Update(c.Request.Context(), coachID, planID, UpdateInput(req))
+	if err != nil {
+		writeServiceError(c, err)
+		return
+	}
+
+	httpx.OK(c, newPlanDetailResponse(updated))
+}
+
+// Delete removes a plan for good. Hard, not soft: nothing references plan rows (workout logs will
+// snapshot the prescription, docs/adr/0018), and every row today is live, so adding deleted_at later needs no backfill.
+//
+//	@Summary		Delete a plan
+//	@Description	Deletes the plan with its days, blocks and block movements; data is null on success. This can't be undone. A plan whose athlete belongs to another coach is reported as not found.
+//	@Tags			plans
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			id	path		string	true	"Plan ID"	format(uuid)
+//	@Success		200	{object}	httpx.NoContentEnvelope
+//	@Failure		401	{object}	httpx.UnauthorizedEnvelope
+//	@Failure		404	{object}	httpx.NotFoundEnvelope
+//	@Failure		500	{object}	httpx.InternalErrorEnvelope
+//	@Router			/api/v1/plans/{id} [delete]
+func (h *Handler) Delete(c *gin.Context) {
+	coachID, ok := tenant.CoachIDFromContext(c)
+	if !ok {
+		httpx.Error(c, http.StatusUnauthorized, httpx.CodeUnauthorized, httpx.MsgUnauthorized)
+		return
+	}
+
+	planID, ok := httpx.PathUUID(c, paramPlanID)
+	if !ok {
+		return
+	}
+
+	if err := h.svc.Delete(c.Request.Context(), coachID, planID); err != nil {
+		writeServiceError(c, err)
+		return
+	}
+
+	httpx.NoContent(c)
 }
 
 // AddDay adds a training day to a plan, in one of its seven slots.

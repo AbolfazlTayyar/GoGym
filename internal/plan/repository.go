@@ -180,6 +180,32 @@ func (r *Repository) Create(ctx context.Context, p *Plan) error {
 	return nil
 }
 
+func (r *Repository) Update(ctx context.Context, p *Plan) error {
+	result := r.db.WithContext(ctx).
+		Model(p).
+		Select("title", "note", "start_date", "updated_at").
+		Updates(p)
+	if result.Error != nil {
+		return fmt.Errorf("plan: failed to update: %w", result.Error)
+	}
+	if result.RowsAffected == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
+// Delete is hard: the schema's ON DELETE CASCADE removes the plan's days, blocks and block movements.
+func (r *Repository) Delete(ctx context.Context, planID uuid.UUID) error {
+	result := r.db.WithContext(ctx).Delete(&Plan{}, "id = ?", planID)
+	if result.Error != nil {
+		return fmt.Errorf("plan: failed to delete: %w", result.Error)
+	}
+	if result.RowsAffected == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
 // CreateDay leaves the 7-day cap to the schema, which holds it even against concurrent inserts.
 func (r *Repository) CreateDay(ctx context.Context, d *Day) error {
 	err := r.db.WithContext(ctx).Omit(clause.Associations).Create(d).Error

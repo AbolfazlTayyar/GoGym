@@ -80,6 +80,13 @@ type CreateInput struct {
 	Note      *string
 }
 
+// UpdateInput has no athlete: giving a plan to another athlete is a copy, not an edit.
+type UpdateInput struct {
+	StartDate string
+	Title     string
+	Note      *string
+}
+
 // The int pointers below tell a missing value from 0, which is a valid order_index.
 
 type AddDayInput struct {
@@ -215,6 +222,36 @@ func (s *Service) Create(ctx context.Context, coachID uuid.UUID, input CreateInp
 	}
 
 	return p, nil
+}
+
+// Update replaces title, note and start_date: an omitted note is cleared. A new start_date can change
+// which plan is current; that is docs/adr/0016's rule doing its job.
+func (s *Service) Update(ctx context.Context, coachID, planID uuid.UUID, input UpdateInput) (*Plan, error) {
+	p, err := s.ownedPlan(ctx, coachID, planID)
+	if err != nil {
+		return nil, err
+	}
+
+	fields := make(map[string]string)
+	p.StartDate, p.Title, p.Note = planFields(fields, input)
+	if len(fields) > 0 {
+		return nil, &ValidationError{Fields: fields}
+	}
+
+	if err := s.repo.Update(ctx, p); err != nil {
+		return nil, err
+	}
+
+	return s.Get(ctx, coachID, planID)
+}
+
+// Delete removes the plan with its days, blocks and block movements, through the FK cascades.
+func (s *Service) Delete(ctx context.Context, coachID, planID uuid.UUID) error {
+	if _, err := s.ownedPlan(ctx, coachID, planID); err != nil {
+		return err
+	}
+
+	return s.repo.Delete(ctx, planID)
 }
 
 // AddDay checks ownership before validating, so another coach's plan is a 404 whatever the body holds.
@@ -393,18 +430,7 @@ func buildPlan(input CreateInput) (*Plan, error) {
 	fields := make(map[string]string)
 
 	athleteID := requiredUUID(fields, "athlete_id", input.AthleteID)
-
-	rawDate := strings.TrimSpace(input.StartDate)
-	startDate, err := time.Parse(time.DateOnly, rawDate)
-	switch {
-	case rawDate == "":
-		fields["start_date"] = httpx.MsgFieldRequired
-	case err != nil:
-		fields["start_date"] = httpx.MsgDateFormat
-	}
-
-	title := requiredText(fields, "title", input.Title, maxTitleLength)
-	note := optionalText(fields, "note", input.Note, maxNotesLength)
+	startDate, title, note := planFields(fields, UpdateInput{StartDate: input.StartDate, Title: input.Title, Note: input.Note})
 
 	if len(fields) > 0 {
 		return nil, &ValidationError{Fields: fields}
@@ -417,6 +443,23 @@ func buildPlan(input CreateInput) (*Plan, error) {
 		Title:     title,
 		Note:      note,
 	}, nil
+}
+
+// planFields checks the fields a plan's create and update share.
+func planFields(fields map[string]string, input UpdateInput) (time.Time, string, *string) {
+	rawDate := strings.TrimSpace(input.StartDate)
+	startDate, err := time.Parse(time.DateOnly, rawDate)
+	switch {
+	case rawDate == "":
+		fields["start_date"] = httpx.MsgFieldRequired
+	case err != nil:
+		fields["start_date"] = httpx.MsgDateFormat
+	}
+
+	title := requiredText(fields, "title", input.Title, maxTitleLength)
+	note := optionalText(fields, "note", input.Note, maxNotesLength)
+
+	return startDate, title, note
 }
 
 func buildDay(planID uuid.UUID, input AddDayInput) (*Day, error) {

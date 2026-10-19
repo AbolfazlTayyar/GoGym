@@ -1035,7 +1035,7 @@ a delete the athlete, their plans and their measurements are 404s; both endpoint
 
 ### Plan update and delete
 
-⬜ **Not started** — before the frontend's profile and builder screens.
+✅ **Done**
 
 **Description:** A plan's title, note and start date are fixed once created, and a plan made by mistake can't be removed. The builder's header shows the title, and the new-plan form pre-fills a title and date the coach may want to fix later ([concept-8-1-home-and-plans.png](../design/concept-8-1-home-and-plans.png)). `internal/plan` only has create, list and get for plans.
 
