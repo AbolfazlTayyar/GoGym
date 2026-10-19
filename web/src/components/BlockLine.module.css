@@ -1,0 +1,80 @@
+/* A day's lines on its white sheet (blush.css .dh, .mv, .num, .mb). */
+.dh {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 10px 0 2px;
+}
+
+.dh b {
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.dh span {
+  font-size: 12.5px;
+  color: var(--dim);
+}
+
+.mv {
+  display: flex;
+  gap: 12px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.num {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--blush2);
+  color: var(--pinkText);
+  font-size: 13px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  margin-top: 2px;
+}
+
+.mb {
+  min-width: 0;
+}
+
+/* A superset reads as one unit: one number, a pink edge, a "+" before every movement after the first. */
+.ss {
+  border-inline-start: 2.5px solid var(--petal);
+  padding-inline-start: 10px;
+}
+
+.nm {
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.rx {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--pinkText);
+}
+
+.plus {
+  font-style: normal;
+  color: var(--rose);
+  font-weight: 800;
+  margin-inline-end: 4px;
+}
+
+/* blush.css's tag. The board PNG draws it white and outlined only because board.css's .board .tag leaks onto it. */
+.tag {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--rose);
+  background: var(--blush);
+  padding: 1px 8px;
+  border-radius: 999px;
+  margin-inline-start: 6px;
+  vertical-align: 2px;
+}

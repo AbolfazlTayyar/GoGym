@@ -1,0 +1,19 @@
+/* The day as one white sheet (blush.css .sheet); a long day scrolls inside it. */
+.sheet {
+  margin: 0 14px calc(14px + env(safe-area-inset-bottom));
+  background: #fff;
+  border-radius: 26px;
+  padding: 4px 16px;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  box-shadow: var(--soft);
+}
+
+.note {
+  padding: 24px 0;
+  text-align: center;
+  font-size: 13px;
+  color: var(--dim);
+}

@@ -1,0 +1,36 @@
+/* blush.css .days: a plan's day letters as pills, the open one pink. */
+.days {
+  display: flex;
+  gap: 8px;
+  padding: 0 18px 14px;
+  flex: none;
+}
+
+.days > button {
+  flex: 1;
+  min-width: 0;
+  height: 48px;
+  border-radius: 16px;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font: 800 17px var(--inter);
+  box-shadow: var(--soft);
+  touch-action: manipulation;
+}
+
+.days > .on {
+  background: var(--pink);
+  color: #fff;
+  box-shadow: var(--glow);
+}
+
+/* The builder's "+": a dashed outline, narrower than a day. */
+.days > .add {
+  flex: 0 0 46px;
+  background: none;
+  box-shadow: none;
+  border: 1.5px dashed var(--petal);
+  color: var(--pinkText);
+}

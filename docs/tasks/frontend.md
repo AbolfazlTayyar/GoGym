@@ -338,7 +338,7 @@ mobile and height are sent as Latin.
 
 ### Day view
 
-⬜ **Not started**
+✅ **Done**
 
 **Description:** One day of a plan as one white sheet: numbered lines, the prescription under each in the coach's own wording, supersets as one line with a pink edge ([concept-8-1](../design/concept-8-1-home-and-plans.png), second phone). The coach reads it mid-session, and public athletes get it as a screenshot, so one day must fit one screen.
 

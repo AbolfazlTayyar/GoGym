@@ -2,6 +2,7 @@ import { createBrowserRouter } from "react-router";
 import { RequireAuth } from "./components/RequireAuth";
 import { TabLayout } from "./components/TabLayout";
 import { EditAthletePage, NewAthletePage } from "./pages/AthleteFormPage";
+import { DayViewPage } from "./pages/DayViewPage";
 import { HomePage } from "./pages/HomePage";
 import { LoginPage } from "./pages/LoginPage";
 import { MovementsPage } from "./pages/MovementsPage";
@@ -19,6 +20,7 @@ export const router = createBrowserRouter([
           { path: "/movements", element: <MovementsPage /> },
         ],
       },
+      { path: "/plans/:planId", element: <DayViewPage /> },
       { path: "/athletes/new", element: <NewAthletePage /> },
       { path: "/athletes/:id/edit", element: <EditAthletePage /> },
       { path: "*", element: <NotFoundPage /> },
