@@ -3,7 +3,9 @@ import { toPersianDigits } from "../lib/digits";
 // The API's field messages are English (internal/*/service.go); each known shape gets a Persian one.
 const rules: [RegExp, (m: RegExpMatchArray) => string][] = [
   [/^is required$/, () => "لازم است."],
+  [/^at least one movement is required$/, () => "دست‌کم یک حرکت لازم است."],
   [/^at least one .* is required$/, () => "دست‌کم یکی را پر کنید."],
+  [/^must have at most (\d+) items$/, (m) => `حداکثر ${toPersianDigits(m[1])} مورد.`],
   [/^must be at most (\d+) characters$/, (m) => `حداکثر ${toPersianDigits(m[1])} نویسه.`],
   [/^must be at least (\d+) characters$/, (m) => `دست‌کم ${toPersianDigits(m[1])} نویسه.`],
   [/^must be an Iranian mobile number/, () => "شماره موبایل درست نیست؛ مثلاً ۰۹۱۲۳۴۵۶۷۸۹."],
@@ -14,7 +16,7 @@ const rules: [RegExp, (m: RegExpMatchArray) => string][] = [
     (m) => `باید بین ${toPersianDigits(m[1])} و ${toPersianDigits(m[2])} باشد.`,
   ],
   [/^must be an integer$/, () => "باید عدد صحیح باشد."],
-  [/^not found$/, () => "پیدا نشد."],
+  [/^not found$/, () => "پیدا نشد؛ شاید حذف شده باشد."],
   [/^is already used/, () => "تکراری است."],
 ];
 

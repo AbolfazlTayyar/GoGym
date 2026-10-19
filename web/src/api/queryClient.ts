@@ -13,9 +13,11 @@ export function shouldRetry(failureCount: number, error: unknown): boolean {
   );
 }
 
+// networkMode "always": offline, a request fails at once with the network error instead of waiting,
+// paused, for the connection; a failed save then shows and keeps the draft rather than hanging.
 export const queryClient = new QueryClient({
   defaultOptions: {
-    queries: { refetchOnWindowFocus: false, retry: shouldRetry },
-    mutations: { retry: false },
+    queries: { refetchOnWindowFocus: false, retry: shouldRetry, networkMode: "always" },
+    mutations: { retry: false, networkMode: "always" },
   },
 });

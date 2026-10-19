@@ -409,7 +409,7 @@ docs/design/src/concept-8-1-home-and-plans.html and blush.css.
 
 ### Builder: edit a day
 
-⬜ **Not started** — needs *Save a day: replace its blocks* and *Plan update and delete* in [backend.md](backend.md).
+✅ **Done**
 
 **Description:** The day view's sheet, editable, saved in one request ([concept-8-1](../design/concept-8-1-home-and-plans.png), fourth phone). This screen decides the coach's first day with the app: 20–30 notebook plans typed in back to back, each in under 15 minutes, on a phone ([stakeholder-brief.md](../stakeholder-brief.md) §3–5).
 

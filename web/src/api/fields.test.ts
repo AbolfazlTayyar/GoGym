@@ -12,6 +12,8 @@ describe("translateFieldMessage", () => {
       "at least one of weight, chest, waist, arm, thigh or hip is required",
       "دست‌کم یکی را پر کنید.",
     ],
+    ["at least one movement is required", "دست‌کم یک حرکت لازم است."],
+    ["must have at most 10 items", "حداکثر ۱۰ مورد."],
     ["something new", "مقدار درست نیست."],
   ])("%s", (english, persian) => {
     expect(translateFieldMessage(english)).toBe(persian);
