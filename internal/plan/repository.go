@@ -40,6 +40,60 @@ func (r *Repository) ListByAthlete(ctx context.Context, athleteID uuid.UUID) ([]
 	return plans, nil
 }
 
+// Size is what a plan summary says about a plan's contents.
+type Size struct {
+	// DayLabels are in order_index order; an empty plan has none, never nil.
+	DayLabels []string
+	// BlockCount counts numbered lines: a superset is one block, however many movements it holds.
+	BlockCount int
+}
+
+// Sizes loads every given plan's day labels and block count in two queries, however many plans there are.
+func (r *Repository) Sizes(ctx context.Context, planIDs []uuid.UUID) (map[uuid.UUID]Size, error) {
+	sizes := make(map[uuid.UUID]Size, len(planIDs))
+	for _, id := range planIDs {
+		sizes[id] = Size{DayLabels: []string{}}
+	}
+	if len(planIDs) == 0 {
+		return sizes, nil
+	}
+
+	var days []Day
+	if err := r.db.WithContext(ctx).
+		Select("plan_id", "label").
+		Where("plan_id IN ?", planIDs).
+		Order("plan_id, order_index").
+		Find(&days).Error; err != nil {
+		return nil, fmt.Errorf("plan: failed to load day labels: %w", err)
+	}
+	for _, d := range days {
+		size := sizes[d.PlanID]
+		size.DayLabels = append(size.DayLabels, d.Label)
+		sizes[d.PlanID] = size
+	}
+
+	var counts []struct {
+		PlanID uuid.UUID
+		Blocks int
+	}
+	if err := r.db.WithContext(ctx).
+		Model(&Block{}).
+		Select("day.plan_id AS plan_id, COUNT(*) AS blocks").
+		Joins("JOIN day ON day.id = block.day_id").
+		Where("day.plan_id IN ?", planIDs).
+		Group("day.plan_id").
+		Scan(&counts).Error; err != nil {
+		return nil, fmt.Errorf("plan: failed to count blocks: %w", err)
+	}
+	for _, c := range counts {
+		size := sizes[c.PlanID]
+		size.BlockCount = c.Blocks
+		sizes[c.PlanID] = size
+	}
+
+	return sizes, nil
+}
+
 // FindByID returns the plan alone; Service checks its athlete before LoadDays touches the children.
 func (r *Repository) FindByID(ctx context.Context, id uuid.UUID) (*Plan, error) {
 	var p Plan

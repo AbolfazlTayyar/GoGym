@@ -22,27 +22,32 @@ const (
 
 const msgNoMovements = "at least one movement is required"
 
+// planSummaryResponse is the one summary shape: the athlete's plan list and the current plans list both return it.
 type planSummaryResponse struct {
-	ID        string  `json:"id" example:"9b2d4f1a-6c3e-4a7b-8d5f-1e2c3b4a5d6e"`
-	AthleteID string  `json:"athlete_id" example:"3f0b1c6e-2a1d-4f7b-9c3e-6d5a4b3c2d1e"`
-	Title     string  `json:"title" example:"Cut phase 1"`
-	Note      *string `json:"note" example:"Deload every 4th week"`
-	StartDate string  `json:"start_date" example:"2026-09-15"`
-	IsCurrent bool    `json:"is_current" example:"true"`
-	CreatedAt string  `json:"created_at" example:"2026-09-10T18:00:00Z"`
-	UpdatedAt string  `json:"updated_at" example:"2026-09-10T18:00:00Z"`
+	ID         string   `json:"id" example:"9b2d4f1a-6c3e-4a7b-8d5f-1e2c3b4a5d6e"`
+	AthleteID  string   `json:"athlete_id" example:"3f0b1c6e-2a1d-4f7b-9c3e-6d5a4b3c2d1e"`
+	Title      string   `json:"title" example:"Cut phase 1"`
+	Note       *string  `json:"note" example:"Deload every 4th week"`
+	StartDate  string   `json:"start_date" example:"2026-09-15"`
+	IsCurrent  bool     `json:"is_current" example:"true"`
+	DayLabels  []string `json:"day_labels" example:"A,B,C,D,E"`
+	BlockCount int      `json:"block_count" example:"43"`
+	CreatedAt  string   `json:"created_at" example:"2026-09-10T18:00:00Z"`
+	UpdatedAt  string   `json:"updated_at" example:"2026-09-10T18:00:00Z"`
 }
 
-func newPlanSummaryResponse(p *Plan, isCurrent bool) planSummaryResponse {
+func newPlanSummaryResponse(p *Plan, isCurrent bool, size Size) planSummaryResponse {
 	return planSummaryResponse{
-		ID:        p.ID.String(),
-		AthleteID: p.AthleteID.String(),
-		Title:     p.Title,
-		Note:      p.Note,
-		StartDate: p.StartDate.Format(time.DateOnly),
-		IsCurrent: isCurrent,
-		CreatedAt: p.CreatedAt.Format(time.RFC3339),
-		UpdatedAt: p.UpdatedAt.Format(time.RFC3339),
+		ID:         p.ID.String(),
+		AthleteID:  p.AthleteID.String(),
+		Title:      p.Title,
+		Note:       p.Note,
+		StartDate:  p.StartDate.Format(time.DateOnly),
+		IsCurrent:  isCurrent,
+		DayLabels:  size.DayLabels,
+		BlockCount: size.BlockCount,
+		CreatedAt:  p.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:  p.UpdatedAt.Format(time.RFC3339),
 	}
 }
 
@@ -189,7 +194,7 @@ func NewHandler(svc *Service) *Handler {
 // List returns an athlete's plans, newest first, with the one in effect today marked.
 //
 //	@Summary		List an athlete's plans
-//	@Description	Returns every plan for the athlete, newest start_date first. At most one plan has is_current true: the latest one whose start_date is today or earlier. A plan starting in the future is upcoming, not current, and if every plan starts in the future none is current. Not paginated. An athlete with no plans yields an empty array; an athlete that belongs to another coach is reported as not found.
+//	@Description	Returns every plan for the athlete, newest start_date first. At most one plan has is_current true: the latest one whose start_date is today or earlier. A plan starting in the future is upcoming, not current, and if every plan starts in the future none is current. Each plan carries its day_labels in day order ([] for an empty plan) and its block_count: the numbered lines across all its days, where a superset counts once. Warm-up and cool-down blocks count too, until a rule for telling them apart is decided. Not paginated. An athlete with no plans yields an empty array; an athlete that belongs to another coach is reported as not found.
 //	@Tags			plans
 //	@Produce		json
 //	@Security		BearerAuth
@@ -220,7 +225,7 @@ func (h *Handler) List(c *gin.Context) {
 	items := make([]planSummaryResponse, 0, len(result.Plans))
 	for i := range result.Plans {
 		p := &result.Plans[i]
-		items = append(items, newPlanSummaryResponse(p, p.ID == result.CurrentID))
+		items = append(items, newPlanSummaryResponse(p, p.ID == result.CurrentID, result.Sizes[p.ID]))
 	}
 
 	httpx.OK(c, items)

@@ -69,6 +69,7 @@ var ErrNoMovements = errors.New("plan: no movements given")
 type ListResult struct {
 	Plans     []Plan
 	CurrentID uuid.UUID
+	Sizes     map[uuid.UUID]Size
 }
 
 // CreateInput's AthleteID is a string so a malformed id is reported as a field error like any other.
@@ -122,7 +123,20 @@ func (s *Service) List(ctx context.Context, coachID, athleteID uuid.UUID) (*List
 		return nil, err
 	}
 
-	return &ListResult{Plans: plans, CurrentID: currentPlanID(plans, time.Now())}, nil
+	sizes, err := s.repo.Sizes(ctx, planIDs(plans))
+	if err != nil {
+		return nil, err
+	}
+
+	return &ListResult{Plans: plans, CurrentID: currentPlanID(plans, time.Now()), Sizes: sizes}, nil
+}
+
+func planIDs(plans []Plan) []uuid.UUID {
+	ids := make([]uuid.UUID, 0, len(plans))
+	for _, p := range plans {
+		ids = append(ids, p.ID)
+	}
+	return ids
 }
 
 // Get returns ErrNotFound for another coach's plan, exactly as for one that doesn't exist.

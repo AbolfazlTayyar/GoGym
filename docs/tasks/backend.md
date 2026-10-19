@@ -910,7 +910,7 @@ that isn't allowed doesn't get credentialed CORS headers.
 
 ### Plan summaries: day letters and size
 
-⬜ **Not started** — before the frontend's profile screen.
+✅ **Done**
 
 **Description:** The profile lists every plan an athlete has had ([concept-8-2-athlete.png](../design/concept-8-2-athlete.png)). `GET /athletes/:id/plans` returns each plan's title, start date and `is_current`, but nothing about its size. So the design shows day letters and a movement count only for the current plan, whose detail it loads anyway, and older plans show just a date. Adding the day labels and a block count to each summary lets every row say "۵ روز · ۴۱ حرکت", and gives the next task the shape it returns.
 

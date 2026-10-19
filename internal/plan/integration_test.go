@@ -53,11 +53,13 @@ func newTestRouter(t *testing.T) (*gin.Engine, *gorm.DB) {
 }
 
 type planResponse struct {
-	ID        string `json:"id"`
-	AthleteID string `json:"athlete_id"`
-	Title     string `json:"title"`
-	StartDate string `json:"start_date"`
-	IsCurrent bool   `json:"is_current"`
+	ID         string   `json:"id"`
+	AthleteID  string   `json:"athlete_id"`
+	Title      string   `json:"title"`
+	StartDate  string   `json:"start_date"`
+	IsCurrent  bool     `json:"is_current"`
+	DayLabels  []string `json:"day_labels"`
+	BlockCount int      `json:"block_count"`
 }
 
 type envelope struct {
@@ -250,6 +252,72 @@ func TestPlans_RequireAToken(t *testing.T) {
 
 	rec := do(t, router, http.MethodGet, plansPath(uuid.NewString()), "", "")
 	require.Equal(t, http.StatusUnauthorized, rec.Code)
+}
+
+func TestPlans_SummariesCarryDayLabelsAndBlockCount(t *testing.T) {
+	router, db := newTestRouter(t)
+	token := createCoach(t, router, db, "09121110206")
+	athleteID := createAthlete(t, router, token, "09121230206")
+	squat := insertMovement(t, db, "Back squat", "strength")
+
+	full := insertPlan(t, db, athleteID, "Full", daysFromToday(-10))
+	insertPlan(t, db, athleteID, "Empty", daysFromToday(10))
+
+	// Days inserted out of order, holding 2, 3 and 0 blocks; one block is a two-movement superset.
+	_, err := insertDay(db, full, "C", 2)
+	require.NoError(t, err)
+	dayA, err := insertDay(db, full, "A", 0)
+	require.NoError(t, err)
+	dayB, err := insertDay(db, full, "B", 1)
+	require.NoError(t, err)
+	for i := range 2 {
+		insertBlock(t, db, dayA, i, 3, nil)
+	}
+	for i := range 3 {
+		block := insertBlock(t, db, dayB, i, 3, nil)
+		insertBlockMovement(t, db, block, squat, 12, 0)
+		insertBlockMovement(t, db, block, squat, 10, 1)
+	}
+
+	env := decodeEnvelope(t, do(t, router, http.MethodGet, plansPath(athleteID), token, ""), http.StatusOK)
+	var got []planResponse
+	require.NoError(t, json.Unmarshal(env.Data, &got))
+	require.Len(t, got, 2)
+
+	assert.Equal(t, "Empty", got[0].Title)
+	assert.Equal(t, []string{}, got[0].DayLabels)
+	assert.Equal(t, 0, got[0].BlockCount)
+	assert.Contains(t, string(env.Data), `"day_labels":[]`, "an empty plan's labels are [], never null")
+
+	assert.Equal(t, "Full", got[1].Title)
+	assert.Equal(t, []string{"A", "B", "C"}, got[1].DayLabels, "in order_index order")
+	assert.Equal(t, 5, got[1].BlockCount, "a superset counts once")
+}
+
+func TestPlans_SummariesTakeTheSameQueriesForOneOrManyPlans(t *testing.T) {
+	router, db := newTestRouter(t)
+	token := createCoach(t, router, db, "09121110207")
+	one := createAthlete(t, router, token, "09121230207")
+	five := createAthlete(t, router, token, "09121230208")
+
+	addPlan := func(athleteID string, n int) {
+		planID := insertPlan(t, db, athleteID, fmt.Sprintf("Plan %d", n), daysFromToday(-30*n))
+		day, err := insertDay(db, planID, "A", 0)
+		require.NoError(t, err)
+		insertBlock(t, db, day, 0, 3, nil)
+	}
+	addPlan(one, 1)
+	for n := 1; n <= 5; n++ {
+		addPlan(five, n)
+	}
+
+	rec := recordSQL(db)
+	listPlans(t, router, token, one)
+	forOne := len(rec.take())
+	listPlans(t, router, token, five)
+	forFive := len(rec.take())
+
+	assert.Equal(t, forOne, forFive)
 }
 
 // The insert helpers below bypass the builder endpoints for the same reason as insertPlan.

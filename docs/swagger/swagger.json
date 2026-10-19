@@ -390,7 +390,7 @@
                         "BearerAuth": []
                     }
                 ],
-                "description": "Returns every plan for the athlete, newest start_date first. At most one plan has is_current true: the latest one whose start_date is today or earlier. A plan starting in the future is upcoming, not current, and if every plan starts in the future none is current. Not paginated. An athlete with no plans yields an empty array; an athlete that belongs to another coach is reported as not found.",
+                "description": "Returns every plan for the athlete, newest start_date first. At most one plan has is_current true: the latest one whose start_date is today or earlier. A plan starting in the future is upcoming, not current, and if every plan starts in the future none is current. Each plan carries its day_labels in day order ([] for an empty plan) and its block_count: the numbered lines across all its days, where a superset counts once. Warm-up and cool-down blocks count too, until a rule for telling them apart is decided. Not paginated. An athlete with no plans yields an empty array; an athlete that belongs to another coach is reported as not found.",
                 "produces": [
                     "application/json"
                 ],
@@ -2131,9 +2131,26 @@
                     "type": "string",
                     "example": "3f0b1c6e-2a1d-4f7b-9c3e-6d5a4b3c2d1e"
                 },
+                "block_count": {
+                    "type": "integer",
+                    "example": 43
+                },
                 "created_at": {
                     "type": "string",
                     "example": "2026-09-10T18:00:00Z"
+                },
+                "day_labels": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "A",
+                        "B",
+                        "C",
+                        "D",
+                        "E"
+                    ]
                 },
                 "id": {
                     "type": "string",
