@@ -1,0 +1,30 @@
+.nav {
+  margin: 10px 18px calc(16px + env(safe-area-inset-bottom));
+  height: 62px;
+  background: #fff;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  padding: 0 6px;
+  gap: 6px;
+  flex: none;
+  box-shadow: 0 10px 30px rgba(214, 0, 74, 0.12);
+}
+
+.item {
+  flex: 1;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--faint);
+  border-radius: 999px;
+}
+
+.on {
+  background: var(--blush);
+  color: var(--pinkText);
+}

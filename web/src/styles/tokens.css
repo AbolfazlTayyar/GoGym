@@ -1,0 +1,27 @@
+/* The concept 8 palette from docs/design/src/blush.css, under the board's names so the two stay comparable. */
+/* Small pink text uses --pinkText: #FF0057 on white is under 4.5:1 (docs/adr/0029). */
+:root {
+  --pink: #ff0057;
+  --pinkText: #d6004a;
+  --rose: #ec5e93;
+  --blush: #ffeff2;
+  --blush2: #ffe6ef;
+  --petal: #ffd3db;
+  --cream: #f7f3ef;
+  --lemon: #fffcc1;
+  --amber: #94600a;
+  --ink: #2b1a20;
+  --dim: #8c7980;
+  --faint: #bfaeb4;
+  --line: #f7e8ec;
+  --glow: 0 8px 20px rgba(255, 0, 87, 0.28);
+  --soft: 0 6px 18px rgba(214, 0, 74, 0.07);
+
+  --page:
+    radial-gradient(circle at 10% 3%, rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0) 110px),
+    linear-gradient(180deg, #ffcbd5 0, #ffd3db 120px, #fff1f4 300px, #fff8f9 420px);
+  --pageEnd: #fff8f9;
+
+  --vazir: "Vazirmatn Variable", sans-serif;
+  --inter: "Inter Variable", sans-serif;
+}

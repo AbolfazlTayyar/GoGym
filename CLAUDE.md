@@ -12,6 +12,12 @@ The React app lives in `web/` (Vite, React, TypeScript strict, npm), next to the
 
 Mobile first: the coach does everything on a phone, so every screen is built and checked at 360–430px wide first. Wider screens get the same phone-width column, centered, not a desktop layout.
 
+The concept 8 boards are the spec for how the app looks ([docs/tasks/frontend.md](docs/tasks/frontend.md), top). Screens are ported from the board HTML in `docs/design/src/` and `blush.css` (sizes, radii, shadows, weights), not redrawn from the PNG, and each is checked side by side with its board at 390×840. Tokens in `web/src/styles/tokens.css` keep `blush.css`'s names (`--pink`, `--pinkText`, `--blush`, …); small pink text uses `--pinkText`. Icons come from `web/src/components/icons.tsx`, generated unchanged from `data.js`'s `ICON`; no icon library. Styling is plain CSS: the global token and base files plus a CSS module per component, with no Tailwind or component library.
+
+RTL: use logical properties only (`margin-inline-start`, `padding-inline`, `inset-inline-end`); `grep -rnE "(margin|padding)-(left|right)|[^-](left|right):" web/src --include='*.css'` must find nothing. Icons that point are drawn for RTL and carry `data-directional`, which `base.css` mirrors in LTR.
+
+Mobile-first rules: the base styles are the phone layout, with no media queries; touch targets are at least 44px (a 40px board button gets an invisible `::after` to reach it); inputs use at least a 16px font, or iOS Safari zooms on focus; heights use `100dvh`, not `100vh`; fixed bars pad with `env(safe-area-inset-bottom)`. A screen is a `100dvh` column (`Screen`) whose `ScreenContent` is the only part that scrolls.
+
 In development Vite proxies `/api` and `/healthz` to the API on `:8080`, so the browser sees one origin as it does behind Caddy, and the auth cookie needs no CORS. `npm run dev -- --host` serves it on the LAN for testing on a real phone.
 
 ## Commit conventions

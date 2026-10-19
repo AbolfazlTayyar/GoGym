@@ -77,7 +77,7 @@ dist/assets/index-….js
 
 ### Design tokens, base styles and the app frame
 
-⬜ **Not started**
+✅ **Done**
 
 **Description:** The concept 8 look in code: the colors, shadows and background from `docs/design/src/blush.css`, RTL-safe base styles, and the frame every screen sits in, a header plus the bottom bar with the app's two top-level pages.
 

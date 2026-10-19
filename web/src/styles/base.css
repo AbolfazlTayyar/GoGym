@@ -1,0 +1,52 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* line-height stays normal: Vazirmatn's own metrics give about 1.57, which suits Persian and is what the boards render. */
+body {
+  min-height: 100dvh;
+  font-family: var(--vazir);
+  color: var(--ink);
+  background:
+    var(--page) no-repeat,
+    var(--pageEnd);
+  -webkit-font-smoothing: antialiased;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+svg {
+  display: block;
+  flex: none;
+}
+
+/* The icons are drawn for RTL. */
+:dir(ltr) svg[data-directional] {
+  transform: scaleX(-1);
+}
