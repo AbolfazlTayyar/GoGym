@@ -1033,6 +1033,187 @@ a delete the athlete, their plans and their measurements are 404s; both endpoint
 
 ---
 
+### Plan update and delete
+
+⬜ **Not started** — before the frontend's profile and builder screens.
+
+**Description:** A plan's title, note and start date are fixed once created, and a plan made by mistake can't be removed. The builder's header shows the title, and the new-plan form pre-fills a title and date the coach may want to fix later ([concept-8-1-home-and-plans.png](../design/concept-8-1-home-and-plans.png)). `internal/plan` only has create, list and get for plans.
+
+**Prompt:**
+```
+Add update and delete for plans to internal/plan.
+
+- PUT /api/v1/plans/:id replaces title, note and start_date under the same rules as
+  POST /plans; an omitted note is cleared, like PUT /movements/:id. athlete_id isn't
+  editable: giving a plan to another athlete is a copy (see the New plan from a copy
+  task). Changing start_date can change which plan is current; that's docs/adr/0016's
+  rule doing its job, not something to special-case.
+- DELETE /api/v1/plans/:id hard-deletes the plan; the FK cascades remove its days,
+  blocks and block movements. Not a soft delete: nothing references plan rows (workout
+  logs will snapshot the prescription, docs/adr/0018), and adding deleted_at later needs
+  no backfill because every existing row is live. Say so in a one-line comment on the
+  handler. Respond the way DELETE /movements/:id does.
+- Both find the plan through the existing ownership chain (plan → athlete → coach);
+  another coach's plan is a 404.
+
+Swagger annotations, then `make swagger`. Integration tests: an update round-trips and
+clears an omitted note; moving the current plan's start_date into the future makes the
+previous plan current in GET /athletes/:id/plans; after a delete, GET /plans/:id is a 404
+and the plan's days, blocks and block movements are gone (check with a query); both
+endpoints are a 404 for another coach's plan.
+```
+
+**Checkpoint:** Rename a plan and `GET /plans/:id` shows the new title. Delete a plan with days and blocks, then `SELECT count(*)` on `day`, `block` and `block_movement` for its ids returns 0. Coach B gets 404 on both endpoints for coach A's plan.
+
+**Expected output:**
+```
+$ curl -s -X PUT -H "Authorization: Bearer $TOKEN" localhost:8080/api/v1/plans/$PLAN_ID \
+    -d '{"title":"برنامه آبان","start_date":"2026-10-23"}'
+{"success":true,"data":{"id":"...","title":"برنامه آبان","note":null,"start_date":"2026-10-23",...},"error":null}
+
+$ curl -s -X DELETE -H "Authorization: Bearer $TOKEN" localhost:8080/api/v1/plans/$PLAN_ID
+{"success":true,"data":null,"error":null}
+```
+
+**In short:** the coach can fix a plan's title and dates, and remove a plan made by mistake.
+
+---
+
+### Save a day: replace its blocks
+
+⬜ **Not started** — before the frontend's builder screen.
+
+**Description:** The builder edits a whole day and saves it with one "ذخیره" button ([concept-8-1-home-and-plans.png](../design/concept-8-1-home-and-plans.png)). In between, the coach changes sets and reps, deletes lines, moves them up and down, and turns a line into a superset. The API can only add: `POST /days/:id/blocks` and `POST /blocks/:id/movements`, with no edit, delete or reorder. Separate endpoints for each would mean about ten of them, and a save sending one request per change. Replacing the day's blocks in one request is one endpoint and one transaction. It also matches what [er-diagram.md](../er-diagram.md) already says about day, block and block_movement: the builder deletes and recreates them, so they carry no `updated_at`.
+
+**Prompt:**
+```
+Add an endpoint that replaces a day's blocks in one request, and one that deletes a day.
+
+- PUT /api/v1/days/:id/blocks takes the day's full block list, in order, as a JSON array
+  (like POST /blocks/:id/movements takes a bare array):
+    [{"sets":3,"rest_seconds":null,"notes":null,"movements":[
+        {"movement_id":"...","reps":12,"duration_seconds":null,"load":null}, ...]}, ...]
+  Block order_index and order_in_block come from array position, not from the body, so
+  a client can't send gaps or duplicates. In one transaction, delete the day's blocks
+  (the FK cascade removes their movements) and insert the new ones, in a fixed number of
+  queries however big the day is. An empty array clears the day. Respond 200 with the
+  day in GET /plans/:id's day shape, so the builder doesn't refetch the plan.
+- Validation reuses the rules POST /days/:id/blocks and POST /blocks/:id/movements
+  enforce, reported together and keyed by position: "[2].sets",
+  "[2].movements[1].movement_id". A block needs at least one movement. Bound both
+  arrays with named constants (her days are 6-9 lines with at most tri-sets; pick limits
+  well above that) so one request can't insert thousands of rows.
+- Movement ids: a movement must be visible to the coach (own or universal), the same as
+  today, with one exception. A movement already used in this day before the save is
+  accepted even if it has since been soft-deleted, because the plan keeps naming a deleted
+  movement (docs/adr/0022). Without the exception, deleting a movement from the library
+  would make every day that uses it impossible to save. Anything else unusable is a field
+  error, not a 404 (docs/adr/0019).
+- DELETE /api/v1/days/:id deletes the day and, through the cascade, its blocks. The other
+  days keep their labels and order_index slots; don't renumber them (the home screen's
+  letters keep their columns).
+- Both go through the existing ownership chain (day → plan → athlete → coach); another
+  coach's day is a 404.
+
+Block and block_movement ids change on every save; say so in the swagger description so
+a client doesn't hold on to them. The builder won't use POST /days/:id/blocks or
+POST /blocks/:id/movements any more. Leave them in place, and say in the ADR whether they
+should go.
+
+Record the decision as the next ADR: replacing a whole day vs separate update, delete and
+reorder endpoints for blocks and block movements. Include that two concurrent saves of the
+same day mean the last one wins. Swagger annotations, then `make swagger`. Integration
+tests: a save replaces the day's blocks and GET /plans/:id shows the new order; an empty
+array clears the day; one bad movement_id among several valid lines leaves the day exactly
+as it was (check with a query) and names the bad entry by position; a day that uses a
+movement soft-deleted after it was added still saves; a newly added soft-deleted movement
+is rejected; deleting a day leaves the other days' slots unchanged; both endpoints are a
+404 for another coach's day.
+```
+
+**Checkpoint:** Build day C with four lines through the API, then save it with line 3 removed, lines 1 and 2 swapped, and line 4 turned into a two-movement superset. `GET /plans/:id` shows exactly that. Save again with an invalid `movement_id` in the last line: the response names `[3].movements[1].movement_id` and the day is unchanged. With SQL logging on, saving a 3-line day runs the same number of queries as saving a 9-line one.
+
+**Expected output:**
+```
+$ curl -s -X PUT -H "Authorization: Bearer $TOKEN" localhost:8080/api/v1/days/$DAY_ID/blocks \
+    -d '[{"sets":3,"movements":[{"movement_id":"<lunge>","reps":12}]},
+         {"sets":3,"movements":[{"movement_id":"<hip thrust>","reps":15},{"movement_id":"<glute bridge>","duration_seconds":45}]}]'
+{"success":true,"data":{"id":"...","label":"C","order_index":2,"blocks":[
+  {"id":"...","order_index":0,"sets":3,"rest_seconds":null,"notes":null,"movements":[{"name":"لانژ با جمع در شکم دمبل","reps":12,...}]},
+  {"id":"...","order_index":1,"sets":3,"rest_seconds":null,"notes":null,"movements":[{...,"order_in_block":0},{...,"order_in_block":1}]}
+]},"error":null}
+
+$ curl -s -X PUT ... /days/$DAY_ID/blocks -d '[{"sets":3,"movements":[{"movement_id":"<other coach>","reps":12}]}]'
+{"success":false,"data":null,"error":{"code":"validation_failed","message":"invalid request","fields":{"[0].movements[0].movement_id":"not found"}}}
+```
+
+**In short:** the builder saves a whole edited day in one request, and a bad line never leaves half a day behind.
+
+---
+
+### New plan from a copy
+
+⬜ **Not started** — before the frontend's new-plan screen.
+
+**Description:** Most of her plans start from one she has already written, and rewriting them from scratch is one of the two slow parts of plan writing ([stakeholder-brief.md](../stakeholder-brief.md) §3). The new-plan screen offers three starts: a copy of this athlete's last plan (the suggested one), a copy of another athlete's plan, or an empty plan ([concept-8-1-home-and-plans.png](../design/concept-8-1-home-and-plans.png)). All three create a plan, so the copy is an optional field on `POST /plans`, not a second endpoint.
+
+**Prompt:**
+```
+Let POST /api/v1/plans create a plan as a copy of an existing one.
+
+- Add an optional source_plan_id to POST /plans. When it's set, the new plan gets a copy
+  of the source's days, blocks and block movements: labels, order, sets, rest, notes,
+  reps, duration and load. title, note and start_date still come from the request, not
+  the source; the client pre-fills them.
+- The source can belong to any of the coach's athletes, so a plan can be copied from one
+  athlete to another. It is checked through the ownership chain like everything else;
+  one the coach can't use is a field error on source_plan_id, not a 404
+  (docs/adr/0019).
+- Copy movements as they are, including ones soft-deleted from the library since. The
+  copy names them the way the source does (docs/adr/0022); it doesn't re-check the
+  library.
+- One transaction, in a fixed number of queries however big the plan is: load the source
+  tree with the preloads GET /plans/:id uses, generate the new ids in Go so children can
+  point at their new parents, then insert days, blocks and block movements in one batch
+  each.
+- The response stays what POST /plans returns today; the builder loads GET /plans/:id
+  next.
+- Remember where a copy came from. The builder's header says "کپی از <source title>"
+  (docs/design/concept-8-1-home-and-plans.png, fourth phone), and which plan a copy came
+  from can't be worked out later. Add a migration with a nullable plan.source_plan_id
+  UUID REFERENCES plan(id) ON DELETE SET NULL, set only on a copy. GET /plans/:id
+  returns source_plan_id and source_plan_title, both null for a plan that isn't a copy
+  or whose source was deleted. Update docs/er-diagram.md in the same commit as the
+  migration.
+
+Swagger annotations, then `make swagger`. Integration tests: a copy of a two-day plan with
+a superset matches the source in GET /plans/:id apart from ids, title and start_date; a
+copy to a different athlete of the same coach works; editing the copy (PUT
+/days/:id/blocks) leaves the source unchanged; the copy's GET /plans/:id names its
+source, and after the source is deleted it returns nulls instead; a source_plan_id from
+another coach is a 400 on source_plan_id and creates no plan; without source_plan_id,
+POST /plans behaves exactly as before and the plan's source fields are null.
+```
+
+**Checkpoint:** Copy a full A–E plan to a new start date and compare both in `GET /plans/:id`: same days, lines and supersets, different ids. Copy it to a second athlete too. Change a line in the copy and the source stays the same. The copy's `GET /plans/:id` shows the source's id and title, and once the source plan is deleted, both are `null`. With SQL logging on, copying a 5-day plan runs the same number of queries as copying a 1-day one.
+
+**Expected output:**
+```
+$ curl -s -X POST -H "Authorization: Bearer $TOKEN" localhost:8080/api/v1/plans \
+    -d '{"athlete_id":"<sara>","title":"برنامه آبان","start_date":"2026-10-23","source_plan_id":"<mehr plan>"}'
+{"success":true,"data":{"id":"<new>","athlete_id":"<sara>","title":"برنامه آبان","start_date":"2026-10-23",...},"error":null}
+
+$ curl -s -H "Authorization: Bearer $TOKEN" localhost:8080/api/v1/plans/<new>
+{"success":true,"data":{"id":"<new>","title":"برنامه آبان","source_plan_id":"<mehr plan>","source_plan_title":"برنامه مهر",...,"days":[...]},"error":null}
+
+$ curl -s -X POST ... /plans -d '{"athlete_id":"<sara>","title":"x","start_date":"2026-10-23","source_plan_id":"<other coach plan>"}'
+{"success":false,"data":null,"error":{"code":"validation_failed","message":"invalid request","fields":{"source_plan_id":"not found"}}}
+```
+
+**In short:** next month's plan starts as a copy of this month's, so the coach changes a few lines instead of writing 40.
+
+---
+
 ## Deferred
 
 Not scheduled. Each task says what should trigger it.

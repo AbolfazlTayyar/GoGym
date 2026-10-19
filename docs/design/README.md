@@ -72,7 +72,8 @@ don't:
 - **Warm-up and cool-down cardio** fit as a one-movement block with `duration_seconds`. Showing
   them outside the numbering, as every design does, needs a rule: either their position (first
   or last block) or the movement's category.
-- Plan editing and duplicating are already listed in the brief.
+- Plan editing and duplicating are already listed in the brief. They are the *Plan update and
+  delete*, *Save a day* and *New plan from a copy* tasks in [tasks/backend.md](../tasks/backend.md).
 
 Already supported: the same movement twice in one block ("10 with weight + 10 without").
 `block_movement` has no uniqueness on `(block_id, movement_id)`, and `load` tells the two apart.
