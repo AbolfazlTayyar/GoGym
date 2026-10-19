@@ -144,7 +144,7 @@ web/package-lock.json, then npm ci, lint, typecheck, test and build, all in web/
 
 ### API client
 
-⬜ **Not started**
+✅ **Done**
 
 **Description:** The one module every API call goes through. It unwraps the `{success, data, error, meta}` envelope, turns failures into a typed error with Persian messages, and sends the coach to sign-in on a 401.
 
