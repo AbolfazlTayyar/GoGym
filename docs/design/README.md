@@ -77,18 +77,22 @@ don't:
 Already supported: the same movement twice in one block ("10 with weight + 10 without").
 `block_movement` has no uniqueness on `(block_id, movement_id)`, and `load` tells the two apart.
 
-Found while drawing the other screens:
+Found while drawing the other screens. Each one is a task in
+[tasks/backend.md](../tasks/backend.md), Phase 2:
 
 - **Home needs each athlete's current plan.** `GET /athletes` returns no plan, so the plan title and
-  day letters on every row would take a plan-list and a plan-detail request per athlete. Each list
-  item needs its current plan's id, title and days (id and label).
+  day letters on every row would take a plan-list and a plan-detail request per athlete. *Current
+  plans for the athlete list* adds one request that returns them all.
 - **Athletes can't be edited or deleted.** There is no `PUT` or `DELETE /athletes/{id}`. The
-  profile's pencil needs it, and so does moving an athlete between private and public.
+  profile's pencil needs it, and so does moving an athlete between private and public. *Athlete
+  update and delete* adds both.
+- **Plan summaries have no size.** `GET /athletes/{id}/plans` has no day letters or counts, so
+  until *Plan summaries: day letters and size* is done the profile shows them only for the
+  current plan, whose detail it loads anyway.
 
-The profile's plan list shows day counts only for the current plan, whose detail it loads anyway:
-`GET /athletes/{id}/plans` has no counts, and they aren't worth a request per plan. Search across
-both groups (`athlete_type=all` with `q`), editing and deleting check-ins and movements are already
-supported, and sign-out is part of the *Browser auth via httpOnly cookie* task.
+Search across both groups (`athlete_type=all` with `q`), editing and deleting check-ins and
+movements are already supported, and sign-out is part of the *Browser auth via httpOnly cookie*
+task.
 
 ## Regenerating the images
 

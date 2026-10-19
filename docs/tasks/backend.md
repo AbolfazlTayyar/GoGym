@@ -908,6 +908,131 @@ that isn't allowed doesn't get credentialed CORS headers.
 
 ---
 
+### Plan summaries: day letters and size
+
+⬜ **Not started** — before the frontend's profile screen.
+
+**Description:** The profile lists every plan an athlete has had ([concept-8-2-athlete.png](../design/concept-8-2-athlete.png)). `GET /athletes/:id/plans` returns each plan's title, start date and `is_current`, but nothing about its size. So the design shows day letters and a movement count only for the current plan, whose detail it loads anyway, and older plans show just a date. Adding the day labels and a block count to each summary lets every row say "۵ روز · ۴۱ حرکت", and gives the next task the shape it returns.
+
+**Prompt:**
+```
+Extend the plan summary returned by GET /api/v1/athletes/:id/plans with what the
+profile's plan list shows (docs/design/concept-8-2-athlete.png):
+
+- day_labels: the plan's day labels in order_index order, e.g. ["A","B","C","D","E"].
+  An empty plan has [], never null.
+- block_count: the number of blocks across all its days. The coach numbers blocks, not
+  movements: a superset is one numbered line. Warm-up and cool-down blocks count too
+  until docs/design/README.md's warm-up rule is decided; say so in the swagger
+  description.
+- Load both for all of the athlete's plans in a fixed number of queries (e.g. one for
+  the day labels, one grouped count of blocks), not one per plan.
+
+Keep planSummaryResponse the one summary shape: the Current plans task after this one
+returns it too. Swagger annotations, then `make swagger`. Integration tests: a plan with
+days A-C holding 2, 3 and 0 blocks lists day_labels ["A","B","C"] and block_count 5; an
+empty plan lists [] and 0.
+```
+
+**Checkpoint:** An athlete with one empty plan and one full plan lists both with the right `day_labels` and `block_count`. With SQL logging on, the request runs the same number of queries for an athlete with one plan as for one with five.
+
+**Expected output:**
+```
+$ curl -s -H "Authorization: Bearer $TOKEN" localhost:8080/api/v1/athletes/$ID/plans
+{"success":true,"data":[
+  {"id":"...","title":"برنامه آبان","start_date":"2026-10-23","is_current":false,"day_labels":[],"block_count":0,...},
+  {"id":"...","title":"برنامه مهر","start_date":"2026-09-23","is_current":true,"day_labels":["A","B","C","D","E"],"block_count":53,...}
+],"error":null}
+```
+
+**In short:** every plan in an athlete's list says how many days and movements it has, not only the current one.
+
+---
+
+### Current plans for the athlete list
+
+⬜ **Not started** — after *Plan summaries*, before the frontend's home screen.
+
+**Description:** Each row on the home screen carries its athlete's current plan: the title under the name, and the day letters as buttons, so a day is one tap from opening the app ([concept-8-1-home-and-plans.png](../design/concept-8-1-home-and-plans.png), [ADR 0029](../adr/0029-blush-theme-day-buttons-home.md)). `GET /athletes` returns no plan. Per athlete, the client would need the plan list and then the plan detail: 40–60 requests for one screen. The athlete module can't add the plan itself, because `internal/plan` already imports `internal/athlete` and the reverse is an import cycle.
+
+**Prompt:**
+```
+Add an endpoint the home screen calls next to GET /api/v1/athletes, so a row can show
+its athlete's current plan without a request per athlete.
+
+- GET /api/v1/plans/current, in internal/plan (pick another path if it clashes with
+  /plans/:id in Gin). It returns the current plan of every one of the authenticated
+  coach's athletes, private and public, as the summary from the Plan summaries task:
+  athlete_id, id, title, day_labels and the rest. Athletes with no current plan are
+  left out. "Current" is docs/adr/0016's rule, computed by the code GET
+  /athletes/:id/plans already uses, not a second copy of it.
+- No athlete-id filter and no pagination: one coach has 20-30 athletes, so this is one
+  small response the client matches to the athlete list by athlete_id. Search results
+  use the same response.
+- Ownership goes through the athlete, like everything else in this module
+  (docs/adr/0015), and soft-deleted athletes are left out. A fixed number of queries,
+  not one per athlete.
+
+The alternative is embedding current_plan in GET /athletes, through an interface the plan
+module implements and internal/server/server.go wires in. Ask me before picking that:
+it changes the athlete list's shape. Record the choice as the next ADR, since "why isn't
+this on the athlete list?" is the obvious question. Swagger annotations, then
+`make swagger`. Integration tests: of three athletes, two with a started plan (one of
+them also with a future plan) and one with none, exactly two summaries come back, each
+the started plan; another coach's athletes' plans never appear; a soft-deleted athlete's
+plan doesn't either.
+```
+
+**Checkpoint:** Home needs two requests: `GET /athletes` and `GET /plans/current`. An athlete with no plan, or only a future one, is absent from the second. Coach B's plans never show up for coach A.
+
+**Expected output:**
+```
+$ curl -s -H "Authorization: Bearer $TOKEN" localhost:8080/api/v1/plans/current
+{"success":true,"data":[
+  {"id":"...","athlete_id":"...","title":"برنامه مهر","start_date":"2026-09-23","is_current":true,"day_labels":["A","B","C","D","E"],"block_count":53,...},
+  {"id":"...","athlete_id":"...","title":"برنامه مهر","start_date":"2026-09-23","is_current":true,"day_labels":["A","B","C","D"],"block_count":40,...}
+],"error":null}
+```
+
+**In short:** the home screen gets every athlete's current plan and day letters in one extra request.
+
+---
+
+### Athlete update and delete
+
+⬜ **Not started** — before the frontend's profile screen.
+
+**Description:** The profile's pencil opens the athlete form filled in ([concept-8-2-athlete.png](../design/concept-8-2-athlete.png)), and moving an athlete between private and public is an edit too. `internal/athlete` only has create, list and get. Athletes already have a `deleted_at` column ([ADR 0008](../adr/0008-soft-delete.md)), but no endpoint sets it.
+
+**Prompt:**
+```
+Add update and delete to internal/athlete.
+
+- PUT /api/v1/athletes/:id replaces every editable field under the same rules as
+  create, like PUT /movements/:id: an optional field left out is cleared. One request
+  type serves both (see movementRequest). Decide whether athlete_type is required here:
+  on create, leaving it out means private, so an edit that forgets it would quietly move
+  a public athlete to private.
+- DELETE /api/v1/athletes/:id soft-deletes (docs/adr/0008). Afterwards the athlete is
+  gone from the list and from GET /athletes/:id, and their plans and measurements become
+  404s through the ownership checks that already go through the athlete. Nothing else is
+  deleted. Respond the way DELETE /movements/:id does.
+- Both pick the row through tenant.Scope; another coach's athlete is a 404, the same as
+  one that doesn't exist.
+
+Swagger annotations, then `make swagger`. Service unit tests for update validation.
+Integration tests: an update round-trips and clears an omitted optional field; switching
+private to public moves the athlete from the default list to athlete_type=public; after
+a delete the athlete, their plans and their measurements are 404s; both endpoints are a
+404 for another coach's athlete.
+```
+
+**Checkpoint:** Change an athlete's phone and goal, and `GET /athletes/:id` shows the new values. Switch them to public, and they leave the default list. Delete them, and `GET /athletes/:id` and their current plan's `GET /plans/:id` both return 404.
+
+**In short:** the coach can fix an athlete's details, move them between private and public, and remove them.
+
+---
+
 ## Deferred
 
 Not scheduled. Each task says what should trigger it.
