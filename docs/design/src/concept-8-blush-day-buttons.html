@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Concept 6 — Blush</title>
+<title>Concept 8 — Blush with day buttons</title>
 <link rel="stylesheet" href="board.css">
 <style>
   body { width: 1860px; }
@@ -34,14 +34,17 @@
   .pills2 { display: flex; margin: 12px 18px; background: #fff; border-radius: 999px; padding: 4px; flex: none; box-shadow: var(--soft); }
   .pills2 div { flex: 1; text-align: center; padding: 8px 0; border-radius: 999px; font-size: 14.5px; font-weight: 700; color: var(--dim); }
   .pills2 .on { background: var(--pink); color: #fff; box-shadow: var(--glow); }
-  .list { padding: 2px 18px 0; display: flex; flex-direction: column; gap: 9px; flex: 1; min-height: 0; overflow: hidden; }
-  .ath { display: flex; align-items: center; gap: 12px; background: #fff; border-radius: 22px; padding: 11px 14px; box-shadow: var(--soft); flex: none; }
-  .av { width: 44px; height: 44px; border-radius: 50%; background: var(--blush2); color: var(--pinkText); font-size: 17px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex: none; }
-  .ath .nm { flex: 1; }
-  .ath b { font-size: 16px; font-weight: 700; display: block; line-height: 1.35; }
-  .ath .nm span { font-size: 12.5px; color: var(--dim); }
-  .ath .none { display: inline-block; margin-top: 2px; background: var(--lemon); color: var(--amber); font-size: 11.5px; font-weight: 700; padding: 2px 9px; border-radius: 999px; }
-  .go { width: 30px; height: 30px; border-radius: 50%; background: var(--blush); color: var(--pinkText); display: flex; align-items: center; justify-content: center; flex: none; }
+  /* Concept 2's home rows on one white sheet: the day letters need the width an avatar and a chevron took. */
+  .roster { margin: 0 14px; background: #fff; border-radius: 26px; padding: 2px 14px; flex: 1; min-height: 0; overflow: hidden; box-shadow: var(--soft); }
+  .ath { display: flex; align-items: center; gap: 10px; height: 58px; border-bottom: 1px solid var(--line); }
+  .ath .nm { flex: 1; min-width: 0; }
+  .ath b { font-size: 15.5px; font-weight: 700; display: block; line-height: 1.35; white-space: nowrap; }
+  .ath .nm span { font-size: 12px; color: var(--dim); }
+  .ath .none { display: inline-block; background: var(--lemon); color: var(--amber); font-size: 11px; font-weight: 700; padding: 1px 9px; border-radius: 999px; }
+  .dl { display: flex; gap: 5px; width: 190px; flex: none; }
+  .dl div { width: 34px; height: 38px; border-radius: 12px; background: var(--blush); color: var(--pinkText); display: flex; align-items: center; justify-content: center; font: 800 15px "Inter", sans-serif; }
+  .dl .tap { background: var(--pink); color: #fff; box-shadow: var(--glow); }
+  .dl .new { width: auto; flex: 1; gap: 4px; background: none; border: 1.5px dashed var(--petal); font: 700 13px "Vazirmatn", sans-serif; }
   .nav { margin: 10px 18px 16px; height: 62px; background: #fff; border-radius: 999px; display: flex; align-items: center; padding: 0 6px; gap: 6px; flex: none; box-shadow: 0 10px 30px rgba(214,0,74,0.12); }
   .nav div { flex: 1; height: 50px; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 14px; font-weight: 700; color: var(--faint); border-radius: 999px; }
   .nav .on { background: var(--blush); color: var(--pinkText); }
@@ -116,9 +119,9 @@
 </head>
 <body>
 <div class="board">
-  <h1>Concept 6 — Blush</h1>
-  <p class="pitch">A soft, light look after appetit.fit: a blush-pink header, white rounded cards with a pink glow, hot-pink pill buttons and cream for the quiet parts. The flow is concept 5's (plain list, the day like her paper plan, copy first), so what changes is mostly the look.</p>
-  <div class="tags"><span class="tag">Light, blush pink</span><span class="tag">Home → any day: 2 taps</span><span class="tag">No per-athlete colors</span><span class="tag">Whole day on one screen</span></div>
+  <h1>Concept 8 — Blush with day buttons</h1>
+  <p class="pitch">The chosen direction: concept 6's look and screens, with concept 2's home. Every athlete row carries her plan's day letters, so the day an athlete names is one tap from opening the app. Day view, new plan and builder are concept 6's.</p>
+  <div class="tags"><span class="tag">Light, blush pink</span><span class="tag">Home → any day: 1 tap</span><span class="tag">No per-athlete colors</span><span class="tag">Whole day on one screen</span></div>
 
   <div class="row">
     <div class="col">
@@ -130,14 +133,14 @@
         </div>
         <div class="search">ICON_SEARCH<span>جستجوی نام شاگرد…</span></div>
         <div class="pills2"><div class="on">خصوصی ۱۵</div><div>عمومی ۹</div></div>
-        <div class="list" data-fill="cards"></div>
+        <div class="roster" data-fill="roster"></div>
         <div class="nav"><div class="on">ICON_USERS شاگردها</div><div>ICON_DUMBBELL حرکات</div></div>
       </div></div>
-      <h2>Home — soft cards</h2>
+      <h2>Home — names with their days</h2>
       <ul>
-        <li>Pink header with a greeting; search and the private/public switch are white pills under it.</li>
-        <li>One card per athlete: initial, name, current plan. The same pink for everyone, so no per-athlete colors. About seven fit.</li>
-        <li>"No plan" is a soft yellow pill: red would get lost next to the pink.</li>
+        <li>The athlete says "B" → she taps B on that row and lands on day B. Tapping the name opens the plan.</li>
+        <li>Rows share one white sheet instead of separate cards, so about nine athletes fit. No avatar and no per-athlete color: the letters need the width.</li>
+        <li>Letters keep their columns, so a four-day plan leaves E's place empty. A row with no plan gets the yellow pill and a button to write one.</li>
       </ul>
     </div>
 
@@ -150,12 +153,12 @@
           <div class="rb">ICON_USER</div>
           <div class="rb pink">ICON_EDIT</div>
         </div>
-        <div class="days"><div class="on">A</div><div>B</div><div>C</div><div>D</div><div>E</div></div>
+        <div class="days"><div>A</div><div class="on">B</div><div>C</div><div>D</div><div>E</div></div>
         <div class="sheet" data-fill="day"></div>
       </div></div>
       <h2>Day view — one white sheet</h2>
       <ul>
-        <li>Day letters as pills; the open day glows pink.</li>
+        <li>Opens on the day tapped on home. Day letters as pills; the open day glows pink.</li>
         <li>The day is one white sheet: pink number, movement, and under it sets × reps in her wording. A superset gets a "سوپرست" tag and a pink edge.</li>
         <li>Warm-up and cool-down are cream strips outside the numbering. The nine-movement day fits one screen, so one screenshot is the whole day.</li>
       </ul>
@@ -233,11 +236,20 @@
   const cardio = (label, text) => `<div class="cardio">${ICON.clock}<span>${label}</span><b>${text}</b></div>`;
   const dayHead = (letter, count) => `<div class="dh"><b>روز ${letter}</b><span>${fa(count)} حرکت</span></div>`;
 
+  const LETTERS = "ABCDE";
+
   fill({
-    cards: () => PRIVATE.slice(0, 7).map((a, i) => `<div class="ath"><div class="av">${a.first[0]}</div><div class="nm"><b>${a.first} ${a.last}</b>`
-      + (i === 3 ? `<span class="none">بدون برنامه</span>` : `<span>برنامه مهر · ${fa(a.days)} روز</span>`)
-      + `</div><span class="go">${ICON.chevL}</span></div>`).join(""),
-    day: () => dayHead("A", DAY_A.items.length) + cardio("گرم کردن", DAY_A.warm) + DAY_A.items.map(line).join("") + cardio("سرد کردن", DAY_A.cool),
+    roster: () => PRIVATE.slice(0, 10).map((a, i) => {
+      const noPlan = i === 3;
+      const days = noPlan
+        ? `<div class="new">${ICON.plus}برنامه جدید</div>`
+        : LETTERS.slice(0, a.days).split("").map((d) => `<div class="${a.first === "سارا" && d === "B" ? "tap" : ""}">${d}</div>`).join("");
+      return `<div class="ath"><div class="nm"><b>${a.first} ${a.last}</b>`
+        + (noPlan ? `<span class="none">بدون برنامه</span>` : `<span>برنامه مهر</span>`)
+        + `</div><div class="dl">${days}</div></div>`;
+    }).join(""),
+    // Day A's content stands in for day B: the board follows the B tapped on home.
+    day: () => dayHead("B", DAY_A.items.length) + cardio("گرم کردن", DAY_A.warm) + DAY_A.items.map(line).join("") + cardio("سرد کردن", DAY_A.cool),
     mini: () => [["A", 9], ["B", 8], ["C", 9], ["D", 8], ["E", 9]].map(([d, n]) => `<div><b>${d}</b><span>${fa(n)} حرکت</span></div>`).join(""),
     builder: () => {
       const open = DAY_C_DRAFT.items[4];

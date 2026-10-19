@@ -46,8 +46,8 @@ Not in the v1 feature list, but confirmed as a real part of the system: a `billi
 
 ## Design constraints carried from the UI brief
 
-- Mobile-first, dark/neutral professional theme, RTL (Persian content)
-- High contrast, large touch targets — legible under gym lighting
+- Mobile-first, light blush theme ([design/](design/README.md#chosen-direction), [ADR 0029](adr/0029-blush-theme-day-buttons-home.md)), RTL (Persian content)
+- High contrast, large touch targets — legible under gym lighting. Text is at least 4.5:1, so small pink text uses `#D6004A`, not `#FF0057`
 - Athlete and plan cards must stay dense-but-uncluttered on a touch UI
 
 ## Next step

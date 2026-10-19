@@ -33,3 +33,4 @@ One file per decision, [MADR](https://adr.github.io/madr/)-style. Process rules 
 | [0026](0026-healthz-cached-not-hidden.md) | /healthz caches its database ping instead of hiding behind a secret path | 2026-10-11 | accepted |
 | [0027](0027-platform-package-for-infrastructure.md) | Shared infrastructure lives under internal/platform | 2026-10-12 | accepted |
 | [0028](0028-drop-movement-filters.md) | Movement has no muscle group or equipment until the library outgrows search | 2026-10-13 | accepted |
+| [0029](0029-blush-theme-day-buttons-home.md) | Light blush theme, with day buttons on the home screen | 2026-10-19 | accepted |
