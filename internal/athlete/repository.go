@@ -44,6 +44,18 @@ func (r *Repository) FindByID(ctx context.Context, coachID, id uuid.UUID) (*Athl
 	return &a, nil
 }
 
+// IDs returns every one of the coach's athletes, private and public, newest first, unpaginated.
+func (r *Repository) IDs(ctx context.Context, coachID uuid.UUID) ([]uuid.UUID, error) {
+	ids := make([]uuid.UUID, 0)
+	if err := tenant.Scope(r.db.WithContext(ctx), coachID).
+		Model(&Athlete{}).
+		Order("created_at DESC, id DESC").
+		Pluck("id", &ids).Error; err != nil {
+		return nil, fmt.Errorf("athlete: failed to list ids: %w", err)
+	}
+	return ids, nil
+}
+
 // List expects opts already normalized by normalizeListOptions.
 func (r *Repository) List(ctx context.Context, coachID uuid.UUID, opts ListOptions) ([]Athlete, int64, error) {
 	query := r.filtered(ctx, coachID, opts)

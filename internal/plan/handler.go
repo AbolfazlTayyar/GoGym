@@ -231,6 +231,39 @@ func (h *Handler) List(c *gin.Context) {
 	httpx.OK(c, items)
 }
 
+// Current returns every athlete's current plan, for the home screen's rows.
+//
+//	@Summary		List the current plan of every athlete
+//	@Description	Returns the current plan of each of the coach's athletes, private and public, in the plan list's summary shape (is_current is always true). The current plan is the latest one whose start_date is today or earlier; an athlete with no plan, or only future ones, is left out. Meant to sit next to GET /athletes: the client matches each summary to its athlete by athlete_id, in one request instead of one per athlete. Not paginated and not filtered: one coach's athletes make a small list.
+//	@Tags			plans
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Success		200	{object}	httpx.SuccessEnvelope{data=[]planSummaryResponse}
+//	@Failure		401	{object}	httpx.UnauthorizedEnvelope
+//	@Failure		500	{object}	httpx.InternalErrorEnvelope
+//	@Router			/api/v1/plans/current [get]
+func (h *Handler) Current(c *gin.Context) {
+	coachID, ok := tenant.CoachIDFromContext(c)
+	if !ok {
+		httpx.Error(c, http.StatusUnauthorized, httpx.CodeUnauthorized, httpx.MsgUnauthorized)
+		return
+	}
+
+	result, err := h.svc.Current(c.Request.Context(), coachID)
+	if err != nil {
+		writeServiceError(c, err)
+		return
+	}
+
+	items := make([]planSummaryResponse, 0, len(result.Plans))
+	for i := range result.Plans {
+		p := &result.Plans[i]
+		items = append(items, newPlanSummaryResponse(p, true, result.Sizes[p.ID]))
+	}
+
+	httpx.OK(c, items)
+}
+
 // Get returns one plan with its whole day → block → movement tree, ordered for display.
 //
 //	@Summary		Get a plan with its days, blocks and movements

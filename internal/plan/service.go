@@ -131,6 +131,50 @@ func (s *Service) List(ctx context.Context, coachID, athleteID uuid.UUID) (*List
 	return &ListResult{Plans: plans, CurrentID: currentPlanID(plans, time.Now()), Sizes: sizes}, nil
 }
 
+// CurrentResult holds one plan per athlete that has a current plan; the others are left out.
+type CurrentResult struct {
+	Plans []Plan
+	Sizes map[uuid.UUID]Size
+}
+
+// Current finds the current plan of every one of the coach's athletes in a fixed number of queries.
+// Ownership comes from the athlete list itself, so another coach's or a deleted athlete's plans never load.
+func (s *Service) Current(ctx context.Context, coachID uuid.UUID) (*CurrentResult, error) {
+	athleteIDs, err := s.athletes.IDs(ctx, coachID)
+	if err != nil {
+		return nil, err
+	}
+
+	plans, err := s.repo.ListByAthletes(ctx, athleteIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	byAthlete := make(map[uuid.UUID][]Plan, len(athleteIDs))
+	for _, p := range plans {
+		byAthlete[p.AthleteID] = append(byAthlete[p.AthleteID], p)
+	}
+
+	now := time.Now()
+	current := make([]Plan, 0, len(athleteIDs))
+	for _, athleteID := range athleteIDs {
+		athletePlans := byAthlete[athleteID]
+		currentID := currentPlanID(athletePlans, now)
+		for _, p := range athletePlans {
+			if p.ID == currentID {
+				current = append(current, p)
+			}
+		}
+	}
+
+	sizes, err := s.repo.Sizes(ctx, planIDs(current))
+	if err != nil {
+		return nil, err
+	}
+
+	return &CurrentResult{Plans: current, Sizes: sizes}, nil
+}
+
 func planIDs(plans []Plan) []uuid.UUID {
 	ids := make([]uuid.UUID, 0, len(plans))
 	for _, p := range plans {

@@ -320,6 +320,92 @@ func TestPlans_SummariesTakeTheSameQueriesForOneOrManyPlans(t *testing.T) {
 	assert.Equal(t, forOne, forFive)
 }
 
+func currentPlans(t *testing.T, router *gin.Engine, token string) []planResponse {
+	t.Helper()
+
+	env := decodeEnvelope(t, do(t, router, http.MethodGet, "/api/v1/plans/current", token, ""), http.StatusOK)
+	var out []planResponse
+	require.NoError(t, json.Unmarshal(env.Data, &out))
+	return out
+}
+
+func TestCurrentPlans_OnePerAthleteWithAStartedPlan(t *testing.T) {
+	router, db := newTestRouter(t)
+	token := createCoach(t, router, db, "09121110211")
+	withTwo := createAthlete(t, router, token, "09121230211")
+	withOne := createAthlete(t, router, token, "09121230212")
+	createAthlete(t, router, token, "09121230213") // no plan at all
+	onlyFuture := createAthlete(t, router, token, "09121230214")
+
+	started := insertPlan(t, db, withTwo, "Mehr", daysFromToday(-10))
+	insertPlan(t, db, withTwo, "Aban", daysFromToday(10))
+	insertPlan(t, db, withTwo, "Shahrivar", daysFromToday(-40))
+	other := insertPlan(t, db, withOne, "Mehr", daysFromToday(-5))
+	insertPlan(t, db, onlyFuture, "Aban", daysFromToday(10))
+	day, err := insertDay(db, started, "A", 0)
+	require.NoError(t, err)
+	insertBlock(t, db, day, 0, 3, nil)
+
+	got := currentPlans(t, router, token)
+	require.Len(t, got, 2)
+
+	byAthlete := map[string]planResponse{}
+	for _, p := range got {
+		byAthlete[p.AthleteID] = p
+		assert.True(t, p.IsCurrent)
+	}
+	assert.Equal(t, started.String(), byAthlete[withTwo].ID, "the started plan, not the future or older one")
+	assert.Equal(t, []string{"A"}, byAthlete[withTwo].DayLabels)
+	assert.Equal(t, 1, byAthlete[withTwo].BlockCount)
+	assert.Equal(t, other.String(), byAthlete[withOne].ID)
+}
+
+func TestCurrentPlans_OnlyTheCoachsLiveAthletes(t *testing.T) {
+	router, db := newTestRouter(t)
+	coachA := createCoach(t, router, db, "09121110215")
+	coachB := createCoach(t, router, db, "09121110216")
+	mine := createAthlete(t, router, coachA, "09121230215")
+	deleted := createAthlete(t, router, coachA, "09121230216")
+	theirs := createAthlete(t, router, coachB, "09121230217")
+
+	minePlan := insertPlan(t, db, mine, "Mehr", daysFromToday(-3))
+	insertPlan(t, db, deleted, "Mehr", daysFromToday(-3))
+	insertPlan(t, db, theirs, "Mehr", daysFromToday(-3))
+	require.NoError(t, db.Delete(&athlete.Athlete{}, "id = ?", deleted).Error)
+
+	got := currentPlans(t, router, coachA)
+	require.Len(t, got, 1, "neither coach B's athlete nor a deleted athlete shows up")
+	assert.Equal(t, minePlan.String(), got[0].ID)
+
+	assert.Len(t, currentPlans(t, router, coachB), 1)
+}
+
+func TestCurrentPlans_TakeTheSameQueriesForOneOrManyAthletes(t *testing.T) {
+	router, db := newTestRouter(t)
+	one := createCoach(t, router, db, "09121110217")
+	many := createCoach(t, router, db, "09121110218")
+	insertPlan(t, db, createAthlete(t, router, one, "09121230218"), "Mehr", daysFromToday(-3))
+	for i := range 4 {
+		insertPlan(t, db, createAthlete(t, router, many, fmt.Sprintf("0912123022%d", i)), "Mehr", daysFromToday(-3))
+	}
+
+	rec := recordSQL(db)
+	currentPlans(t, router, one)
+	forOne := len(rec.take())
+	currentPlans(t, router, many)
+	forMany := len(rec.take())
+
+	assert.Equal(t, forOne, forMany)
+}
+
+func TestCurrentPlans_EmptyIsAnEmptyArray(t *testing.T) {
+	router, db := newTestRouter(t)
+	token := createCoach(t, router, db, "09121110219")
+
+	env := decodeEnvelope(t, do(t, router, http.MethodGet, "/api/v1/plans/current", token, ""), http.StatusOK)
+	assert.JSONEq(t, `[]`, string(env.Data))
+}
+
 // The insert helpers below bypass the builder endpoints for the same reason as insertPlan.
 
 func insertMovement(t *testing.T, db *gorm.DB, name, category string) uuid.UUID {

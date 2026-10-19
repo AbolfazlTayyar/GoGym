@@ -7,6 +7,8 @@ func RegisterRoutes(protected *gin.RouterGroup, h *Handler) {
 	plans.GET("", h.List)
 
 	protected.POST("/plans", h.Create)
+	// Gin matches the static segment before the :id wildcard, so "current" is never read as a plan id.
+	protected.GET("/plans/current", h.Current)
 	protected.GET("/plans/:"+paramPlanID, h.Get)
 	protected.POST("/plans/:"+paramPlanID+"/days", h.AddDay)
 	protected.POST("/days/:"+paramDayID+"/blocks", h.AddBlock)

@@ -28,14 +28,31 @@ func NewRepository(db *gorm.DB) *Repository {
 	return &Repository{db: db}
 }
 
-// ListByAthlete orders newest first; among plans starting the same day, the later-created one leads.
+// newestFirst is the order currentPlanID relies on: among plans starting the same day, the later-created one leads.
+const newestFirst = "start_date DESC, created_at DESC, id DESC"
+
 func (r *Repository) ListByAthlete(ctx context.Context, athleteID uuid.UUID) ([]Plan, error) {
 	plans := make([]Plan, 0)
 	if err := r.db.WithContext(ctx).
 		Where("athlete_id = ?", athleteID).
-		Order("start_date DESC, created_at DESC, id DESC").
+		Order(newestFirst).
 		Find(&plans).Error; err != nil {
 		return nil, fmt.Errorf("plan: failed to list: %w", err)
+	}
+	return plans, nil
+}
+
+// ListByAthletes loads every given athlete's plans in one query, each athlete's newest first.
+func (r *Repository) ListByAthletes(ctx context.Context, athleteIDs []uuid.UUID) ([]Plan, error) {
+	plans := make([]Plan, 0)
+	if len(athleteIDs) == 0 {
+		return plans, nil
+	}
+	if err := r.db.WithContext(ctx).
+		Where("athlete_id IN ?", athleteIDs).
+		Order("athlete_id, " + newestFirst).
+		Find(&plans).Error; err != nil {
+		return nil, fmt.Errorf("plan: failed to list for athletes: %w", err)
 	}
 	return plans, nil
 }

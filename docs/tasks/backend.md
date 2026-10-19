@@ -951,7 +951,7 @@ $ curl -s -H "Authorization: Bearer $TOKEN" localhost:8080/api/v1/athletes/$ID/p
 
 ### Current plans for the athlete list
 
-⬜ **Not started** — after *Plan summaries*, before the frontend's home screen.
+✅ **Done** — see [ADR 0032](../adr/0032-current-plans-endpoint.md)
 
 **Description:** Each row on the home screen carries its athlete's current plan: the title under the name, and the day letters as buttons, so a day is one tap from opening the app ([concept-8-1-home-and-plans.png](../design/concept-8-1-home-and-plans.png), [ADR 0029](../adr/0029-blush-theme-day-buttons-home.md)). `GET /athletes` returns no plan. Per athlete, the client would need the plan list and then the plan detail: 40–60 requests for one screen. The athlete module can't add the plan itself, because `internal/plan` already imports `internal/athlete` and the reverse is an import cycle.
 
