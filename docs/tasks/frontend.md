@@ -458,7 +458,7 @@ body.
 
 ### Profile: plans
 
-⬜ **Not started** — needs *Plan summaries: day letters and size* in [backend.md](backend.md).
+✅ **Done**
 
 **Description:** Everything about one athlete except the plan itself: who they are, what to check before writing a plan (level, height, goal, injuries), and every plan they've had ([concept-8-2](../design/concept-8-2-athlete.png), first phone).
 

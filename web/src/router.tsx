@@ -7,6 +7,7 @@ import { DayViewPage } from "./pages/DayViewPage";
 import { HomePage } from "./pages/HomePage";
 import { LoginPage } from "./pages/LoginPage";
 import { NewPlanPage } from "./pages/NewPlanPage";
+import { ProfilePage } from "./pages/ProfilePage";
 import { MovementsPage } from "./pages/MovementsPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
 
@@ -25,6 +26,7 @@ export const router = createBrowserRouter([
       { path: "/plans/:planId", element: <DayViewPage /> },
       { path: "/plans/:planId/edit", element: <BuilderPage /> },
       { path: "/athletes/new", element: <NewAthletePage /> },
+      { path: "/athletes/:id", element: <ProfilePage /> },
       { path: "/athletes/:id/edit", element: <EditAthletePage /> },
       { path: "/athletes/:id/plans/new", element: <NewPlanPage /> },
       { path: "*", element: <NotFoundPage /> },

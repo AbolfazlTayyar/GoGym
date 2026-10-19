@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseNumber, toLatinDigits, toPersianDigits, toPhone } from "./digits";
+import { formatPhone, parseNumber, toLatinDigits, toPersianDigits, toPhone } from "./digits";
 
 describe("toLatinDigits", () => {
   it.each([
@@ -38,5 +38,11 @@ describe("parseNumber", () => {
 describe("toPhone", () => {
   it("drops grouping and converts digits", () => {
     expect(toPhone("۰۹۱۲ ۳۴۵-۶۷۸۹")).toBe("09123456789");
+  });
+});
+
+describe("formatPhone", () => {
+  it("groups a mobile number 4-3-4 in Persian digits", () => {
+    expect(formatPhone("09123456789")).toBe("۰۹۱۲ ۳۴۵ ۶۷۸۹");
   });
 });

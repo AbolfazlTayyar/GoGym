@@ -26,3 +26,9 @@ export function parseNumber(text: string): number | null {
 export function toPhone(text: string): string {
   return toLatinDigits(text).replace(/[\s-]/g, "");
 }
+
+// 09123456789 → ۰۹۱۲ ۳۴۵ ۶۷۸۹, grouped the way the boards show a mobile number.
+export function formatPhone(phone: string): string {
+  const m = /^(\d{4})(\d{3})(\d{4})$/.exec(phone);
+  return toPersianDigits(m ? `${m[1]} ${m[2]} ${m[3]}` : phone);
+}
