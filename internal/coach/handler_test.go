@@ -17,7 +17,7 @@ import (
 // newHandlerTestRouter uses a nil *gorm.DB on purpose: a test that reaches the database panics.
 func newHandlerTestRouter() *gin.Engine {
 	svc := NewService(NewRepository(nil), "test-secret", time.Hour)
-	handler := NewHandler(svc)
+	handler := NewHandler(svc, true)
 
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
@@ -95,4 +95,13 @@ func TestAuthMiddleware_Envelope(t *testing.T) {
 			requireErrorEnvelope(t, rec, http.StatusUnauthorized, httpx.CodeUnauthorized)
 		})
 	}
+}
+
+func TestAuthMiddleware_InvalidCookie(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/coaches/me", nil)
+	req.AddCookie(&http.Cookie{Name: AuthCookieName, Value: "not-a-jwt"})
+	rec := httptest.NewRecorder()
+	newHandlerTestRouter().ServeHTTP(rec, req)
+
+	requireErrorEnvelope(t, rec, http.StatusUnauthorized, httpx.CodeUnauthorized)
 }

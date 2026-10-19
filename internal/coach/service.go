@@ -100,6 +100,11 @@ func (s *Service) Login(ctx context.Context, phone, password string) (string, er
 	return token, nil
 }
 
+// TokenExpiry is how long a token from Login stays valid; the auth cookie lives as long.
+func (s *Service) TokenExpiry() time.Duration {
+	return s.jwtExpiry
+}
+
 func (s *Service) ValidateToken(tokenString string) (uuid.UUID, error) {
 	return parseToken(tokenString, s.jwtSecret)
 }

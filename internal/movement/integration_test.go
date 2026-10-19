@@ -54,7 +54,7 @@ func newTestRouter(t *testing.T) (*gin.Engine, *gorm.DB) {
 	protected := v1.Group("")
 	protected.Use(coach.AuthMiddleware(coachSvc))
 
-	coach.RegisterRoutes(v1, protected, coach.NewHandler(coachSvc))
+	coach.RegisterRoutes(v1, protected, coach.NewHandler(coachSvc, false))
 	movementSvc := movement.NewService(movement.NewRepository(db))
 
 	movement.RegisterRoutes(protected, movement.NewHandler(movementSvc))
@@ -134,15 +134,11 @@ func createCoach(t *testing.T, router *gin.Engine, db *gorm.DB, phone string) te
 	require.NoError(t, err)
 
 	credentials := fmt.Sprintf(`{"phone":%q,"password":%q}`, phone, password)
-	env := decodeEnvelope(t, do(t, router, http.MethodPost, "/api/v1/auth/login", "", credentials), http.StatusOK)
+	rec := do(t, router, http.MethodPost, "/api/v1/auth/login", "", credentials)
+	decodeEnvelope(t, rec, http.StatusOK)
 
-	var loggedIn struct {
-		Token string `json:"token"`
-	}
-	require.NoError(t, json.Unmarshal(env.Data, &loggedIn))
-	require.NotEmpty(t, loggedIn.Token)
-
-	return testCoach{id: created.ID.String(), token: loggedIn.Token}
+	// The tests send the cookie's token back as a Bearer header, which the middleware also accepts.
+	return testCoach{id: created.ID.String(), token: testutil.Cookie(t, rec, coach.AuthCookieName)}
 }
 
 func listMovements(t *testing.T, router *gin.Engine, token, query string) []movementResponse {

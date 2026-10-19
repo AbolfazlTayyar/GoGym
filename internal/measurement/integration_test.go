@@ -39,7 +39,7 @@ func newTestRouter(t *testing.T) (*gin.Engine, *gorm.DB) {
 	protected := v1.Group("")
 	protected.Use(coach.AuthMiddleware(coachSvc))
 
-	coach.RegisterRoutes(v1, protected, coach.NewHandler(coachSvc))
+	coach.RegisterRoutes(v1, protected, coach.NewHandler(coachSvc, false))
 	athlete.RegisterRoutes(protected, athlete.NewHandler(athleteSvc))
 	measurement.RegisterRoutes(protected, measurement.NewHandler(measurementSvc))
 
@@ -106,15 +106,11 @@ func createCoach(t *testing.T, router *gin.Engine, db *gorm.DB, phone string) st
 	require.NoError(t, err)
 
 	credentials := fmt.Sprintf(`{"phone":%q,"password":%q}`, phone, password)
-	env := decodeEnvelope(t, do(t, router, http.MethodPost, "/api/v1/auth/login", "", credentials), http.StatusOK)
+	rec := do(t, router, http.MethodPost, "/api/v1/auth/login", "", credentials)
+	decodeEnvelope(t, rec, http.StatusOK)
 
-	var payload struct {
-		Token string `json:"token"`
-	}
-	require.NoError(t, json.Unmarshal(env.Data, &payload))
-	require.NotEmpty(t, payload.Token)
-
-	return payload.Token
+	// The tests send the cookie's token back as a Bearer header, which the middleware also accepts.
+	return testutil.Cookie(t, rec, coach.AuthCookieName)
 }
 
 func createAthlete(t *testing.T, router *gin.Engine, token, phone string) string {

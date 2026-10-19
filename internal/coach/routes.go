@@ -6,6 +6,7 @@ import "github.com/gin-gonic/gin"
 func RegisterRoutes(v1 *gin.RouterGroup, protected *gin.RouterGroup, h *Handler) {
 	auth := v1.Group("/auth")
 	auth.POST("/login", h.Login)
+	auth.POST("/logout", h.Logout)
 
 	protected.GET("/coaches/me", h.Me)
 }

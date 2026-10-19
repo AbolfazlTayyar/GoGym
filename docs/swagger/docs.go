@@ -460,7 +460,7 @@ const docTemplate = `{
         },
         "/api/v1/auth/login": {
             "post": {
-                "description": "Verifies phone + password and returns a signed JWT. The error is the same whether the phone or the password was wrong.",
+                "description": "Verifies phone + password and sets the signed JWT as an httpOnly cookie (gogym_auth, Path=/api/v1, SameSite=Strict, Secure outside development) that the browser sends on every later call. The token is not in the body, so page scripts can't read it. The error is the same whether the phone or the password was wrong.",
                 "consumes": [
                     "application/json"
                 ],
@@ -486,19 +486,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.SuccessEnvelope"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/internal_coach.loginResponse"
-                                        }
-                                    }
-                                }
-                            ]
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.NoContentEnvelope"
+                        },
+                        "headers": {
+                            "Set-Cookie": {
+                                "type": "string",
+                                "description": "gogym_auth=\u003cjwt\u003e; Path=/api/v1; Max-Age=\u003cJWT_EXPIRY\u003e; HttpOnly; Secure; SameSite=Strict"
+                            }
                         }
                     },
                     "400": {
@@ -523,6 +517,32 @@ const docTemplate = `{
                         "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.InternalErrorEnvelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/logout": {
+            "post": {
+                "description": "Clears the gogym_auth cookie. Needs no valid token, so an expired session can still sign out. A token sent in the Authorization header stays valid until it expires.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Log out a coach",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.NoContentEnvelope"
+                        },
+                        "headers": {
+                            "Set-Cookie": {
+                                "type": "string",
+                                "description": "gogym_auth=; Path=/api/v1; Max-Age=0; HttpOnly; Secure; SameSite=Strict"
+                            }
                         }
                     }
                 }
@@ -624,7 +644,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Returns the profile of the coach identified by the bearer token.",
+                "description": "Returns the profile of the coach identified by the auth cookie or the bearer token.",
                 "produces": [
                     "application/json"
                 ],
@@ -1763,15 +1783,6 @@ const docTemplate = `{
                 "phone": {
                     "type": "string",
                     "example": "09372144430"
-                }
-            }
-        },
-        "internal_coach.loginResponse": {
-            "type": "object",
-            "properties": {
-                "token": {
-                    "type": "string",
-                    "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
                 }
             }
         },

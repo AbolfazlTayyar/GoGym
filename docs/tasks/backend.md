@@ -871,7 +871,7 @@ docs/tasks/frontend.md holds the task list, in the same task format, with no fro
 
 ### Browser auth via httpOnly cookie
 
-⬜ **Not started** — after *Frontend stack decision*, before the first frontend screen calls the API.
+✅ **Done** — see [ADR 0031](../adr/0031-auth-token-in-httponly-cookie.md)
 
 **Description:** Login returns the JWT in the response body, and `AuthMiddleware` reads only the `Authorization: Bearer` header. A browser client would have to keep that token somewhere JavaScript can read, such as localStorage, where any injected script can steal it. With the token in an httpOnly cookie, the browser sends it automatically and scripts can't read it. Do this before the frontend exists, so the frontend is never built against a body token that would have to be taken out later.
 

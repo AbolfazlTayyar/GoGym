@@ -4,6 +4,7 @@ package testutil
 import (
 	"context"
 	"errors"
+	"net/http/httptest"
 	"path/filepath"
 	"runtime"
 	"testing"
@@ -79,4 +80,18 @@ func migrationsSourceURL() string {
 	dir := filepath.Join(filepath.Dir(file), "..", "..", "..", "migrations")
 
 	return "file://" + filepath.ToSlash(dir)
+}
+
+// Cookie returns the value of the named cookie the response set, failing the test if it set none.
+func Cookie(t *testing.T, rec *httptest.ResponseRecorder, name string) string {
+	t.Helper()
+
+	for _, c := range rec.Result().Cookies() {
+		if c.Name == name {
+			require.NotEmpty(t, c.Value, "cookie %s is empty", name)
+			return c.Value
+		}
+	}
+	require.Failf(t, "cookie not set", "the response set no %s cookie", name)
+	return ""
 }

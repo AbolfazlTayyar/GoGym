@@ -78,7 +78,7 @@ Tables with universal rows (`movement`, where `coach_id IS NULL`) are read throu
 
 Tables without a `coach_id` (measurement, and later plan/day/block) prove ownership by loading their parent through that parent's tenant-scoped lookup (e.g. `athlete.Service.Get`) before touching the child; their repositories trust the parent id and say so in a comment. One addressed by its own id gets a flat route (`/measurements/:id`), not one nested under its parent — see [docs/architecture.md](docs/architecture.md#tenant-isolation).
 
-There is no signup endpoint. Integration tests create coaches through `coach.Service.Create`, then log in over HTTP for a token.
+There is no signup endpoint. Integration tests create coaches through `coach.Service.Create`, then log in over HTTP and take the token from the `gogym_auth` cookie (`testutil.Cookie`); they send it back as a Bearer header, which `AuthMiddleware` accepts alongside the cookie.
 
 GORM is opened with `TranslateError: true` (`internal/platform/db`, `internal/platform/testutil`) so repositories can check portable errors like `errors.Is(err, gorm.ErrDuplicatedKey)` instead of parsing Postgres-specific error codes. Keep using the portable sentinels — without this config the driver-specific check would silently never match.
 

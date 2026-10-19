@@ -18,16 +18,19 @@ import (
 	"gorm.io/gorm"
 )
 
+const testTokenExpiry = time.Hour
+
 // newTestRouter also returns the service, since coaches are created through it rather than over HTTP.
+// Its cookies are Secure, as outside development.
 func newTestRouter(t *testing.T) (*gin.Engine, *coach.Service) {
 	t.Helper()
 
-	return newTestRouterWithDB(testutil.NewDB(t))
+	return newTestRouterWithDB(testutil.NewDB(t), true)
 }
 
-func newTestRouterWithDB(db *gorm.DB) (*gin.Engine, *coach.Service) {
-	svc := coach.NewService(coach.NewRepository(db), "test-secret", time.Hour)
-	handler := coach.NewHandler(svc)
+func newTestRouterWithDB(db *gorm.DB, secureCookie bool) (*gin.Engine, *coach.Service) {
+	svc := coach.NewService(coach.NewRepository(db), "test-secret", testTokenExpiry)
+	handler := coach.NewHandler(svc, secureCookie)
 
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
@@ -121,31 +124,97 @@ func TestCreateLoginProtectedRoute(t *testing.T) {
 		"phone":    testPhone,
 		"password": testPassword,
 	})
+	var loginData any
+	decodeSuccess(t, loginRec, http.StatusOK, &loginData)
+	assert.Nil(t, loginData, "the token travels only in the httpOnly cookie")
+	token := testutil.Cookie(t, loginRec, coach.AuthCookieName)
 
-	var loginResp struct {
-		Token string `json:"token"`
-	}
-	decodeSuccess(t, loginRec, http.StatusOK, &loginResp)
-	require.NotEmpty(t, loginResp.Token)
-
-	unauthReq := httptest.NewRequest(http.MethodGet, "/api/v1/coaches/me", nil)
-	unauthRec := httptest.NewRecorder()
-	router.ServeHTTP(unauthRec, unauthReq)
+	unauthRec := getMe(router, nil)
 	decodeError(t, unauthRec, http.StatusUnauthorized, httpx.CodeUnauthorized)
 
-	meReq := httptest.NewRequest(http.MethodGet, "/api/v1/coaches/me", nil)
-	meReq.Header.Set("Authorization", "Bearer "+loginResp.Token)
-	meRec := httptest.NewRecorder()
-	router.ServeHTTP(meRec, meReq)
+	for name, authorize := range map[string]func(*http.Request){
+		"cookie only": func(r *http.Request) { r.AddCookie(&http.Cookie{Name: coach.AuthCookieName, Value: token}) },
+		"bearer only": func(r *http.Request) { r.Header.Set("Authorization", "Bearer "+token) },
+	} {
+		t.Run(name, func(t *testing.T) {
+			meRec := getMe(router, authorize)
 
-	var meResp struct {
-		ID    string `json:"id"`
-		Phone string `json:"phone"`
+			var meResp struct {
+				ID    string `json:"id"`
+				Phone string `json:"phone"`
+			}
+			decodeSuccess(t, meRec, http.StatusOK, &meResp)
+			require.Equal(t, created.ID.String(), meResp.ID)
+			require.Equal(t, testPhone, meResp.Phone)
+			require.NotContains(t, meRec.Body.String(), "password_hash")
+		})
 	}
-	decodeSuccess(t, meRec, http.StatusOK, &meResp)
-	require.Equal(t, created.ID.String(), meResp.ID)
-	require.Equal(t, testPhone, meResp.Phone)
-	require.NotContains(t, meRec.Body.String(), "password_hash")
+}
+
+func getMe(router *gin.Engine, authorize func(*http.Request)) *httptest.ResponseRecorder {
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/coaches/me", nil)
+	if authorize != nil {
+		authorize(req)
+	}
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, req)
+	return rec
+}
+
+func authCookie(t *testing.T, rec *httptest.ResponseRecorder) *http.Cookie {
+	t.Helper()
+
+	for _, c := range rec.Result().Cookies() {
+		if c.Name == coach.AuthCookieName {
+			return c
+		}
+	}
+	require.Fail(t, "no auth cookie set")
+	return nil
+}
+
+func TestLogin_SetsHttpOnlyCookie(t *testing.T) {
+	router, svc := newTestRouter(t)
+	createTestCoach(t, svc, testPhone)
+
+	rec := postJSON(t, router, "/api/v1/auth/login", map[string]string{"phone": testPhone, "password": testPassword})
+	require.Equal(t, http.StatusOK, rec.Code)
+
+	cookie := authCookie(t, rec)
+	assert.NotEmpty(t, cookie.Value)
+	assert.True(t, cookie.HttpOnly)
+	assert.True(t, cookie.Secure)
+	assert.Equal(t, http.SameSiteStrictMode, cookie.SameSite)
+	assert.Equal(t, "/api/v1", cookie.Path)
+	assert.Equal(t, int(testTokenExpiry.Seconds()), cookie.MaxAge)
+	assert.NotContains(t, rec.Body.String(), cookie.Value, "the token is not in the body")
+}
+
+func TestLogin_CookieNotSecureInDevelopment(t *testing.T) {
+	db := testutil.NewDB(t)
+	router, svc := newTestRouterWithDB(db, false)
+	createTestCoach(t, svc, testPhone)
+
+	rec := postJSON(t, router, "/api/v1/auth/login", map[string]string{"phone": testPhone, "password": testPassword})
+	require.Equal(t, http.StatusOK, rec.Code)
+
+	cookie := authCookie(t, rec)
+	assert.False(t, cookie.Secure, "local dev is plain http")
+	assert.True(t, cookie.HttpOnly)
+}
+
+func TestLogout_ClearsCookie(t *testing.T) {
+	router, _ := newTestRouter(t)
+
+	rec := postJSON(t, router, "/api/v1/auth/logout", nil)
+
+	var data any
+	decodeSuccess(t, rec, http.StatusOK, &data)
+	cookie := authCookie(t, rec)
+	assert.Empty(t, cookie.Value)
+	assert.Negative(t, cookie.MaxAge, "Max-Age=0 tells the browser to delete it")
+	assert.Equal(t, "/api/v1", cookie.Path, "the path must match for the browser to delete the same cookie")
+	assert.True(t, cookie.HttpOnly)
 }
 
 func TestSignupIsNotPublic(t *testing.T) {
@@ -187,7 +256,7 @@ func TestLogin_UnknownPhone(t *testing.T) {
 
 func TestLogin_DatabaseFailureIsInternalError(t *testing.T) {
 	db := testutil.NewDB(t)
-	router, _ := newTestRouterWithDB(db)
+	router, _ := newTestRouterWithDB(db, true)
 
 	sqlDB, err := db.DB()
 	require.NoError(t, err)
@@ -227,12 +296,9 @@ func TestResetPassword(t *testing.T) {
 	oldRec := postJSON(t, router, "/api/v1/auth/login", map[string]string{"phone": testPhone, "password": testPassword})
 	decodeError(t, oldRec, http.StatusUnauthorized, httpx.CodeInvalidCredentials)
 
-	var loginResp struct {
-		Token string `json:"token"`
-	}
 	newRec := postJSON(t, router, "/api/v1/auth/login", map[string]string{"phone": testPhone, "password": newPassword})
-	decodeSuccess(t, newRec, http.StatusOK, &loginResp)
-	require.NotEmpty(t, loginResp.Token)
+	require.Equal(t, http.StatusOK, newRec.Code)
+	testutil.Cookie(t, newRec, coach.AuthCookieName)
 }
 
 func TestResetPassword_UnknownPhone(t *testing.T) {

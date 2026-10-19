@@ -101,3 +101,23 @@ func TestNew_RecoveredPanicIsLogged(t *testing.T) {
 	assert.Contains(t, logs.String(), `"level":"error"`)
 	assert.Contains(t, logs.String(), `"errors":["panic: boom"]`)
 }
+
+// The frontend shares the API's origin, so no other origin gets CORS headers, credentialed or not.
+func TestNew_NoCORSForOtherOrigins(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	router, err := New(config.Config{}, nil, zerolog.Nop())
+	require.NoError(t, err)
+
+	for _, method := range []string{http.MethodOptions, http.MethodGet} {
+		t.Run(method, func(t *testing.T) {
+			req := httptest.NewRequest(method, "/api/v1/coaches/me", http.NoBody)
+			req.Header.Set("Origin", "https://evil.example")
+			req.Header.Set("Access-Control-Request-Method", http.MethodGet)
+			rec := httptest.NewRecorder()
+			router.ServeHTTP(rec, req)
+
+			assert.Empty(t, rec.Header().Get("Access-Control-Allow-Origin"))
+			assert.Empty(t, rec.Header().Get("Access-Control-Allow-Credentials"))
+		})
+	}
+}

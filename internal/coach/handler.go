@@ -31,22 +31,40 @@ type loginRequest struct {
 	Password string `json:"password" binding:"required" example:"correct-horse-battery-staple"`
 }
 
-type loginResponse struct {
-	Token string `json:"token" example:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."`
-}
+// AuthCookieName carries the JWT for the browser; see docs/adr/0031.
+const AuthCookieName = "gogym_auth"
+
+// authCookiePath is the API prefix, so the cookie never rides along on requests for the frontend's files.
+const authCookiePath = "/api/v1"
 
 type Handler struct {
 	svc          *Service
 	ipLimiter    *rateLimiter
 	phoneLimiter *rateLimiter
+	// secureCookie is off only in development, which is plain http (a phone on the LAN can't use https).
+	secureCookie bool
 }
 
-func NewHandler(svc *Service) *Handler {
+func NewHandler(svc *Service, secureCookie bool) *Handler {
 	return &Handler{
 		svc:          svc,
 		ipLimiter:    newRateLimiter(authRateLimitMax, authRateLimitWindow),
 		phoneLimiter: newRateLimiter(authRateLimitMax, authRateLimitWindow),
+		secureCookie: secureCookie,
 	}
+}
+
+// setAuthCookie with an empty token and maxAge -1 clears the cookie.
+func (h *Handler) setAuthCookie(c *gin.Context, token string, maxAge int) {
+	http.SetCookie(c.Writer, &http.Cookie{
+		Name:     AuthCookieName,
+		Value:    token,
+		Path:     authCookiePath,
+		MaxAge:   maxAge,
+		HttpOnly: true,
+		Secure:   h.secureCookie,
+		SameSite: http.SameSiteStrictMode,
+	})
 }
 
 // rateLimited writes the 429 itself; callers just return when it reports true.
@@ -65,12 +83,13 @@ func (h *Handler) rateLimited(c *gin.Context, phone string) bool {
 // Login handles coach authentication.
 //
 // @Summary		Log in a coach
-// @Description	Verifies phone + password and returns a signed JWT. The error is the same whether the phone or the password was wrong.
+// @Description	Verifies phone + password and sets the signed JWT as an httpOnly cookie (gogym_auth, Path=/api/v1, SameSite=Strict, Secure outside development) that the browser sends on every later call. The token is not in the body, so page scripts can't read it. The error is the same whether the phone or the password was wrong.
 // @Tags			auth
 // @Accept			json
 // @Produce		json
 // @Param			request	body		loginRequest	true	"Login credentials"
-// @Success		200		{object}	httpx.SuccessEnvelope{data=loginResponse}
+// @Success		200		{object}	httpx.NoContentEnvelope
+// @Header			200		{string}	Set-Cookie	"gogym_auth=<jwt>; Path=/api/v1; Max-Age=<JWT_EXPIRY>; HttpOnly; Secure; SameSite=Strict"
 // @Failure		400		{object}	httpx.ValidationErrorEnvelope
 // @Failure		401		{object}	httpx.InvalidCredentialsEnvelope
 // @Failure		429		{object}	httpx.RateLimitedEnvelope
@@ -97,13 +116,28 @@ func (h *Handler) Login(c *gin.Context) {
 		return
 	}
 
-	httpx.OK(c, loginResponse{Token: token})
+	h.setAuthCookie(c, token, int(h.svc.TokenExpiry().Seconds()))
+	httpx.NoContent(c)
+}
+
+// Logout clears the auth cookie, which page scripts can't do because it is httpOnly.
+//
+// @Summary		Log out a coach
+// @Description	Clears the gogym_auth cookie. Needs no valid token, so an expired session can still sign out. A token sent in the Authorization header stays valid until it expires.
+// @Tags			auth
+// @Produce		json
+// @Success		200	{object}	httpx.NoContentEnvelope
+// @Header			200	{string}	Set-Cookie	"gogym_auth=; Path=/api/v1; Max-Age=0; HttpOnly; Secure; SameSite=Strict"
+// @Router			/api/v1/auth/logout [post]
+func (h *Handler) Logout(c *gin.Context) {
+	h.setAuthCookie(c, "", -1)
+	httpx.NoContent(c)
 }
 
 // Me returns the authenticated coach's own profile.
 //
 // @Summary		Get the authenticated coach
-// @Description	Returns the profile of the coach identified by the bearer token.
+// @Description	Returns the profile of the coach identified by the auth cookie or the bearer token.
 // @Tags			auth
 // @Produce		json
 // @Security		BearerAuth

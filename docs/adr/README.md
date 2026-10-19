@@ -35,3 +35,4 @@ One file per decision, [MADR](https://adr.github.io/madr/)-style. Process rules 
 | [0028](0028-drop-movement-filters.md) | Movement has no muscle group or equipment until the library outgrows search | 2026-10-13 | accepted |
 | [0029](0029-blush-theme-day-buttons-home.md) | Light blush theme, with day buttons on the home screen | 2026-10-19 | accepted |
 | [0030](0030-react-spa-same-origin.md) | React single-page app, served by Caddy on the API's origin | 2026-10-19 | accepted |
+| [0031](0031-auth-token-in-httponly-cookie.md) | The browser's auth token lives in an httpOnly cookie, with no CORS | 2026-10-19 | accepted |

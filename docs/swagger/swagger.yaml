@@ -246,12 +246,6 @@ definitions:
     - password
     - phone
     type: object
-  internal_coach.loginResponse:
-    properties:
-      token:
-        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-        type: string
-    type: object
   internal_measurement.measurementRequest:
     properties:
       arm:
@@ -840,8 +834,11 @@ paths:
     post:
       consumes:
       - application/json
-      description: Verifies phone + password and returns a signed JWT. The error is
-        the same whether the phone or the password was wrong.
+      description: Verifies phone + password and sets the signed JWT as an httpOnly
+        cookie (gogym_auth, Path=/api/v1, SameSite=Strict, Secure outside development)
+        that the browser sends on every later call. The token is not in the body,
+        so page scripts can't read it. The error is the same whether the phone or
+        the password was wrong.
       parameters:
       - description: Login credentials
         in: body
@@ -854,13 +851,13 @@ paths:
       responses:
         "200":
           description: OK
+          headers:
+            Set-Cookie:
+              description: gogym_auth=<jwt>; Path=/api/v1; Max-Age=<JWT_EXPIRY>; HttpOnly;
+                Secure; SameSite=Strict
+              type: string
           schema:
-            allOf:
-            - $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.SuccessEnvelope'
-            - properties:
-                data:
-                  $ref: '#/definitions/internal_coach.loginResponse'
-              type: object
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.NoContentEnvelope'
         "400":
           description: Bad Request
           schema:
@@ -878,6 +875,26 @@ paths:
           schema:
             $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.InternalErrorEnvelope'
       summary: Log in a coach
+      tags:
+      - auth
+  /api/v1/auth/logout:
+    post:
+      description: Clears the gogym_auth cookie. Needs no valid token, so an expired
+        session can still sign out. A token sent in the Authorization header stays
+        valid until it expires.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          headers:
+            Set-Cookie:
+              description: gogym_auth=; Path=/api/v1; Max-Age=0; HttpOnly; Secure;
+                SameSite=Strict
+              type: string
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.NoContentEnvelope'
+      summary: Log out a coach
       tags:
       - auth
   /api/v1/blocks/{id}/movements:
@@ -946,7 +963,8 @@ paths:
       - plans
   /api/v1/coaches/me:
     get:
-      description: Returns the profile of the coach identified by the bearer token.
+      description: Returns the profile of the coach identified by the auth cookie
+        or the bearer token.
       produces:
       - application/json
       responses:

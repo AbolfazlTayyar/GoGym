@@ -3,7 +3,6 @@ package server
 
 import (
 	"fmt"
-	"time"
 
 	_ "github.com/AbolfazlTayyar/gogym/docs/swagger"
 	"github.com/AbolfazlTayyar/gogym/internal/athlete"
@@ -12,7 +11,6 @@ import (
 	"github.com/AbolfazlTayyar/gogym/internal/movement"
 	"github.com/AbolfazlTayyar/gogym/internal/plan"
 	"github.com/AbolfazlTayyar/gogym/internal/platform/config"
-	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog"
 	swaggerFiles "github.com/swaggo/files"
@@ -41,13 +39,8 @@ func New(cfg config.Config, gormDB *gorm.DB, log zerolog.Logger) (*gin.Engine, e
 	router.NoRoute(notFoundHandler)
 	router.NoMethod(methodNotAllowedHandler)
 
-	// TODO: restrict AllowAllOrigins once the frontend's deployed origin is known.
-	router.Use(cors.New(cors.Config{
-		AllowAllOrigins: true,
-		AllowMethods:    []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
-		AllowHeaders:    []string{"Origin", "Content-Type", "Authorization"},
-		MaxAge:          12 * time.Hour,
-	}))
+	// No CORS middleware: the frontend is served on the API's origin (docs/adr/0030), so no other
+	// origin may call the API with the coach's cookie — see docs/adr/0031.
 
 	router.GET(healthzPath, healthzHandler(gormDB))
 
@@ -56,7 +49,7 @@ func New(cfg config.Config, gormDB *gorm.DB, log zerolog.Logger) (*gin.Engine, e
 	}
 
 	coachSvc := coach.NewService(coach.NewRepository(gormDB), cfg.JWTSecret, cfg.JWTExpiry)
-	coachHandler := coach.NewHandler(coachSvc)
+	coachHandler := coach.NewHandler(coachSvc, cfg.Environment != config.EnvDevelopment)
 
 	v1 := router.Group(APIV1Prefix)
 	protected := v1.Group("")

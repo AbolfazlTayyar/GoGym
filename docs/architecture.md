@@ -129,7 +129,10 @@ bodies a client can't parse.
 ## Auth
 
 `internal/coach` owns the one login this app has: login, JWT issuance/validation, and
-`AuthMiddleware`. Passwords are bcrypt-hashed, never logged or stored in plaintext. `/auth/*`
+`AuthMiddleware`. Login sets the JWT as the httpOnly `gogym_auth` cookie and logout clears it;
+the middleware reads that cookie, or a Bearer header for Swagger UI, curl and other non-browser
+clients. The frontend shares the API's origin, so there is no CORS middleware — see
+[0031](adr/0031-auth-token-in-httponly-cookie.md). Passwords are bcrypt-hashed, never logged or stored in plaintext. `/auth/*`
 is rate-limited in-process, keyed by both IP and phone (`internal/coach/ratelimit.go`) — a
 simple sliding-window limiter, sufficient for v1's single-instance deployment; a
 multi-instance deployment would need a shared store instead. The IP is `c.ClientIP()`, which honors
