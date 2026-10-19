@@ -751,6 +751,182 @@ func TestSaveAndDeleteDay_AnotherCoachsDayIsNotFound(t *testing.T) {
 	assert.Equal(t, []string{"3: lunge 12"}, dayLines(t, f.router, f.token, f.planID, "C"))
 }
 
+type copiedPlan struct {
+	ID              string  `json:"id"`
+	AthleteID       string  `json:"athlete_id"`
+	Title           string  `json:"title"`
+	StartDate       string  `json:"start_date"`
+	SourcePlanID    *string `json:"source_plan_id"`
+	SourcePlanTitle *string `json:"source_plan_title"`
+}
+
+func createPlan(t *testing.T, router *gin.Engine, token, body string, wantStatus int) (copiedPlan, envelope) {
+	t.Helper()
+
+	env := decodeEnvelope(t, do(t, router, http.MethodPost, "/api/v1/plans", token, body), wantStatus)
+	var p copiedPlan
+	if wantStatus == http.StatusCreated {
+		require.NoError(t, json.Unmarshal(env.Data, &p))
+	}
+	return p, env
+}
+
+// treeOf is a plan's content without ids: what a copy has to match.
+func treeOf(t *testing.T, router *gin.Engine, token, planID string) []string {
+	t.Helper()
+
+	got, _ := getPlan(t, router, token, planID)
+	var out []string
+	for _, d := range got.Days {
+		for _, b := range d.Blocks {
+			parts := make([]string, 0, len(b.Movements))
+			for _, m := range b.Movements {
+				load := ""
+				if m.Load != nil {
+					load = " " + *m.Load
+				}
+				parts = append(parts, fmt.Sprintf("%s:%d%s", m.Name, *m.Reps, load))
+			}
+			notes := ""
+			if b.Notes != nil {
+				notes = *b.Notes
+			}
+			out = append(out, fmt.Sprintf("%s/%d %d×%d rest %d %q [%s]",
+				d.Label, d.OrderIndex, b.OrderIndex, b.Sets, *b.RestSeconds, notes, strings.Join(parts, " + ")))
+		}
+	}
+	return out
+}
+
+func TestCopyPlan_MatchesTheSourceApartFromIdsTitleAndDate(t *testing.T) {
+	f := newSaveFixture(t, "09121110701", "09121230701")
+	dayA, err := insertDay(f.db, f.planID, "A", 0)
+	require.NoError(t, err)
+	superset := "superset"
+	ss := insertBlock(t, f.db, dayA, 0, 3, &superset)
+	insertBlockMovement(t, f.db, ss, f.lunge, 12, 0)
+	insertBlockMovement(t, f.db, ss, f.bridge, 15, 1)
+	single := insertBlock(t, f.db, f.dayID, 0, 4, nil)
+	insertBlockMovement(t, f.db, single, f.squat, 8, 0)
+	require.NoError(t, f.db.Delete(&movement.Movement{}, "id = ?", f.squat).Error)
+
+	source, _ := getPlan(t, f.router, f.token, f.planID.String())
+	body := fmt.Sprintf(`{"athlete_id":%q,"title":"برنامه آبان","start_date":"2026-10-23","source_plan_id":%q}`,
+		source.AthleteID, f.planID)
+	copied, env := createPlan(t, f.router, f.token, body, http.StatusCreated)
+
+	assert.NotEqual(t, f.planID.String(), copied.ID)
+	assert.Equal(t, "برنامه آبان", copied.Title)
+	assert.Equal(t, "2026-10-23", copied.StartDate)
+	require.NotNil(t, copied.SourcePlanID)
+	assert.Equal(t, f.planID.String(), *copied.SourcePlanID, "the response is the copy's full detail")
+	assert.Contains(t, string(env.Data), `"name":"squat"`, "a movement deleted from the library is copied as is")
+
+	assert.Equal(t, treeOf(t, f.router, f.token, f.planID.String()), treeOf(t, f.router, f.token, copied.ID))
+
+	got, _ := getPlan(t, f.router, f.token, copied.ID)
+	for _, d := range got.Days {
+		for _, sd := range source.Days {
+			assert.NotEqual(t, sd.ID, d.ID, "every row is new")
+		}
+	}
+}
+
+func TestCopyPlan_ToAnotherAthleteAndEditingTheCopy(t *testing.T) {
+	f := newSaveFixture(t, "09121110702", "09121230702")
+	f.save(t, saveBody(t, line(3, f.lunge, 12), line(3, f.bridge, 15)), http.StatusOK)
+	other := createAthlete(t, f.router, f.token, "09121230703")
+
+	copied, _ := createPlan(t, f.router, f.token, fmt.Sprintf(
+		`{"athlete_id":%q,"title":"Aban","start_date":"2026-10-23","source_plan_id":%q}`, other, f.planID), http.StatusCreated)
+	assert.Equal(t, other, copied.AthleteID)
+
+	got, _ := getPlan(t, f.router, f.token, copied.ID)
+	require.Len(t, got.Days, 1)
+	decodeEnvelope(t, do(t, f.router, http.MethodPut, "/api/v1/days/"+got.Days[0].ID+"/blocks", f.token,
+		saveBody(t, line(5, f.squat, 5))), http.StatusOK)
+
+	assert.Equal(t, []string{"3: lunge 12", "3: bridge 15"}, dayLines(t, f.router, f.token, f.planID, "C"),
+		"the source is untouched")
+	assert.Equal(t, []string{"5: squat 5"}, dayLines(t, f.router, f.token, uuid.MustParse(copied.ID), "C"))
+}
+
+func TestCopyPlan_NamesItsSourceUntilTheSourceIsDeleted(t *testing.T) {
+	f := newSaveFixture(t, "09121110704", "09121230704")
+	source, _ := getPlan(t, f.router, f.token, f.planID.String())
+	copied, _ := createPlan(t, f.router, f.token, fmt.Sprintf(
+		`{"athlete_id":%q,"title":"Aban","start_date":"2026-10-23","source_plan_id":%q}`, source.AthleteID, f.planID), http.StatusCreated)
+
+	_, raw := getPlan(t, f.router, f.token, copied.ID)
+	var detail copiedPlan
+	require.NoError(t, json.Unmarshal(raw, &detail))
+	require.NotNil(t, detail.SourcePlanTitle)
+	assert.Equal(t, "Mehr", *detail.SourcePlanTitle)
+
+	decodeEnvelope(t, do(t, f.router, http.MethodDelete, planPath(f.planID.String()), f.token, ""), http.StatusOK)
+
+	_, raw = getPlan(t, f.router, f.token, copied.ID)
+	require.NoError(t, json.Unmarshal(raw, &detail))
+	assert.Nil(t, detail.SourcePlanID)
+	assert.Nil(t, detail.SourcePlanTitle)
+	assert.Contains(t, string(raw), `"source_plan_id":null`)
+}
+
+func TestCopyPlan_AnotherCoachsSourceIsAFieldErrorAndCreatesNothing(t *testing.T) {
+	f := newSaveFixture(t, "09121110705", "09121230705")
+	intruder := createCoach(t, f.router, f.db, "09121110706")
+	theirAthlete := createAthlete(t, f.router, intruder, "09121230706")
+
+	_, env := createPlan(t, f.router, intruder, fmt.Sprintf(
+		`{"athlete_id":%q,"title":"x","start_date":"2026-10-23","source_plan_id":%q}`, theirAthlete, f.planID), http.StatusBadRequest)
+	assert.Equal(t, map[string]string{"source_plan_id": "not found"}, env.Error.Fields)
+
+	_, env = createPlan(t, f.router, intruder, fmt.Sprintf(
+		`{"athlete_id":%q,"title":"x","start_date":"2026-10-23","source_plan_id":"nope"}`, theirAthlete), http.StatusBadRequest)
+	assert.Equal(t, map[string]string{"source_plan_id": "must be a UUID"}, env.Error.Fields)
+
+	assert.Empty(t, listPlans(t, f.router, intruder, theirAthlete))
+}
+
+func TestCreatePlan_WithoutASourceIsAnEmptyPlan(t *testing.T) {
+	router, db := newTestRouter(t)
+	token := createCoach(t, router, db, "09121110707")
+	athleteID := createAthlete(t, router, token, "09121230707")
+
+	created, env := createPlan(t, router, token, fmt.Sprintf(`{"athlete_id":%q,"title":"Mehr","start_date":"2026-09-23"}`, athleteID), http.StatusCreated)
+	assert.Contains(t, string(env.Data), `"days":[]`)
+	assert.Nil(t, created.SourcePlanID)
+	assert.Nil(t, created.SourcePlanTitle)
+
+	_, raw := getPlan(t, router, token, created.ID)
+	assert.Contains(t, string(raw), `"source_plan_id":null`)
+	assert.Contains(t, string(raw), `"source_plan_title":null`)
+}
+
+func TestCopyPlan_TakesTheSameQueriesForOneOrFiveDays(t *testing.T) {
+	f := newSaveFixture(t, "09121110708", "09121230708")
+	athleteID := createAthlete(t, f.router, f.token, "09121230709")
+	bigPlan := insertPlan(t, f.db, athleteID, "Big", daysFromToday(-3))
+	for i, label := range []string{"A", "B", "C", "D", "E"} {
+		day, err := insertDay(f.db, bigPlan, label, i)
+		require.NoError(t, err)
+		for j := range 3 {
+			block := insertBlock(t, f.db, day, j, 3, nil)
+			insertBlockMovement(t, f.db, block, f.lunge, 12, 0)
+		}
+	}
+	f.save(t, saveBody(t, line(3, f.lunge, 12)), http.StatusOK)
+
+	copyOf := func(source uuid.UUID) int {
+		rec := recordSQL(f.db)
+		createPlan(t, f.router, f.token, fmt.Sprintf(
+			`{"athlete_id":%q,"title":"Copy","start_date":"2026-10-23","source_plan_id":%q}`, athleteID, source), http.StatusCreated)
+		return len(rec.take())
+	}
+
+	assert.Equal(t, copyOf(f.planID), copyOf(bigPlan))
+}
+
 // The insert helpers below bypass the builder endpoints for the same reason as insertPlan.
 
 func insertMovement(t *testing.T, db *gorm.DB, name, category string) uuid.UUID {

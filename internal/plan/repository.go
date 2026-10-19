@@ -283,6 +283,45 @@ func (r *Repository) Delete(ctx context.Context, planID uuid.UUID) error {
 	return nil
 }
 
+// CreateCopy inserts the plan and its copied tree in one transaction, one batch per table, so a 5-day
+// copy takes as many queries as a 1-day one.
+func (r *Repository) CreateCopy(ctx context.Context, p *Plan, days []Day) error {
+	var blocks []Block
+	var movements []BlockMovement
+	for _, d := range days {
+		for _, b := range d.Blocks {
+			blocks = append(blocks, b)
+			movements = append(movements, b.Movements...)
+		}
+	}
+
+	err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := tx.Omit(clause.Associations).Create(p).Error; err != nil {
+			return err
+		}
+		if len(days) > 0 {
+			if err := tx.Omit(clause.Associations).Create(&days).Error; err != nil {
+				return err
+			}
+		}
+		if len(blocks) > 0 {
+			if err := tx.Omit(clause.Associations).Create(&blocks).Error; err != nil {
+				return err
+			}
+		}
+		if len(movements) > 0 {
+			if err := tx.Omit(clause.Associations).Create(&movements).Error; err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return fmt.Errorf("plan: failed to create copy: %w", err)
+	}
+	return nil
+}
+
 // CreateDay leaves the 7-day cap to the schema, which holds it even against concurrent inserts.
 func (r *Repository) CreateDay(ctx context.Context, d *Day) error {
 	err := r.db.WithContext(ctx).Omit(clause.Associations).Create(d).Error

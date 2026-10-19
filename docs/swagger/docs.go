@@ -1458,7 +1458,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Creates an empty plan for the athlete; add days, blocks and movements to it with the builder endpoints. athlete_id, start_date (YYYY-MM-DD) and title are required, note is optional. The response has the plan detail shape with an empty days array. An athlete that belongs to another coach is reported as not found.",
+                "description": "Creates a plan for the athlete. athlete_id, start_date (YYYY-MM-DD) and title are required, note is optional. Without source_plan_id the plan is empty: the response has an empty days array. With source_plan_id the plan is a copy of that plan's days, blocks and block movements (labels, order, sets, rest, notes, reps, duration and load, movements deleted from the library since included); title, note and start_date still come from the request. The source can be any of the coach's athletes' plans; one the coach can't use is a 400 on source_plan_id. A copy's response is its full detail, and the copy names its source in source_plan_id and source_plan_title. An athlete that belongs to another coach is reported as not found.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1468,7 +1468,7 @@ const docTemplate = `{
                 "tags": [
                     "plans"
                 ],
-                "summary": "Create a plan",
+                "summary": "Create a plan, empty or as a copy",
                 "parameters": [
                     {
                         "description": "Plan details",
@@ -1585,7 +1585,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Returns the plan with its full nested tree in one response: days ordered by order_index (at most 7), each day's blocks ordered by order_index, and each block's movements ordered by order_in_block with the movement library's name and category inlined. A block is the superset unit: a single movement and a superset have the same shape, differing only in the length of movements. Empty levels are empty arrays, never null. A plan whose athlete belongs to another coach is reported as not found.",
+                "description": "Returns the plan with its full nested tree in one response. source_plan_id and source_plan_title name the plan this one was copied from, both null when it wasn't a copy or the source was deleted. The tree: days ordered by order_index (at most 7), each day's blocks ordered by order_index, and each block's movements ordered by order_in_block with the movement library's name and category inlined. A block is the superset unit: a single movement and a superset have the same shape, differing only in the length of movements. Empty levels are empty arrays, never null. A plan whose athlete belongs to another coach is reported as not found.",
                 "produces": [
                     "application/json"
                 ],
@@ -2512,6 +2512,10 @@ const docTemplate = `{
                     "type": "string",
                     "example": "Deload every 4th week"
                 },
+                "source_plan_id": {
+                    "type": "string",
+                    "example": "4d1c2b3a-5e6f-4a7b-8c9d-0e1f2a3b4c5d"
+                },
                 "start_date": {
                     "type": "string",
                     "example": "2026-09-15"
@@ -2569,6 +2573,15 @@ const docTemplate = `{
                 "note": {
                     "type": "string",
                     "example": "Deload every 4th week"
+                },
+                "source_plan_id": {
+                    "description": "SourcePlanID and SourcePlanTitle name the plan this one was copied from; both null when it wasn't\na copy or the source was deleted.",
+                    "type": "string",
+                    "example": "4d1c2b3a-5e6f-4a7b-8c9d-0e1f2a3b4c5d"
+                },
+                "source_plan_title": {
+                    "type": "string",
+                    "example": "برنامه مهر"
                 },
                 "start_date": {
                     "type": "string",

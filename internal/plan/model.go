@@ -15,12 +15,16 @@ const MaxDaysPerPlan = 7
 type Plan struct {
 	ID        uuid.UUID `gorm:"column:id;type:uuid;primaryKey"`
 	AthleteID uuid.UUID `gorm:"column:athlete_id;type:uuid;not null"`
-	StartDate time.Time `gorm:"column:start_date;type:date;not null"`
-	Title     string    `gorm:"column:title;type:text;not null"`
-	Note      *string   `gorm:"column:note;type:text"`
-	CreatedAt time.Time `gorm:"column:created_at;type:timestamptz;not null"`
-	UpdatedAt time.Time `gorm:"column:updated_at;type:timestamptz;not null"`
-	Days      []Day     `gorm:"foreignKey:PlanID"`
+	// SourcePlanID is the plan this one was copied from; nil when it wasn't, or once the source is deleted.
+	SourcePlanID *uuid.UUID `gorm:"column:source_plan_id;type:uuid"`
+	StartDate    time.Time  `gorm:"column:start_date;type:date;not null"`
+	Title        string     `gorm:"column:title;type:text;not null"`
+	Note         *string    `gorm:"column:note;type:text"`
+	CreatedAt    time.Time  `gorm:"column:created_at;type:timestamptz;not null"`
+	UpdatedAt    time.Time  `gorm:"column:updated_at;type:timestamptz;not null"`
+	Days         []Day      `gorm:"foreignKey:PlanID"`
+	// SourceTitle is filled by Service.Get for the builder's header, not stored.
+	SourceTitle *string `gorm:"-"`
 }
 
 func (Plan) TableName() string {

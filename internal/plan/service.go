@@ -41,19 +41,21 @@ const (
 )
 
 const (
-	fieldOrderIndex = "order_index"
-	fieldMovementID = "movement_id"
+	fieldOrderIndex   = "order_index"
+	fieldMovementID   = "movement_id"
+	fieldSourcePlanID = "source_plan_id"
 )
 
 const (
-	msgUUID             = "must be a UUID"
-	msgMaxLength        = "must be at most %d characters"
-	msgRange            = "must be between %d and %d"
-	msgDayLabel         = "must be one of A-G or day1-day7"
-	msgDaySlotTaken     = "is already used by another day in this plan"
-	msgMovementNotFound = "not found"
-	msgTooMany          = "must have at most %d items"
-	msgNoMovements      = "at least one movement is required"
+	msgUUID         = "must be a UUID"
+	msgMaxLength    = "must be at most %d characters"
+	msgRange        = "must be between %d and %d"
+	msgDayLabel     = "must be one of A-G or day1-day7"
+	msgDaySlotTaken = "is already used by another day in this plan"
+	// msgNotFound answers an id in the body the coach can't use, without saying whether it exists.
+	msgNotFound    = "not found"
+	msgTooMany     = "must have at most %d items"
+	msgNoMovements = "at least one movement is required"
 )
 
 // dayLabels names each of a plan's MaxDaysPerPlan slots, in either the letter or the numbered scheme.
@@ -84,12 +86,14 @@ type ListResult struct {
 	Sizes     map[uuid.UUID]Size
 }
 
-// CreateInput's AthleteID is a string so a malformed id is reported as a field error like any other.
+// CreateInput's ids are strings so a malformed one is reported as a field error like any other.
 type CreateInput struct {
 	AthleteID string
 	StartDate string
 	Title     string
 	Note      *string
+	// SourcePlanID, when set, makes the plan a copy of that plan's days; empty means an empty plan.
+	SourcePlanID string
 }
 
 // UpdateInput has no athlete: giving a plan to another athlete is a copy, not an edit.
@@ -231,10 +235,21 @@ func (s *Service) Get(ctx context.Context, coachID, planID uuid.UUID) (*Plan, er
 	}
 	p.Days = days
 
+	if p.SourcePlanID != nil {
+		source, err := s.repo.FindByID(ctx, *p.SourcePlanID)
+		if err != nil && !errors.Is(err, ErrNotFound) {
+			return nil, err
+		}
+		if source != nil {
+			p.SourceTitle = &source.Title
+		}
+	}
+
 	return p, nil
 }
 
 // Create validates before checking ownership: the athlete id is itself a body field and has to parse first.
+// With a source plan it copies the source's days, blocks and block movements, and returns the full copy.
 func (s *Service) Create(ctx context.Context, coachID uuid.UUID, input CreateInput) (*Plan, error) {
 	p, err := buildPlan(input)
 	if err != nil {
@@ -245,11 +260,56 @@ func (s *Service) Create(ctx context.Context, coachID uuid.UUID, input CreateInp
 		return nil, err
 	}
 
-	if err := s.repo.Create(ctx, p); err != nil {
+	if p.SourcePlanID == nil {
+		if err := s.repo.Create(ctx, p); err != nil {
+			return nil, err
+		}
+		return p, nil
+	}
+
+	// The source may be any of the coach's athletes' plans; one the coach can't use is a field error
+	// (docs/adr/0019), and the copy names its movements as the source does, deleted ones included.
+	if _, err := s.ownedPlan(ctx, coachID, *p.SourcePlanID); err != nil {
+		if errors.Is(err, ErrNotFound) {
+			return nil, &ValidationError{Fields: map[string]string{fieldSourcePlanID: msgNotFound}}
+		}
 		return nil, err
 	}
 
-	return p, nil
+	days, err := s.repo.LoadDays(ctx, *p.SourcePlanID)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := s.repo.CreateCopy(ctx, p, copyDays(p.ID, days)); err != nil {
+		return nil, err
+	}
+
+	return s.Get(ctx, coachID, p.ID)
+}
+
+// copyDays gives the source's tree new ids, generated here so each child can point at its new parent
+// before anything is inserted.
+func copyDays(planID uuid.UUID, source []Day) []Day {
+	days := make([]Day, 0, len(source))
+	for _, d := range source {
+		day := Day{ID: uuid.New(), PlanID: planID, Label: d.Label, OrderIndex: d.OrderIndex}
+		for _, b := range d.Blocks {
+			block := Block{
+				ID: uuid.New(), DayID: day.ID, OrderIndex: b.OrderIndex,
+				Sets: b.Sets, RestSeconds: b.RestSeconds, Notes: b.Notes,
+			}
+			for _, m := range b.Movements {
+				block.Movements = append(block.Movements, BlockMovement{
+					ID: uuid.New(), BlockID: block.ID, MovementID: m.MovementID,
+					Reps: m.Reps, DurationSeconds: m.DurationSeconds, Load: m.Load, OrderInBlock: m.OrderInBlock,
+				})
+			}
+			day.Blocks = append(day.Blocks, block)
+		}
+		days = append(days, day)
+	}
+	return days
 }
 
 // Update replaces title, note and start_date: an omitted note is cleared. A new start_date can change
@@ -468,7 +528,7 @@ func (s *Service) checkDayMovements(ctx context.Context, coachID, dayID uuid.UUI
 
 	for k := range movements {
 		if _, flagged := fields[keys[k]]; !flagged && !usable[movements[k].MovementID] {
-			fields[keys[k]] = msgMovementNotFound
+			fields[keys[k]] = msgNotFound
 		}
 	}
 	return nil
@@ -545,7 +605,7 @@ func (s *Service) attachLibrary(ctx context.Context, coachID uuid.UUID, movement
 
 		m, ok := library[movements[i].MovementID]
 		if !ok {
-			fields[key] = msgMovementNotFound
+			fields[key] = msgNotFound
 			continue
 		}
 		movements[i].Movement = m
@@ -590,16 +650,23 @@ func buildPlan(input CreateInput) (*Plan, error) {
 	athleteID := requiredUUID(fields, "athlete_id", input.AthleteID)
 	startDate, title, note := planFields(fields, UpdateInput{StartDate: input.StartDate, Title: input.Title, Note: input.Note})
 
+	var sourceID *uuid.UUID
+	if strings.TrimSpace(input.SourcePlanID) != "" {
+		id := requiredUUID(fields, fieldSourcePlanID, input.SourcePlanID)
+		sourceID = &id
+	}
+
 	if len(fields) > 0 {
 		return nil, &ValidationError{Fields: fields}
 	}
 
 	return &Plan{
-		ID:        uuid.New(),
-		AthleteID: athleteID,
-		StartDate: startDate,
-		Title:     title,
-		Note:      note,
+		ID:           uuid.New(),
+		AthleteID:    athleteID,
+		SourcePlanID: sourceID,
+		StartDate:    startDate,
+		Title:        title,
+		Note:         note,
 	}, nil
 }
 

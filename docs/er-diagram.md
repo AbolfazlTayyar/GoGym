@@ -14,6 +14,7 @@ erDiagram
     ATHLETE ||--o{ ATHLETE_MEASUREMENT : logs
     ATHLETE ||--o{ PLAN : has
     PLAN ||--o{ DAY : contains
+    PLAN |o--o{ PLAN : "copied from"
     DAY ||--o{ BLOCK : contains
     BLOCK ||--o{ BLOCK_MOVEMENT : contains
     MOVEMENT ||--o{ BLOCK_MOVEMENT : "used in"
@@ -61,6 +62,7 @@ erDiagram
     PLAN {
         uuid id PK
         uuid athlete_id FK
+        uuid source_plan_id FK "nullable, the plan this one was copied from"
         date start_date
         text title
         text note
@@ -123,4 +125,5 @@ erDiagram
 - **`Movement` has no muscle group or equipment:** name search and `category` are enough for one coach's library. Bringing them back is a deferred task in [tasks/backend.md](tasks/backend.md) — see [ADR 0028](adr/0028-drop-movement-filters.md).
 - **Universal movements are seeded (migration `000005`):** a starter set with `coach_id NULL`, fixed ids, and a `category` on every row. `media_url` is left `NULL`.
 - **Soft delete (`deleted_at`, added in migration `000003`) on `Athlete` and `Movement`:** these are the coach-owned tables a coach can delete from the UI. Both use GORM's `gorm.DeletedAt` convention (nullable `timestamptz`, indexed) so GORM's default query scope excludes soft-deleted rows automatically, without an explicit `deleted_at IS NULL` in application code. This does not change the movement library's own visibility rule (`coach_id = :coach_id OR coach_id IS NULL`) — the soft-delete scope simply ANDs onto it, so a soft-deleted universal or custom movement drops out of every coach's effective library the same way a soft-deleted row drops out of any other query. `Plan`, `Day`, `Block`, `BlockMovement`, `Coach`, and `AthleteMeasurement` are not soft-deleted: they are either reached transitively through a soft-deleted parent (cascading deletes still apply at the DB level for hard deletes) or not directly deletable from the UI in v1. The one exception is `AthleteMeasurement`, which a coach can delete one check-in at a time: that delete is hard, since nothing references a measurement — see [ADR 0008](adr/0008-soft-delete.md). Preloading a soft-deletable parent from a row that references it (e.g. `block_movement → movement`) needs `Unscoped()`, or the parent comes back zero-valued once it's deleted — a plan must still name a movement the coach has since removed from the library.
+- **`Plan.source_plan_id` (migration `000006`) records which plan a copy was made from:** `POST /plans` with a `source_plan_id` copies that plan's days, blocks and block movements, and the builder's header names the source. It can point at another athlete's plan of the same coach. `ON DELETE SET NULL`, so deleting the source leaves the copy standing with no source. `Plan` itself is hard-deleted (`DELETE /plans/:id`), its days, blocks and block movements going with it through the cascades.
 - **A plan has at most 7 days (migration `000004`):** `day` has `UNIQUE (plan_id, order_index)` and `CHECK (order_index BETWEEN 0 AND 6)`, so a plan has seven slots and at most one day in each. The cap lives in the schema so concurrent inserts can't get around it — see [ADR 0017](adr/0017-plan-day-cap-in-schema.md).

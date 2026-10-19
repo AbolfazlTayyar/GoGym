@@ -52,14 +52,18 @@ func newPlanSummaryResponse(p *Plan, isCurrent bool, size Size) planSummaryRespo
 
 // planDetailResponse nests every level as an array, never null, so an empty day or plan needs no special case.
 type planDetailResponse struct {
-	ID        string        `json:"id" example:"9b2d4f1a-6c3e-4a7b-8d5f-1e2c3b4a5d6e"`
-	AthleteID string        `json:"athlete_id" example:"3f0b1c6e-2a1d-4f7b-9c3e-6d5a4b3c2d1e"`
-	Title     string        `json:"title" example:"Cut phase 1"`
-	Note      *string       `json:"note" example:"Deload every 4th week"`
-	StartDate string        `json:"start_date" example:"2026-09-15"`
-	CreatedAt string        `json:"created_at" example:"2026-09-10T18:00:00Z"`
-	UpdatedAt string        `json:"updated_at" example:"2026-09-10T18:00:00Z"`
-	Days      []dayResponse `json:"days"`
+	ID        string  `json:"id" example:"9b2d4f1a-6c3e-4a7b-8d5f-1e2c3b4a5d6e"`
+	AthleteID string  `json:"athlete_id" example:"3f0b1c6e-2a1d-4f7b-9c3e-6d5a4b3c2d1e"`
+	Title     string  `json:"title" example:"Cut phase 1"`
+	Note      *string `json:"note" example:"Deload every 4th week"`
+	StartDate string  `json:"start_date" example:"2026-09-15"`
+	CreatedAt string  `json:"created_at" example:"2026-09-10T18:00:00Z"`
+	UpdatedAt string  `json:"updated_at" example:"2026-09-10T18:00:00Z"`
+	// SourcePlanID and SourcePlanTitle name the plan this one was copied from; both null when it wasn't
+	// a copy or the source was deleted.
+	SourcePlanID    *string       `json:"source_plan_id" example:"4d1c2b3a-5e6f-4a7b-8c9d-0e1f2a3b4c5d"`
+	SourcePlanTitle *string       `json:"source_plan_title" example:"برنامه مهر"`
+	Days            []dayResponse `json:"days"`
 }
 
 type dayResponse struct {
@@ -94,10 +98,11 @@ type blockMovementResponse struct {
 // The create requests have no binding tags on purpose: the service owns every rule, presence included.
 
 type createRequest struct {
-	AthleteID string  `json:"athlete_id" example:"3f0b1c6e-2a1d-4f7b-9c3e-6d5a4b3c2d1e"`
-	StartDate string  `json:"start_date" example:"2026-09-15"`
-	Title     string  `json:"title" example:"Cut phase 1"`
-	Note      *string `json:"note" example:"Deload every 4th week"`
+	AthleteID    string  `json:"athlete_id" example:"3f0b1c6e-2a1d-4f7b-9c3e-6d5a4b3c2d1e"`
+	StartDate    string  `json:"start_date" example:"2026-09-15"`
+	Title        string  `json:"title" example:"Cut phase 1"`
+	Note         *string `json:"note" example:"Deload every 4th week"`
+	SourcePlanID string  `json:"source_plan_id" example:"4d1c2b3a-5e6f-4a7b-8c9d-0e1f2a3b4c5d"`
 }
 
 type updateRequest struct {
@@ -148,15 +153,24 @@ func newPlanDetailResponse(p *Plan) planDetailResponse {
 		days = append(days, newDayResponse(&p.Days[i]))
 	}
 
+	// The source's title is the sign it still exists; a source_plan_id without one is left out too.
+	var sourceID *string
+	if p.SourcePlanID != nil && p.SourceTitle != nil {
+		id := p.SourcePlanID.String()
+		sourceID = &id
+	}
+
 	return planDetailResponse{
-		ID:        p.ID.String(),
-		AthleteID: p.AthleteID.String(),
-		Title:     p.Title,
-		Note:      p.Note,
-		StartDate: p.StartDate.Format(time.DateOnly),
-		CreatedAt: p.CreatedAt.Format(time.RFC3339),
-		UpdatedAt: p.UpdatedAt.Format(time.RFC3339),
-		Days:      days,
+		ID:              p.ID.String(),
+		AthleteID:       p.AthleteID.String(),
+		Title:           p.Title,
+		Note:            p.Note,
+		StartDate:       p.StartDate.Format(time.DateOnly),
+		CreatedAt:       p.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:       p.UpdatedAt.Format(time.RFC3339),
+		SourcePlanID:    sourceID,
+		SourcePlanTitle: p.SourceTitle,
+		Days:            days,
 	}
 }
 
@@ -287,7 +301,7 @@ func (h *Handler) Current(c *gin.Context) {
 // Get returns one plan with its whole day → block → movement tree, ordered for display.
 //
 //	@Summary		Get a plan with its days, blocks and movements
-//	@Description	Returns the plan with its full nested tree in one response: days ordered by order_index (at most 7), each day's blocks ordered by order_index, and each block's movements ordered by order_in_block with the movement library's name and category inlined. A block is the superset unit: a single movement and a superset have the same shape, differing only in the length of movements. Empty levels are empty arrays, never null. A plan whose athlete belongs to another coach is reported as not found.
+//	@Description	Returns the plan with its full nested tree in one response. source_plan_id and source_plan_title name the plan this one was copied from, both null when it wasn't a copy or the source was deleted. The tree: days ordered by order_index (at most 7), each day's blocks ordered by order_index, and each block's movements ordered by order_in_block with the movement library's name and category inlined. A block is the superset unit: a single movement and a superset have the same shape, differing only in the length of movements. Empty levels are empty arrays, never null. A plan whose athlete belongs to another coach is reported as not found.
 //	@Tags			plans
 //	@Produce		json
 //	@Security		BearerAuth
@@ -320,8 +334,8 @@ func (h *Handler) Get(c *gin.Context) {
 
 // Create starts an empty plan for one of the authenticated coach's athletes.
 //
-//	@Summary		Create a plan
-//	@Description	Creates an empty plan for the athlete; add days, blocks and movements to it with the builder endpoints. athlete_id, start_date (YYYY-MM-DD) and title are required, note is optional. The response has the plan detail shape with an empty days array. An athlete that belongs to another coach is reported as not found.
+//	@Summary		Create a plan, empty or as a copy
+//	@Description	Creates a plan for the athlete. athlete_id, start_date (YYYY-MM-DD) and title are required, note is optional. Without source_plan_id the plan is empty: the response has an empty days array. With source_plan_id the plan is a copy of that plan's days, blocks and block movements (labels, order, sets, rest, notes, reps, duration and load, movements deleted from the library since included); title, note and start_date still come from the request. The source can be any of the coach's athletes' plans; one the coach can't use is a 400 on source_plan_id. A copy's response is its full detail, and the copy names its source in source_plan_id and source_plan_title. An athlete that belongs to another coach is reported as not found.
 //	@Tags			plans
 //	@Accept			json
 //	@Produce		json

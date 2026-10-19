@@ -1153,7 +1153,7 @@ $ curl -s -X PUT ... /days/$DAY_ID/blocks -d '[{"sets":3,"movements":[{"movement
 
 ### New plan from a copy
 
-⬜ **Not started** — before the frontend's new-plan screen.
+✅ **Done**
 
 **Description:** Most of her plans start from one she has already written, and rewriting them from scratch is one of the two slow parts of plan writing ([stakeholder-brief.md](../stakeholder-brief.md) §3). The new-plan screen offers three starts: a copy of this athlete's last plan (the suggested one), a copy of another athlete's plan, or an empty plan ([concept-8-1-home-and-plans.png](../design/concept-8-1-home-and-plans.png)). All three create a plan, so the copy is an optional field on `POST /plans`, not a second endpoint.
 
