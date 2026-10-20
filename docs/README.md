@@ -22,6 +22,7 @@ for." It is not committed scope.
 |---|---|
 | [product-direction.md](product-direction.md) | The post-v1 hypothesis: why v1 alone is hard to sell, what is missing, and in what order to fix it. Explicitly unvalidated — it is reasoning from these docs, not from users. The parts of it that must happen *during* v1 are already folded into [tasks/](tasks/README.md) as the tasks marked `[A1]`–`[A4]`. |
 | [stakeholder-brief.md](stakeholder-brief.md) | How the coach works and what they need from the app, in their own words: instant plan lookup in a crowded gym, fast plan writing on a phone, RTL with Jalali dates. Input for the *Frontend stack decision* in [tasks/backend.md](tasks/backend.md). |
+| [discussions/](discussions/README.md) | Product and business conversations kept as records: the questions asked, the answers at the time, and the recommendation. Starts with how the app could make money. |
 | [design/](design/README.md) | The chosen design, covering every v1 screen, what the coach's real plans showed about how she writes them, and the API gaps that surfaced. The options it was chosen from are in [design/archive/](design/archive/README.md). |
 
 If it ever conflicts with [tasks/](tasks/README.md), the task files are what gets built — fix the task text,
