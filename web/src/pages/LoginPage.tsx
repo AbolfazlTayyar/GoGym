@@ -58,13 +58,15 @@ function LoginForm() {
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  // Caught here so the message can name the field, which the API's "is required" can't.
+  const [emptyErrors, setEmptyErrors] = useState<Record<string, string>>({});
 
   // On success the coach query refetches, and LoginPage sends the coach on to where they were going.
   const submit = useMutation({
     mutationFn: () => login(toLatinDigits(phone.trim()), password),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.coach() }),
   });
-  const errors = fieldErrors(submit.error);
+  const errors = { ...fieldErrors(submit.error), ...emptyErrors };
   const formError =
     submit.error instanceof ApiError && formErrorCodes.includes(submit.error.code)
       ? submit.error.message
@@ -72,6 +74,14 @@ function LoginForm() {
 
   const onSubmit = (e: FormEvent) => {
     e.preventDefault();
+    const empty: Record<string, string> = {};
+    if (!phone.trim()) empty.phone = "شماره موبایل را وارد کنید.";
+    if (!password) empty.password = "رمز عبور را وارد کنید.";
+    setEmptyErrors(empty);
+    if (Object.keys(empty).length > 0) {
+      submit.reset();
+      return;
+    }
     submit.mutate();
   };
 
