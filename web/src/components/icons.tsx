@@ -327,6 +327,24 @@ export const EyeIcon = (props: IconProps) => (
   </svg>
 );
 
+// Not on the boards, which only draw the hidden password: the eye above with a slash, for a password on show.
+export const EyeOffIcon = (props: IconProps) => (
+  <svg
+    viewBox="0 0 24 24"
+    width="18"
+    height="18"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    aria-hidden
+    {...props}
+  >
+    <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" />
+    <circle cx="12" cy="12" r="3" />
+    <path d="m4 4 16 16" />
+  </svg>
+);
+
 export const SparkIcon = (props: IconProps) => (
   <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden {...props}>
     <path d="M12 2c.5 4.5 2.5 6.6 7 7-4.5.5-6.5 2.5-7 7-.5-4.5-2.5-6.5-7-7 4.5-.4 6.5-2.5 7-7z" />

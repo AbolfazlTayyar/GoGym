@@ -7,7 +7,7 @@ import { ApiError, fieldErrors } from "../api/client";
 import { queryKeys } from "../api/keys";
 import { nextParam, safeNext } from "../api/session";
 import { BigButton } from "../components/BigButton";
-import { DumbbellIcon, EyeIcon } from "../components/icons";
+import { DumbbellIcon, EyeIcon, EyeOffIcon } from "../components/icons";
 import { Screen } from "../components/Screen";
 import { TextField } from "../components/TextField";
 import { toLatinDigits } from "../lib/digits";
@@ -108,7 +108,7 @@ function LoginForm() {
                 aria-pressed={showPassword}
                 onClick={() => setShowPassword(!showPassword)}
               >
-                <EyeIcon />
+                {showPassword ? <EyeOffIcon /> : <EyeIcon />}
               </button>
             }
           />
