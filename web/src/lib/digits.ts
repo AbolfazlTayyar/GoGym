@@ -27,7 +27,15 @@ export function toPhone(text: string): string {
   return toLatinDigits(text).replace(/[\s-]/g, "");
 }
 
-// 09123456789 → ۰۹۱۲ ۳۴۵ ۶۷۸۹, grouped the way the boards show a mobile number.
+// A mobile number is 09 plus nine digits.
+const phoneLength = 11;
+
+// For a phone field as it's typed: keeps only digits, in whichever script the keyboard types, and stops at a full number.
+export function limitPhoneInput(text: string): string {
+  return text.replace(/[^0-9۰-۹٠-٩]/g, "").slice(0, phoneLength);
+}
+
+// 09123456789 →۰۹۱۲ ۳۴۵ ۶۷۸۹, grouped the way the boards show a mobile number.
 export function formatPhone(phone: string): string {
   const m = /^(\d{4})(\d{3})(\d{4})$/.exec(phone);
   return toPersianDigits(m ? `${m[1]} ${m[2]} ${m[3]}` : phone);

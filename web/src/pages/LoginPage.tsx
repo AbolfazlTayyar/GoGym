@@ -10,7 +10,7 @@ import { BigButton } from "../components/BigButton";
 import { DumbbellIcon, EyeIcon, EyeOffIcon } from "../components/icons";
 import { Screen } from "../components/Screen";
 import { TextField } from "../components/TextField";
-import { toLatinDigits } from "../lib/digits";
+import { limitPhoneInput, toLatinDigits } from "../lib/digits";
 import s from "./LoginPage.module.css";
 
 // Shown under the form; other failures (a field left empty) show under their field.
@@ -89,7 +89,7 @@ function LoginForm() {
             placeholder="۰۹۱۲ ۱۲۳ ۴۵۶۷"
             ltr
             value={phone}
-            onChange={(e) => setPhone(e.target.value)}
+            onChange={(e) => setPhone(limitPhoneInput(e.target.value))}
             error={errors.phone}
           />
           <TextField

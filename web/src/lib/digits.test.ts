@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { formatPhone, parseNumber, toLatinDigits, toPersianDigits, toPhone } from "./digits";
+import {
+  formatPhone,
+  limitPhoneInput,
+  parseNumber,
+  toLatinDigits,
+  toPersianDigits,
+  toPhone,
+} from "./digits";
 
 describe("toLatinDigits", () => {
   it.each([
@@ -38,6 +45,13 @@ describe("parseNumber", () => {
 describe("toPhone", () => {
   it("drops grouping and converts digits", () => {
     expect(toPhone("۰۹۱۲ ۳۴۵-۶۷۸۹")).toBe("09123456789");
+  });
+});
+
+describe("limitPhoneInput", () => {
+  it("keeps digits in the script they were typed and stops at eleven", () => {
+    expect(limitPhoneInput("۰۹۱۲ ۳۴۵-۶۷۸۹۰۱")).toBe("۰۹۱۲۳۴۵۶۷۸۹");
+    expect(limitPhoneInput("0912a3456789")).toBe("09123456789");
   });
 });
 

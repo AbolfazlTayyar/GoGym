@@ -21,7 +21,7 @@ import { Screen, ScreenContent } from "../components/Screen";
 import { Segmented } from "../components/Segmented";
 import { TextAreaField, TextField } from "../components/TextField";
 import { useSheet } from "../components/useSheet";
-import { parseNumber, toPersianDigits, toPhone } from "../lib/digits";
+import { limitPhoneInput, parseNumber, toPersianDigits, toPhone } from "../lib/digits";
 import { athleteTypeLabels, experienceLabels } from "../lib/labels";
 import { paths } from "../lib/paths";
 import { useGoBack } from "../lib/useGoBack";
@@ -193,7 +193,7 @@ function AthleteForm({ athlete, initial }: { athlete?: Athlete; initial: FormSta
             inputMode="numeric"
             ltr
             value={form.phone}
-            onChange={(e) => set("phone", e.target.value)}
+            onChange={(e) => set("phone", limitPhoneInput(e.target.value))}
             error={errors.phone}
             autoComplete="off"
           />
