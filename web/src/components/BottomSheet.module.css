@@ -11,7 +11,9 @@
   display: none;
   flex-direction: column;
   justify-content: flex-end;
-  overflow: hidden;
+  /* Not hidden: showModal focuses the close button while the panel is still below the screen, and a
+     hidden overflow would scroll to it, making the sheet jump instead of sliding up. */
+  overflow: clip;
 }
 
 .dialog[open] {
@@ -20,7 +22,7 @@
 
 .dialog::backdrop {
   background: rgba(43, 26, 32, 0.38);
-  animation: fade 0.2s ease-out;
+  animation: fade 0.35s ease-out;
 }
 
 .panel {
@@ -35,7 +37,16 @@
   border-radius: 30px 30px 0 0;
   padding: 8px 18px calc(22px + env(safe-area-inset-bottom));
   box-shadow: 0 -10px 30px rgba(43, 26, 32, 0.15);
-  animation: up 0.22s ease-out;
+  animation: up 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+/* Sliding back down before the dialog closes; the drag's offset, if any, is where it starts from. */
+.closing::backdrop {
+  animation: fade 0.3s ease-in reverse forwards;
+}
+
+.closing .panel {
+  animation: down 0.3s cubic-bezier(0.32, 0, 0.67, 0) forwards;
 }
 
 /* The part that can be dragged down to close; the rest scrolls normally. */
@@ -66,6 +77,12 @@
 
 @keyframes up {
   from {
+    transform: translateY(100%);
+  }
+}
+
+@keyframes down {
+  to {
     transform: translateY(100%);
   }
 }
