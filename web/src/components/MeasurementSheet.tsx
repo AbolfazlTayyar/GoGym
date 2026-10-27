@@ -11,6 +11,7 @@ import {
 } from "../api/measurements";
 import type { Measurement } from "../api/types";
 import { parseNumber, toPersianDigits } from "../lib/digits";
+import { focusNextOnEnter } from "../lib/focusNext";
 import { msgNotANumber } from "../lib/formMessages";
 import { todayISO } from "../lib/jalali";
 import { formatValue, lastValue, metrics, type Metric } from "../lib/measurements";
@@ -97,7 +98,7 @@ function MeasurementForm({ onClose, athleteId, measurements, editing }: Measurem
   return (
     <>
       <JalaliDateField label="تاریخ" value={date} onChange={setDate} error={errors.date} />
-      <div className={s.mgrid}>
+      <div className={s.mgrid} onKeyDown={focusNextOnEnter}>
         {metrics.map(({ key, label, unit }) => {
           const prev = lastValue(measurements, key, editing ?? undefined);
           const error = typoFields.includes(key)
