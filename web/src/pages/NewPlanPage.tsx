@@ -16,6 +16,7 @@ import { PlanMini } from "../components/PlanMini";
 import { Screen, ScreenContent } from "../components/Screen";
 import { TextField } from "../components/TextField";
 import { useSheet } from "../components/useSheet";
+import { msgTitleEmpty } from "../lib/formMessages";
 import { firstOfNextJalaliMonth, planTitleFor, todayISO } from "../lib/jalali";
 import { paths } from "../lib/paths";
 import { planSizeText } from "../lib/planSize";
@@ -62,6 +63,8 @@ function NewPlanForm({ athlete, latest }: { athlete: Athlete; latest: PlanSummar
   const [other, setOther] = useState<{ athlete: Athlete; plan: PlanSummary } | null>(null);
   const [startDate, setStartDate] = useState(() => firstOfNextJalaliMonth(todayISO()));
   const [title, setTitle] = useState(() => planTitleFor(startDate));
+  // Caught here so the message can name the field, which the API's "is required" can't.
+  const [titleError, setTitleError] = useState<string | null>(null);
   // A retried save reuses the plan the first attempt created, so a failed day A doesn't leave two plans.
   const created = useRef<PlanDetail | null>(null);
 
@@ -90,6 +93,16 @@ function NewPlanForm({ athlete, latest }: { athlete: Athlete; latest: PlanSummar
     },
   });
   const errors = fieldErrors(save.error);
+
+  const submit = () => {
+    if (!title.trim()) {
+      setTitleError(msgTitleEmpty);
+      save.reset();
+      return;
+    }
+    setTitleError(null);
+    save.mutate();
+  };
 
   const pickOther = () => {
     if (other) setChoice("other");
@@ -160,7 +173,7 @@ function NewPlanForm({ athlete, latest }: { athlete: Athlete; latest: PlanSummar
             label="عنوان"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            error={errors.title}
+            error={titleError ?? errors.title}
           />
           <JalaliDateField
             label="تاریخ شروع"
@@ -171,7 +184,7 @@ function NewPlanForm({ athlete, latest }: { athlete: Athlete; latest: PlanSummar
         </div>
       </ScreenContent>
       <BottomBar>
-        <BigButton onClick={() => save.mutate()} disabled={save.isPending}>
+        <BigButton onClick={submit} disabled={save.isPending}>
           ادامه
         </BigButton>
         {save.isError && Object.keys(errors).length === 0 && (

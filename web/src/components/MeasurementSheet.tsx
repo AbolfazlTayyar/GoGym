@@ -11,6 +11,7 @@ import {
 } from "../api/measurements";
 import type { Measurement } from "../api/types";
 import { parseNumber, toPersianDigits } from "../lib/digits";
+import { msgNotANumber } from "../lib/formMessages";
 import { todayISO } from "../lib/jalali";
 import { formatValue, lastValue, metrics, type Metric } from "../lib/measurements";
 import { BigButton } from "./BigButton";
@@ -21,7 +22,6 @@ import { JalaliDateField } from "./JalaliDateField";
 import s from "./MeasurementSheet.module.css";
 import { useSheet } from "./useSheet";
 
-const msgNotANumber = "عدد درست نیست.";
 // The API's answer when no measurement is filled; it names every field, so it is shown once instead.
 const msgNoneFilled = "دست‌کم یکی را پر کنید.";
 

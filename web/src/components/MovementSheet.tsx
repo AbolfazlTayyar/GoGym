@@ -49,6 +49,8 @@ function MovementForm({
   const [category, setCategory] = useState<string | null>(movement?.category ?? null);
   const [newCategory, setNewCategory] = useState<string | null>(null);
   const [description, setDescription] = useState(movement?.description ?? "");
+  // Caught here so the message can name the field, which the API's "is required" can't.
+  const [nameError, setNameError] = useState<string | null>(null);
 
   // The builder's search reads the same query, so it sees the change too.
   const refresh = () => queryClient.invalidateQueries({ queryKey: queryKeys.movements() });
@@ -82,6 +84,15 @@ function MovementForm({
     onError,
   });
   const errors = fieldErrors(save.error);
+  const submit = () => {
+    if (!name.trim()) {
+      setNameError("نام حرکت را وارد کنید.");
+      save.reset();
+      return;
+    }
+    setNameError(null);
+    save.mutate();
+  };
   const options = [...new Set([...categories, ...(category ? [category] : [])])];
 
   if (universal && movement) {
@@ -117,7 +128,7 @@ function MovementForm({
           label="نام"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          error={errors.name}
+          error={nameError ?? errors.name}
         />
         <div className={f.fl}>
           <span className={f.label}>
@@ -158,7 +169,7 @@ function MovementForm({
             <TrashIcon /> حذف
           </button>
         )}
-        <BigButton onClick={() => save.mutate()} disabled={save.isPending}>
+        <BigButton onClick={submit} disabled={save.isPending}>
           ذخیره
         </BigButton>
       </div>

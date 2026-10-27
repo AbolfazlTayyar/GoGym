@@ -11,6 +11,7 @@ import { DumbbellIcon, EyeIcon, EyeOffIcon } from "../components/icons";
 import { Screen } from "../components/Screen";
 import { TextField } from "../components/TextField";
 import { limitPhoneInput, toLatinDigits } from "../lib/digits";
+import { msgPhoneEmpty } from "../lib/formMessages";
 import s from "./LoginPage.module.css";
 
 // Shown under the form; other failures (a field left empty) show under their field.
@@ -75,7 +76,7 @@ function LoginForm() {
   const onSubmit = (e: FormEvent) => {
     e.preventDefault();
     const empty: Record<string, string> = {};
-    if (!phone.trim()) empty.phone = "شماره موبایل را وارد کنید.";
+    if (!phone.trim()) empty.phone = msgPhoneEmpty;
     if (!password) empty.password = "رمز عبور را وارد کنید.";
     setEmptyErrors(empty);
     if (Object.keys(empty).length > 0) {

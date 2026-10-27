@@ -22,6 +22,7 @@ import { Segmented } from "../components/Segmented";
 import { TextAreaField, TextField } from "../components/TextField";
 import { useSheet } from "../components/useSheet";
 import { limitPhoneInput, parseNumber, toPersianDigits, toPhone } from "../lib/digits";
+import { msgNotANumber, msgPhoneEmpty } from "../lib/formMessages";
 import { athleteTypeLabels, experienceLabels } from "../lib/labels";
 import { paths } from "../lib/paths";
 import { useGoBack } from "../lib/useGoBack";
@@ -38,8 +39,6 @@ type FormState = {
   height: string;
   injuries: string;
 };
-
-const msgNotANumber = "عدد درست نیست.";
 
 function emptyForm(type: AthleteType): FormState {
   return {
@@ -154,7 +153,7 @@ function AthleteForm({ athlete, initial }: { athlete?: Athlete; initial: FormSta
     const local: Record<string, string> = {};
     if (!form.firstName.trim()) local.first_name = "نام را وارد کنید.";
     if (!form.lastName.trim()) local.last_name = "نام خانوادگی را وارد کنید.";
-    if (!form.phone.trim()) local.phone = "شماره موبایل را وارد کنید.";
+    if (!form.phone.trim()) local.phone = msgPhoneEmpty;
     if (form.height.trim() && parseNumber(form.height) === null) local.height = msgNotANumber;
     setLocalErrors(local);
     if (Object.keys(local).length > 0) {

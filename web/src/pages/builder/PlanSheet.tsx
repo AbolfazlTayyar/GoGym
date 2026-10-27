@@ -10,6 +10,7 @@ import { TrashIcon } from "../../components/icons";
 import { JalaliDateField } from "../../components/JalaliDateField";
 import { TextField } from "../../components/TextField";
 import { useSheet } from "../../components/useSheet";
+import { msgTitleEmpty } from "../../lib/formMessages";
 import s from "./Builder.module.css";
 
 type PlanSheetProps = {
@@ -33,6 +34,8 @@ export function PlanSheet({ open, onClose, plan, onSaved, onDeleted }: PlanSheet
 function PlanForm({ plan, onSaved, onDeleted }: Omit<PlanSheetProps, "open" | "onClose">) {
   const [title, setTitle] = useState(plan.title);
   const [startDate, setStartDate] = useState(plan.start_date);
+  // Caught here so the message can name the field, which the API's "is required" can't.
+  const [titleError, setTitleError] = useState<string | null>(null);
   const confirm = useSheet("delete-plan");
 
   // PUT replaces every field, so the note the builder doesn't show is sent back unchanged.
@@ -44,6 +47,16 @@ function PlanForm({ plan, onSaved, onDeleted }: Omit<PlanSheetProps, "open" | "o
   const remove = useMutation({ mutationFn: () => deletePlan(plan.id), onSuccess: onDeleted });
   const errors = fieldErrors(save.error);
 
+  const submit = () => {
+    if (!title.trim()) {
+      setTitleError(msgTitleEmpty);
+      save.reset();
+      return;
+    }
+    setTitleError(null);
+    save.mutate();
+  };
+
   return (
     <>
       <div className={s.sheetFields}>
@@ -51,7 +64,7 @@ function PlanForm({ plan, onSaved, onDeleted }: Omit<PlanSheetProps, "open" | "o
           label="عنوان"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          error={errors.title}
+          error={titleError ?? errors.title}
         />
         <JalaliDateField
           label="تاریخ شروع"
@@ -61,7 +74,7 @@ function PlanForm({ plan, onSaved, onDeleted }: Omit<PlanSheetProps, "open" | "o
         />
       </div>
       <div className={s.sheetActs}>
-        <BigButton onClick={() => save.mutate()} disabled={save.isPending}>
+        <BigButton onClick={submit} disabled={save.isPending}>
           ذخیره
         </BigButton>
         <BigButton outline onClick={confirm.show}>
