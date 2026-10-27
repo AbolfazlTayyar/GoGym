@@ -21,6 +21,8 @@ A box that scrolls (`overflow-x/y: auto`) clips its children's shadows into hard
 
 Every API call goes through `web/src/api/` (`api.get/post/put/delete` in `client.ts`, one file of plain async functions per resource); screens never call `fetch`. It unwraps the envelope and throws `ApiError` (`status`, `code`, `fields`) for every failure, including a dropped connection or a body that isn't an envelope. What the coach reads comes from `codes.ts` for codes and `fields.ts` for field messages, never from the server's English `error.message`; a new `httpx.Code*` gets a row in `codes.ts`. Payload types in `types.ts` are hand-written from the handlers' json tags, with nullable fields as `T | null`. Query keys come from `queryKeys` in `keys.ts`, so a save invalidates by prefix.
 
+A form checks its required fields before sending and names the empty one («نام را وارد کنید.»); the API's generic "is required" («لازم است.») is only a fallback. Messages used by more than one form live in `web/src/lib/formMessages.ts`.
+
 The app never reads or stores the auth token: the API keeps it in an httpOnly cookie ([ADR 0031](docs/adr/0031-auth-token-in-httponly-cookie.md)). Whether the coach is signed in comes from `useCoach()` (`GET /coaches/me`); every route except `/login` sits under `RequireAuth`, and a 401 from any call but login sends the coach to `/login?next=<page>`.
 
 Links and navigation build their URLs with `paths` in `web/src/lib/paths.ts`, never a hand-written route string, so the router and every link agree. A list that scrolls inside its own box (not the window) uses `useScrollMemory`, so back returns to the same place.
