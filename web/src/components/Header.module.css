@@ -2,7 +2,8 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 6px 18px 14px;
+  /* The board's 6px top sits under a 34px mock status bar the app doesn't draw; 16px keeps the header off the edge. */
+  padding: 16px 18px 14px;
   flex: none;
 }
 
