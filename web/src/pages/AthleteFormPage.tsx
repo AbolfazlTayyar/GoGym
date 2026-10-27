@@ -112,7 +112,8 @@ function AthleteForm({ athlete, initial }: { athlete?: Athlete; initial: FormSta
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [form, setForm] = useState(initial);
-  const [heightError, setHeightError] = useState<string | null>(null);
+  // Caught here so the message can name the field, which the API's "is required" can't.
+  const [localErrors, setLocalErrors] = useState<Record<string, string>>({});
   const discard = useSheet("discard");
   const remove = useSheet("delete");
   const goBack = useGoBack(athlete ? paths.profile(athlete.id) : paths.home);
@@ -146,15 +147,20 @@ function AthleteForm({ athlete, initial }: { athlete?: Athlete; initial: FormSta
     },
   });
 
-  const errors = fieldErrors(save.error);
+  const errors = { ...fieldErrors(save.error), ...localErrors };
 
   const onSubmit = (e?: FormEvent) => {
     e?.preventDefault();
-    if (form.height.trim() && parseNumber(form.height) === null) {
-      setHeightError(msgNotANumber);
+    const local: Record<string, string> = {};
+    if (!form.firstName.trim()) local.first_name = "نام را وارد کنید.";
+    if (!form.lastName.trim()) local.last_name = "نام خانوادگی را وارد کنید.";
+    if (!form.phone.trim()) local.phone = "شماره موبایل را وارد کنید.";
+    if (form.height.trim() && parseNumber(form.height) === null) local.height = msgNotANumber;
+    setLocalErrors(local);
+    if (Object.keys(local).length > 0) {
+      save.reset();
       return;
     }
-    setHeightError(null);
     save.mutate(toInput(form));
   };
 
@@ -244,7 +250,7 @@ function AthleteForm({ athlete, initial }: { athlete?: Athlete; initial: FormSta
               inputMode="decimal"
               value={form.height}
               onChange={(e) => set("height", e.target.value)}
-              error={heightError ?? errors.height}
+              error={errors.height}
               trailing={<span className={f.unit}>سانتی‌متر</span>}
             />
           </div>

@@ -41,6 +41,17 @@ const type = (label: string, value: string) =>
   });
 
 describe("athlete form", () => {
+  it("names each empty required field without calling the API", () => {
+    renderForm();
+
+    fireEvent.click(screen.getByRole("button", { name: "ذخیره" }));
+
+    expect(screen.getByText("نام را وارد کنید.")).toBeTruthy();
+    expect(screen.getByText("نام خانوادگی را وارد کنید.")).toBeTruthy();
+    expect(screen.getByText("شماره موبایل را وارد کنید.")).toBeTruthy();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it("shows the API's phone error under the mobile field", async () => {
     fetchMock.mockResolvedValueOnce(
       new Response(
