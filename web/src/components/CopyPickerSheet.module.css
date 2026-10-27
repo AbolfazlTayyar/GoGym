@@ -14,4 +14,8 @@
 .scroll {
   max-height: 55dvh;
   overflow-y: auto;
+  /* Room for the list's shadow up to the sheet's padding, given back as negative margins: the scroll
+     would cut it off in hard lines at the sides. */
+  padding: 10px 18px 22px;
+  margin: -10px -18px -22px;
 }

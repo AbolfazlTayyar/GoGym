@@ -264,8 +264,9 @@
   gap: 6px;
   overflow-x: auto;
   scrollbar-width: none;
-  padding-bottom: 4px;
-  margin-bottom: -4px;
+  /* Room for the glow, given back as negative margins: the sideways scroll would cut it off in a hard line. */
+  padding: 12px 18px 28px;
+  margin: -12px -18px -28px;
 }
 
 .sug button {

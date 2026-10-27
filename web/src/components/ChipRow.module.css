@@ -2,7 +2,10 @@
 .chiprow {
   display: flex;
   gap: 6px;
-  padding: 0 18px 10px;
+  /* The board's 0 18px 10px, grown by what the glow needs and given back as negative margins: the
+     sideways scroll clips the row, which would cut the chips' shadows off in a hard line. */
+  padding: 12px 18px 28px;
+  margin: -12px 0 -18px;
   flex: none;
   overflow-x: auto;
   scrollbar-width: none;
@@ -32,9 +35,11 @@
   box-shadow: var(--glow);
 }
 
-/* Inside a sheet or a field: no side padding, and a dashed chip for adding a new choice. */
+/* Inside a sheet or a field: lined up with the field, and a dashed chip for adding a new choice. The
+   sheet's 18px padding gives the side room for the shadows. */
 .inline {
-  padding: 5px 0 0;
+  padding: 17px 18px 28px;
+  margin: -12px -18px -28px;
 }
 
 .chiprow .new {
