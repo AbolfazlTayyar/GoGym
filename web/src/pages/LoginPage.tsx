@@ -11,6 +11,7 @@ import { DumbbellIcon, EyeIcon, EyeOffIcon } from "../components/icons";
 import { Screen } from "../components/Screen";
 import { TextField } from "../components/TextField";
 import { limitPhoneInput, toLatinDigits } from "../lib/digits";
+import { focusNextOnEnter } from "../lib/focusNext";
 import { msgPhoneEmpty } from "../lib/formMessages";
 import s from "./LoginPage.module.css";
 
@@ -88,7 +89,7 @@ function LoginForm() {
 
   return (
     <Screen>
-      <form className={s.login} onSubmit={onSubmit} noValidate>
+      <form className={s.login} onSubmit={onSubmit} onKeyDown={focusNextOnEnter} noValidate>
         <Brand />
         <p className={s.sub}>ورود مربی</p>
         <div className={s.fields}>

@@ -6,6 +6,7 @@ import { ErrorCode } from "../api/codes";
 import { queryKeys } from "../api/keys";
 import { createMovement, deleteMovement, updateMovement } from "../api/movements";
 import type { Movement } from "../api/types";
+import { focusNextOnEnter } from "../lib/focusNext";
 import { BigButton } from "./BigButton";
 import { BottomSheet } from "./BottomSheet";
 import { ChipRow } from "./ChipRow";
@@ -123,7 +124,7 @@ function MovementForm({
 
   return (
     <>
-      <div className={s.fields}>
+      <div className={s.fields} onKeyDown={focusNextOnEnter}>
         <TextField
           label="نام"
           value={name}

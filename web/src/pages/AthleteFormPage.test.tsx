@@ -104,4 +104,22 @@ describe("athlete form", () => {
     });
     expect(await screen.findByText("profile")).toBeTruthy();
   });
+
+  it("moves to the next text field on Enter, skipping the buttons between them", () => {
+    renderForm();
+    const field = (label: string) => screen.getByLabelText(new RegExp(`^${label}( ·|$|سانتی)`));
+
+    fireEvent.keyDown(field("نام"), { key: "Enter" });
+    expect(document.activeElement).toBe(field("نام خانوادگی"));
+
+    fireEvent.keyDown(field("موبایل"), { key: "Enter" });
+    expect(document.activeElement).toBe(field("هدف"));
+
+    fireEvent.keyDown(field("قد"), { key: "Enter" });
+    expect(document.activeElement).toBe(field("آسیب‌دیدگی"));
+
+    // Enter in the textarea still starts a new line.
+    expect(fireEvent.keyDown(field("آسیب‌دیدگی"), { key: "Enter" })).toBe(true);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
 });

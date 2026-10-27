@@ -23,6 +23,7 @@ import { TextAreaField, TextField } from "../components/TextField";
 import { useSheet } from "../components/useSheet";
 import { limitPhoneInput, parseNumber, toPersianDigits, toPhone } from "../lib/digits";
 import { msgNotANumber, msgPhoneEmpty } from "../lib/formMessages";
+import { focusNextOnEnter } from "../lib/focusNext";
 import { athleteTypeLabels, experienceLabels } from "../lib/labels";
 import { paths } from "../lib/paths";
 import { useGoBack } from "../lib/useGoBack";
@@ -175,7 +176,7 @@ function AthleteForm({ athlete, initial }: { athlete?: Athlete; initial: FormSta
         </PillButton>
       </Header>
       <ScreenContent>
-        <form className={s.form} onSubmit={onSubmit} noValidate>
+        <form className={s.form} onSubmit={onSubmit} onKeyDown={focusNextOnEnter} noValidate>
           <div className={s.two}>
             <TextField
               label="نام"
