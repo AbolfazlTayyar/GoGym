@@ -3,8 +3,12 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  height: 58px;
+  height: 60px;
   border-bottom: 1px solid var(--line);
+}
+
+.ath:last-child {
+  border-bottom: 0;
 }
 
 .nm {
