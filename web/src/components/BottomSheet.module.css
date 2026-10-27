@@ -22,7 +22,8 @@
 
 .dialog::backdrop {
   background: rgba(43, 26, 32, 0.38);
-  animation: fade 0.35s ease-out;
+  /* A slow start, so the page dims along with the rising panel instead of all at once. */
+  animation: fade-in 0.45s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .panel {
@@ -42,7 +43,8 @@
 
 /* Sliding back down before the dialog closes; the drag's offset, if any, is where it starts from. */
 .closing::backdrop {
-  animation: fade 0.3s ease-in reverse forwards;
+  /* Its own keyframes: reusing the opening one with reverse wouldn't restart it, so the dim would vanish at once. */
+  animation: fade-out 0.3s ease-in forwards;
 }
 
 .closing .panel {
@@ -87,8 +89,14 @@
   }
 }
 
-@keyframes fade {
+@keyframes fade-in {
   from {
+    opacity: 0;
+  }
+}
+
+@keyframes fade-out {
+  to {
     opacity: 0;
   }
 }
