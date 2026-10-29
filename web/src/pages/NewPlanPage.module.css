@@ -64,17 +64,6 @@
   color: var(--dim);
 }
 
-.rec {
-  font-size: 10.5px;
-  font-weight: 700;
-  background: var(--blush);
-  color: var(--pinkText);
-  padding: 2px 8px;
-  border-radius: 999px;
-  margin-inline-start: 6px;
-  vertical-align: 2px;
-}
-
 .faint {
   color: var(--faint);
   margin-top: 6px;

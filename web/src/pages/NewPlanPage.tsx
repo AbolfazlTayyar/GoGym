@@ -124,12 +124,7 @@ function NewPlanForm({ athlete, latest }: { athlete: Athlete; latest: PlanSummar
             <ChoiceCard
               on={choice === "latest"}
               onSelect={() => setChoice("latest")}
-              title={
-                <>
-                  کپی «{latest.title}» {athlete.first_name}
-                  <span className={s.rec}>پیشنهادی</span>
-                </>
-              }
+              title={`کپی «${latest.title}» ${athlete.first_name}`}
               text={`${planSizeText(latest)} · فقط تغییرات را وارد کنید`}
             >
               {latestDetail && <PlanMini days={latestDetail.days} />}
@@ -219,7 +214,7 @@ function usePlanDetail(planId: string | undefined) {
 type ChoiceCardProps = {
   on: boolean;
   onSelect: () => void;
-  title: ReactNode;
+  title: string;
   text: string;
   trailing?: ReactNode;
   children?: ReactNode;
