@@ -43,7 +43,6 @@ function MovementForm({
   categories,
   universal,
 }: MovementSheetProps & { universal: boolean }) {
-  const queryClient = useQueryClient();
   const navigate = useNavigate();
   const confirm = useSheet("delete-movement");
   const [name, setName] = useState(movement?.name ?? "");
@@ -53,12 +52,7 @@ function MovementForm({
   // Caught here so the message can name the field, which the API's "is required" can't.
   const [nameError, setNameError] = useState<string | null>(null);
 
-  // The builder's search reads the same query, so it sees the change too.
-  const refresh = () => queryClient.invalidateQueries({ queryKey: queryKeys.movements() });
-  // A 403 means the list showed a built-in movement as the coach's own; refreshing puts it right.
-  const onError = (err: Error) => {
-    if (err instanceof ApiError && err.code === ErrorCode.forbidden) refresh();
-  };
+  const { refresh, onError } = useRefreshMovements();
 
   const save = useMutation({
     mutationFn: () => {
@@ -72,15 +66,6 @@ function MovementForm({
     onSuccess: async () => {
       await refresh();
       onClose();
-    },
-    onError,
-  });
-  const remove = useMutation({
-    mutationFn: () => deleteMovement(movement!.id),
-    onSuccess: async () => {
-      await refresh();
-      // The confirmation and the sheet under it: two history entries.
-      navigate(-2);
     },
     onError,
   });
@@ -180,17 +165,62 @@ function MovementForm({
         </p>
       )}
       {movement && (
-        <ConfirmSheet
+        <DeleteMovementSheet
           open={confirm.open}
           onClose={confirm.close}
-          title={`حذف «${movement.name}»؟`}
-          text="از فهرست حرکات شما حذف می‌شود، ولی برنامه‌هایی که از آن استفاده کرده‌اند همچنان آن را نشان می‌دهند."
-          confirmLabel="حذف"
-          onConfirm={() => remove.mutate()}
-          pending={remove.isPending}
-          error={remove.isError ? remove.error.message : null}
+          movement={movement}
+          // The confirmation and the sheet under it: two history entries.
+          onDeleted={() => navigate(-2)}
         />
       )}
     </>
   );
+}
+
+type DeleteMovementSheetProps = {
+  open: boolean;
+  onClose: () => void;
+  movement: Movement;
+  onDeleted: () => void;
+};
+
+// Asks before deleting one of the coach's movements, then deletes it and refreshes the lists.
+export function DeleteMovementSheet({
+  open,
+  onClose,
+  movement,
+  onDeleted,
+}: DeleteMovementSheetProps) {
+  const { refresh, onError } = useRefreshMovements();
+  const remove = useMutation({
+    mutationFn: () => deleteMovement(movement.id),
+    onSuccess: async () => {
+      await refresh();
+      onDeleted();
+    },
+    onError,
+  });
+  return (
+    <ConfirmSheet
+      open={open}
+      onClose={onClose}
+      title={`حذف «${movement.name}»؟`}
+      text="از فهرست حرکات شما حذف می‌شود، ولی برنامه‌هایی که از آن استفاده کرده‌اند همچنان آن را نشان می‌دهند."
+      confirmLabel="حذف"
+      onConfirm={() => remove.mutate()}
+      pending={remove.isPending}
+      error={remove.isError ? remove.error.message : null}
+    />
+  );
+}
+
+function useRefreshMovements() {
+  const queryClient = useQueryClient();
+  // The builder's search reads the same query, so it sees the change too.
+  const refresh = () => queryClient.invalidateQueries({ queryKey: queryKeys.movements() });
+  // A 403 means the list showed a built-in movement as the coach's own; refreshing puts it right.
+  const onError = (err: Error) => {
+    if (err instanceof ApiError && err.code === ErrorCode.forbidden) refresh();
+  };
+  return { refresh, onError };
 }

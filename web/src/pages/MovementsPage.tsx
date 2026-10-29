@@ -8,8 +8,9 @@ import { ChipRow } from "../components/ChipRow";
 import { EmptyState } from "../components/EmptyState";
 import { Header, HeaderTitle, RoundButton } from "../components/Header";
 import { ChevLIcon, DumbbellIcon, LockIcon, PlusIcon } from "../components/icons";
-import { MovementSheet } from "../components/MovementSheet";
+import { DeleteMovementSheet, MovementSheet } from "../components/MovementSheet";
 import { SearchBox } from "../components/SearchBox";
+import { SwipeRow } from "../components/SwipeRow";
 import { useSheet } from "../components/useSheet";
 import { toPersianDigits } from "../lib/digits";
 import { useDebouncedValue } from "../lib/useDebouncedValue";
@@ -26,6 +27,10 @@ export function MovementsPage() {
   const [category, setCategory] = useState(allCategories);
   const sheet = useSheet("movement");
   const [selected, setSelected] = useState<Movement | null>(null);
+  // Not MovementSheet's own "delete-movement", or its delete button would open this sheet as well.
+  const deleteSheet = useSheet("delete-swiped-movement");
+  const [deleting, setDeleting] = useState<Movement | null>(null);
+  const [swipedId, setSwipedId] = useState<string | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
   // The same query the builder's search uses.
@@ -70,24 +75,52 @@ export function MovementsPage() {
       <div ref={listRef} className={s.roster}>
         {movements.isPending && <p className={s.note}>در حال بارگذاری…</p>}
         {movements.isSuccess && shown.length === 0 && <p className={s.note}>حرکتی پیدا نشد.</p>}
-        {shown.map((m) => (
-          <button key={m.id} type="button" className={s.mvr} onClick={() => open(m)}>
-            <div className={s.nm}>
-              <b>{m.name}</b>
-              <span>{m.category ?? "بدون دسته"}</span>
-            </div>
-            {m.coach_id === null ? (
+        {shown.map((m) =>
+          // Built-in movements can't be edited or deleted, so they don't swipe.
+          m.coach_id === null ? (
+            <button
+              key={m.id}
+              type="button"
+              className={`${s.mvr} ${s.row}`}
+              onClick={() => open(m)}
+            >
+              <div className={s.nm}>
+                <b>{m.name}</b>
+                <span>{m.category ?? "بدون دسته"}</span>
+              </div>
               <span className={s.uni}>
                 <LockIcon />
                 پیش‌فرض
               </span>
-            ) : (
-              <span className={s.go}>
-                <ChevLIcon />
-              </span>
-            )}
-          </button>
-        ))}
+            </button>
+          ) : (
+            <SwipeRow
+              key={m.id}
+              className={s.row}
+              open={swipedId === m.id}
+              onOpenChange={(o) => setSwipedId(o ? m.id : null)}
+              onEdit={() => {
+                setSwipedId(null);
+                open(m);
+              }}
+              onDelete={() => {
+                setSwipedId(null);
+                setDeleting(m);
+                deleteSheet.show();
+              }}
+            >
+              <button type="button" className={s.mvr} onClick={() => open(m)}>
+                <div className={s.nm}>
+                  <b>{m.name}</b>
+                  <span>{m.category ?? "بدون دسته"}</span>
+                </div>
+                <span className={s.go}>
+                  <ChevLIcon />
+                </span>
+              </button>
+            </SwipeRow>
+          ),
+        )}
       </div>
     );
   }
@@ -127,6 +160,15 @@ export function MovementsPage() {
         movement={selected}
         categories={categories}
       />
+      {deleting && (
+        <DeleteMovementSheet
+          key={deleting.id}
+          open={deleteSheet.open}
+          onClose={deleteSheet.close}
+          movement={deleting}
+          onDeleted={deleteSheet.close}
+        />
+      )}
     </>
   );
 }
