@@ -1,6 +1,6 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Link, useParams, useSearchParams } from "react-router";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router";
 import { getAthlete } from "../api/athletes";
 import { queryKeys } from "../api/keys";
 import { listMeasurements } from "../api/measurements";
@@ -14,6 +14,7 @@ import { MeasurementSheet } from "../components/MeasurementSheet";
 import { PillTabs } from "../components/PillTabs";
 import { PlanMini } from "../components/PlanMini";
 import { Screen, ScreenContent } from "../components/Screen";
+import { SwipeRow } from "../components/SwipeRow";
 import { useSheet } from "../components/useSheet";
 import { formatPhone, toPersianDigits } from "../lib/digits";
 import { formatJalali, todayISO } from "../lib/jalali";
@@ -21,6 +22,7 @@ import { athleteTypeLabels, experienceLabels } from "../lib/labels";
 import { paths } from "../lib/paths";
 import { planSizeText } from "../lib/planSize";
 import { useGoBack } from "../lib/useGoBack";
+import { DeletePlanSheet, PlanSheet } from "./builder/PlanSheet";
 import { MeasurementsTab } from "./MeasurementsTab";
 import s from "./ProfilePage.module.css";
 
@@ -158,6 +160,34 @@ function PlansTab({ plans }: { plans: PlanSummary[] | undefined }) {
     queryFn: () => getPlan(current!.id),
     enabled: current !== null,
   });
+  const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  // One row open at a time, as in iOS: swiping another closes this one.
+  const [swipedId, setSwipedId] = useState<string | null>(null);
+  // The plan a row's edit or delete was tapped on, kept after its sheet closes so the sheet slides down whole.
+  const [target, setTarget] = useState<PlanSummary | null>(null);
+  const editSheet = useSheet("plan");
+  // Not PlanSheet's own "delete-plan", or its delete button would open this sheet as well.
+  const deleteSheet = useSheet("delete-swiped-plan");
+
+  const swipe = (p: PlanSummary) => ({
+    open: swipedId === p.id,
+    onOpenChange: (open: boolean) => setSwipedId(open ? p.id : null),
+    onEdit: () => {
+      setSwipedId(null);
+      setTarget(p);
+      editSheet.show();
+    },
+    onDelete: () => {
+      setSwipedId(null);
+      setTarget(p);
+      deleteSheet.show();
+    },
+  });
+  const forget = (planId: string) => {
+    queryClient.removeQueries({ queryKey: queryKeys.plans("detail", planId) });
+    queryClient.invalidateQueries({ queryKey: queryKeys.plans() });
+  };
 
   if (!plans) return <p className={s.note}>در حال بارگذاری…</p>;
   if (plans.length === 0) {
@@ -175,32 +205,36 @@ function PlansTab({ plans }: { plans: PlanSummary[] | undefined }) {
     <>
       <div className={s.plist}>
         {upcoming.map((p) => (
-          <Link key={p.id} to={paths.dayView(p.id)} className={s.pc}>
-            <div className={s.top}>
-              <b>{p.title}</b>
-              <span className={`${s.badge} ${s.soon}`}>بعدی</span>
-            </div>
-            <span className={s.sub}>شروع {formatJalali(p.start_date)}</span>
-          </Link>
+          <SwipeRow key={p.id} {...swipe(p)}>
+            <Link to={paths.dayView(p.id)} className={s.pc}>
+              <div className={s.top}>
+                <b>{p.title}</b>
+                <span className={`${s.badge} ${s.soon}`}>بعدی</span>
+              </div>
+              <span className={s.sub}>شروع {formatJalali(p.start_date)}</span>
+            </Link>
+          </SwipeRow>
         ))}
         {current && (
-          <div className={`${s.pc} ${s.cur}`}>
-            <Link to={paths.dayView(current.id)}>
-              <div className={s.top}>
-                <b>{current.title}</b>
-                <span className={`${s.badge} ${s.now}`}>فعلی</span>
-              </div>
-              <span className={s.sub}>
-                شروع {formatJalali(current.start_date)} · {planSizeText(current)}
-              </span>
-            </Link>
-            {currentDetail.data && (
-              <PlanMini
-                days={currentDetail.data.days}
-                dayLink={(label) => paths.dayView(current.id, label)}
-              />
-            )}
-          </div>
+          <SwipeRow {...swipe(current)}>
+            <div className={`${s.pc} ${s.cur}`}>
+              <Link to={paths.dayView(current.id)}>
+                <div className={s.top}>
+                  <b>{current.title}</b>
+                  <span className={`${s.badge} ${s.now}`}>فعلی</span>
+                </div>
+                <span className={s.sub}>
+                  شروع {formatJalali(current.start_date)} · {planSizeText(current)}
+                </span>
+              </Link>
+              {currentDetail.data && (
+                <PlanMini
+                  days={currentDetail.data.days}
+                  dayLink={(label) => paths.dayView(current.id, label)}
+                />
+              )}
+            </div>
+          </SwipeRow>
         )}
       </div>
       {older.length > 0 && (
@@ -208,22 +242,52 @@ function PlansTab({ plans }: { plans: PlanSummary[] | undefined }) {
           <div className={s.lbl}>برنامه‌های قبلی</div>
           <div className={s.hist}>
             {older.map((p) => (
-              <Link key={p.id} to={paths.dayView(p.id)} className={s.hr}>
-                <div className={s.nm}>
-                  <b>{p.title}</b>
-                  <span>
-                    شروع {formatJalali(p.start_date)} · {planSizeText(p)}
+              <SwipeRow key={p.id} {...swipe(p)} className={s.hrow}>
+                <Link to={paths.dayView(p.id)} className={s.hr}>
+                  <div className={s.nm}>
+                    <b>{p.title}</b>
+                    <span>
+                      شروع {formatJalali(p.start_date)} · {planSizeText(p)}
+                    </span>
+                  </div>
+                  <span className={s.go}>
+                    <ChevLIcon />
                   </span>
-                </div>
-                <span className={s.go}>
-                  <ChevLIcon />
-                </span>
-              </Link>
+                </Link>
+              </SwipeRow>
             ))}
           </div>
         </>
       )}
       {older.length === 0 && <div className={s.space} />}
+      {target && (
+        <>
+          <PlanSheet
+            open={editSheet.open}
+            onClose={editSheet.close}
+            plan={target}
+            onSaved={() => {
+              queryClient.invalidateQueries({ queryKey: queryKeys.plans() });
+              editSheet.close();
+            }}
+            onDeleted={() => {
+              forget(target.id);
+              // Its confirm sheet is open over it, and both history entries go.
+              navigate(-2);
+            }}
+          />
+          <DeletePlanSheet
+            key={target.id}
+            open={deleteSheet.open}
+            onClose={deleteSheet.close}
+            plan={target}
+            onDeleted={() => {
+              forget(target.id);
+              deleteSheet.close();
+            }}
+          />
+        </>
+      )}
     </>
   );
 }

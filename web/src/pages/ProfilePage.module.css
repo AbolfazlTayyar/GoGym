@@ -63,6 +63,8 @@
   flex-direction: column;
   gap: 10px;
   flex: none;
+  /* A swiped card slides past the screen edge; clip, not hidden, so the cards' shadows above and below stay. */
+  overflow-x: clip;
 }
 
 .pc {
@@ -128,20 +130,28 @@
   padding: 0 14px;
   box-shadow: var(--soft);
   flex: 1;
+  /* A swiped row slides under the sheet's edge instead of past it. */
+  overflow: clip;
 }
 
+/* The line sits on the swipe row, not the link that slides, so it stays put under a swipe. */
+.hrow {
+  border-bottom: 1px solid var(--line);
+}
+
+.hrow:last-child {
+  border-bottom: 0;
+}
+
+/* White, so the swipe actions behind it don't show through. */
 .hr {
   display: flex;
   align-items: center;
   gap: 10px;
   width: 100%;
   height: 54px;
-  border-bottom: 1px solid var(--line);
+  background: #fff;
   text-align: start;
-}
-
-.hr:last-child {
-  border-bottom: 0;
 }
 
 .hr .nm {

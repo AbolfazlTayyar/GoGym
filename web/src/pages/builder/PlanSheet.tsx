@@ -13,15 +13,19 @@ import { useSheet } from "../../components/useSheet";
 import { msgTitleEmpty } from "../../lib/formMessages";
 import s from "./Builder.module.css";
 
+// What the sheet edits, so a plan summary on the profile works as well as the builder's detail.
+type PlanFields = Pick<PlanDetail, "id" | "title" | "start_date" | "note">;
+
 type PlanSheetProps = {
   open: boolean;
   onClose: () => void;
-  plan: PlanDetail;
+  plan: PlanFields;
   onSaved: (plan: PlanDetail) => void;
   onDeleted: () => void;
 };
 
-// Behind the builder's title: the plan's title and start date, and deleting the plan.
+// Behind the builder's title and a profile plan row's edit: the plan's title and start date, and deleting
+// the plan.
 export function PlanSheet({ open, onClose, plan, onSaved, onDeleted }: PlanSheetProps) {
   return (
     <BottomSheet open={open} onClose={onClose} title="برنامه">
@@ -44,7 +48,6 @@ function PlanForm({ plan, onSaved, onDeleted }: Omit<PlanSheetProps, "open" | "o
       updatePlan(plan.id, { title: title.trim(), start_date: startDate, note: plan.note }),
     onSuccess: onSaved,
   });
-  const remove = useMutation({ mutationFn: () => deletePlan(plan.id), onSuccess: onDeleted });
   const errors = fieldErrors(save.error);
 
   const submit = () => {
@@ -86,16 +89,36 @@ function PlanForm({ plan, onSaved, onDeleted }: Omit<PlanSheetProps, "open" | "o
           {save.error.message}
         </p>
       )}
-      <ConfirmSheet
+      <DeletePlanSheet
         open={confirm.open}
         onClose={confirm.close}
-        title={`حذف «${plan.title}»؟`}
-        text="همه روزها و حرکت‌های این برنامه پاک می‌شوند و برنمی‌گردند."
-        confirmLabel="حذف برنامه"
-        onConfirm={() => remove.mutate()}
-        pending={remove.isPending}
-        error={remove.isError ? remove.error.message : null}
+        plan={plan}
+        onDeleted={onDeleted}
       />
     </>
+  );
+}
+
+type DeletePlanSheetProps = {
+  open: boolean;
+  onClose: () => void;
+  plan: PlanFields;
+  onDeleted: () => void;
+};
+
+// Asks before deleting the plan, then deletes it.
+export function DeletePlanSheet({ open, onClose, plan, onDeleted }: DeletePlanSheetProps) {
+  const remove = useMutation({ mutationFn: () => deletePlan(plan.id), onSuccess: onDeleted });
+  return (
+    <ConfirmSheet
+      open={open}
+      onClose={onClose}
+      title={`حذف «${plan.title}»؟`}
+      text="همه روزها و حرکت‌های این برنامه پاک می‌شوند و برنمی‌گردند."
+      confirmLabel="حذف برنامه"
+      onConfirm={() => remove.mutate()}
+      pending={remove.isPending}
+      error={remove.isError ? remove.error.message : null}
+    />
   );
 }

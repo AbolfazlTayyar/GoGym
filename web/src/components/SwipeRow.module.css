@@ -1,0 +1,55 @@
+/* A plan row's swipe actions: the row slides toward inline-end over the buttons behind it. */
+.row {
+  position: relative;
+  touch-action: pan-y;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.content {
+  position: relative;
+  transition: transform 0.2s ease;
+}
+
+.dragging {
+  transition: none;
+}
+
+.actions {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  display: flex;
+  gap: 8px;
+  padding-inline-end: 10px;
+}
+
+.hidden {
+  visibility: hidden;
+}
+
+.act {
+  width: 64px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  border-radius: 18px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.del {
+  background: var(--pink);
+  color: #fff;
+}
+
+.edit {
+  background: var(--blush2);
+  color: var(--pinkText);
+}
+
+.act:focus-visible {
+  outline-offset: -3px;
+}
