@@ -10,7 +10,7 @@ import { BigButton, BottomBar } from "../components/BigButton";
 import { EmptyState } from "../components/EmptyState";
 import { Header, HeaderTitle, RoundButton } from "../components/Header";
 import { AlertIcon, BackIcon, ChevLIcon, EditIcon, PhoneIcon } from "../components/icons";
-import { MeasurementSheet } from "../components/MeasurementSheet";
+import { DeleteMeasurementSheet, MeasurementSheet } from "../components/MeasurementSheet";
 import { PillTabs } from "../components/PillTabs";
 import { PlanMini } from "../components/PlanMini";
 import { DeletePlanSheet, PlanSheet } from "../components/PlanSheet";
@@ -41,6 +41,9 @@ export function ProfilePage() {
     setEditing(m);
     measurementSheet.show();
   };
+  // Not MeasurementSheet's own "delete-measurement", or its delete button would open this sheet as well.
+  const deleteMeasurementSheet = useSheet("delete-swiped-measurement");
+  const [deleting, setDeleting] = useState<Measurement | null>(null);
 
   const athlete = useQuery({
     queryKey: queryKeys.athletes("detail", id),
@@ -111,7 +114,14 @@ export function ProfilePage() {
           {tab === "plans" ? (
             <PlansTab plans={plans.data} />
           ) : (
-            <MeasurementsTab measurements={measurements.data ?? []} onOpen={openMeasurement} />
+            <MeasurementsTab
+              measurements={measurements.data ?? []}
+              onOpen={openMeasurement}
+              onDelete={(m) => {
+                setDeleting(m);
+                deleteMeasurementSheet.show();
+              }}
+            />
           )}
         </div>
       </ScreenContent>
@@ -129,6 +139,15 @@ export function ProfilePage() {
         measurements={measurements.data ?? []}
         editing={editing}
       />
+      {deleting && (
+        <DeleteMeasurementSheet
+          key={deleting.id}
+          open={deleteMeasurementSheet.open}
+          onClose={deleteMeasurementSheet.close}
+          measurement={deleting}
+          onDeleted={deleteMeasurementSheet.close}
+        />
+      )}
     </Screen>
   );
 }

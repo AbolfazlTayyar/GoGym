@@ -72,14 +72,6 @@ function MeasurementForm({ onClose, athleteId, measurements, editing }: Measurem
       editing ? updateMeasurement(editing.id, input) : createMeasurement(athleteId, input),
     onSuccess: done,
   });
-  // Deleting closes the confirmation and the sheet under it: two history entries.
-  const remove = useMutation({
-    mutationFn: () => deleteMeasurement(editing!.id),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: queryKeys.measurements() });
-      navigate(-2);
-    },
-  });
 
   const errors = fieldErrors(save.error);
   const noneFilled = metrics.every(({ key }) => errors[key] === msgNoneFilled);
@@ -150,17 +142,50 @@ function MeasurementForm({ onClose, athleteId, measurements, editing }: Measurem
         </p>
       )}
       {editing && (
-        <ConfirmSheet
+        <DeleteMeasurementSheet
           open={confirm.open}
           onClose={confirm.close}
-          title="حذف این اندازه‌گیری؟"
-          text="این ثبت از تاریخچه و نمودار پاک می‌شود و برنمی‌گردد."
-          confirmLabel="حذف"
-          onConfirm={() => remove.mutate()}
-          pending={remove.isPending}
-          error={remove.isError ? remove.error.message : null}
+          measurement={editing}
+          // The confirmation and the sheet under it: two history entries.
+          onDeleted={() => navigate(-2)}
         />
       )}
     </>
+  );
+}
+
+type DeleteMeasurementSheetProps = {
+  open: boolean;
+  onClose: () => void;
+  measurement: Measurement;
+  onDeleted: () => void;
+};
+
+// Asks before deleting a check-in, then deletes it and refreshes the history and the chart.
+export function DeleteMeasurementSheet({
+  open,
+  onClose,
+  measurement,
+  onDeleted,
+}: DeleteMeasurementSheetProps) {
+  const queryClient = useQueryClient();
+  const remove = useMutation({
+    mutationFn: () => deleteMeasurement(measurement.id),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: queryKeys.measurements() });
+      onDeleted();
+    },
+  });
+  return (
+    <ConfirmSheet
+      open={open}
+      onClose={onClose}
+      title="حذف این اندازه‌گیری؟"
+      text="این ثبت از تاریخچه و نمودار پاک می‌شود و برنمی‌گردد."
+      confirmLabel="حذف"
+      onConfirm={() => remove.mutate()}
+      pending={remove.isPending}
+      error={remove.isError ? remove.error.message : null}
+    />
   );
 }
