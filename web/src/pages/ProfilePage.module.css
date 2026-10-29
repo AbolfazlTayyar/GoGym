@@ -155,7 +155,7 @@
   display: block;
 }
 
-.hr span {
+.hr .nm span {
   font-size: 12px;
   color: var(--dim);
   display: block;
