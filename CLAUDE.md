@@ -18,6 +18,7 @@ RTL: use logical properties only (`margin-inline-start`, `padding-inline`, `inse
 
 Mobile-first rules: the base styles are the phone layout, with no media queries; touch targets are at least 44px (a 40px board button gets an invisible `::after` to reach it); inputs use at least a 16px font, or iOS Safari zooms on focus; heights use `100dvh`, not `100vh`; fixed bars pad with `env(safe-area-inset-bottom)`. A screen is a `100dvh` column (`Screen`) whose `ScreenContent` is the only part that scrolls.
 A box that scrolls (`overflow-x/y: auto`) clips its children's shadows into hard lines: give it padding as deep as the shadow reaches (`--glow` ≈ 12px above, 28px below) and take it back with equal negative margins, so the layout doesn't move.
+Content that slides sideways (a swiped row) overflows its parent and makes a scrolling `ScreenContent` scroll sideways. Clip the parent with `overflow-x: clip`, not `hidden`, so its children's shadows above and below aren't cut.
 A rule that styles children by tag (`.row span`) also hits any classed child of that tag inside it, and usually outranks that child's class. Scope it to the text wrapper (`.row .nm span`) or a direct child (`.row > b`).
 Closing a `BottomSheet` gives focus back to the element that opened it, and the browser shows the global `:focus-visible` ring there. On a card whose selected state is a pink border, that ring looks like a second selection. Turn the ring off on such cards (`.ch:focus-visible { outline: none; }`).
 
