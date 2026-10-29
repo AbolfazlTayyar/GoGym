@@ -279,7 +279,8 @@
   box-shadow: var(--soft);
 }
 
-.sug button:first-child {
+/* The top hit, which a search that finds nothing doesn't have: then "+ افزودن" comes first. */
+.sug button:first-child:not(.create) {
   background: var(--pink);
   color: #fff;
   box-shadow: var(--glow);
