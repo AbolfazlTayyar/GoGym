@@ -14,6 +14,7 @@ Several screens need a backend task from Phase 2 of [backend.md](backend.md) fir
 | 8-1 builder, day view | The هرپا / هرسمت options, "۱۵ تکرار هرپا" | Reps or seconds only | The API has no per-side field yet; see the deferred *Builder: per-side reps…* task |
 | 8-2 profile | Older plans show only their start date | Older plans also show their day count and size | *Plan summaries* added that data; the board predates it |
 | Not drawn | Deleting an athlete, deleting a plan (a swipe on its profile row) or a day, editing a plan's title and date (the same swipe), the sign-out sheet, empty and error states | Built from the boards' existing parts (sheet, pink pill, white sheet, yellow strip) | The backend supports them and the coach needs them |
+| Not drawn | Swipe actions | Plan, check-in, movement and athlete rows swipe right to left, as in iOS Messages, to show حذف and ویرایش; built-in movements don't swipe | Asked for. A plan is edited and deleted only this way; the other lists' tap and sheet still do both |
 
 > **Mobile first.** The coach does everything on a phone, building whole plans included ([stakeholder-brief.md](../stakeholder-brief.md) §2). Every screen is designed and checked at 360–430px wide first, on a real phone before it's called done. Wider screens get the same phone-width column, centered, not a desktop layout.
 

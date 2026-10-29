@@ -1,4 +1,4 @@
-/* A plan row's swipe actions: the row slides toward inline-end over the buttons behind it. */
+/* A row's swipe actions: the row slides toward inline-end over the buttons behind it. */
 .row {
   position: relative;
   touch-action: pan-y;
