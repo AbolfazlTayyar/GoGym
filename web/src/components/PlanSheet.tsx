@@ -1,48 +1,40 @@
 import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
-import { fieldErrors } from "../../api/client";
-import { deletePlan, updatePlan } from "../../api/plans";
-import type { PlanDetail } from "../../api/types";
-import { BigButton } from "../../components/BigButton";
-import { BottomSheet } from "../../components/BottomSheet";
-import { ConfirmSheet } from "../../components/ConfirmSheet";
-import { TrashIcon } from "../../components/icons";
-import { JalaliDateField } from "../../components/JalaliDateField";
-import { TextField } from "../../components/TextField";
-import { useSheet } from "../../components/useSheet";
-import { msgTitleEmpty } from "../../lib/formMessages";
-import s from "./Builder.module.css";
-
-// What the sheet edits, so a plan summary on the profile works as well as the builder's detail.
-type PlanFields = Pick<PlanDetail, "id" | "title" | "start_date" | "note">;
+import { fieldErrors } from "../api/client";
+import { deletePlan, updatePlan } from "../api/plans";
+import type { PlanSummary } from "../api/types";
+import { BigButton } from "./BigButton";
+import { BottomSheet } from "./BottomSheet";
+import { ConfirmSheet } from "./ConfirmSheet";
+import { JalaliDateField } from "./JalaliDateField";
+import { TextField } from "./TextField";
+import { msgTitleEmpty } from "../lib/formMessages";
+import s from "./PlanSheet.module.css";
 
 type PlanSheetProps = {
   open: boolean;
   onClose: () => void;
-  plan: PlanFields;
-  onSaved: (plan: PlanDetail) => void;
-  onDeleted: () => void;
+  plan: PlanSummary;
+  onSaved: () => void;
 };
 
-// Behind the builder's title and a profile plan row's edit: the plan's title and start date, and deleting
-// the plan.
-export function PlanSheet({ open, onClose, plan, onSaved, onDeleted }: PlanSheetProps) {
+// Behind a profile plan row's edit: the plan's title and start date.
+export function PlanSheet({ open, onClose, plan, onSaved }: PlanSheetProps) {
   return (
     <BottomSheet open={open} onClose={onClose} title="برنامه">
       {/* Mounted only while open, so it starts from the saved values each time. */}
-      {open && <PlanForm plan={plan} onSaved={onSaved} onDeleted={onDeleted} />}
+      {open && <PlanForm plan={plan} onSaved={onSaved} />}
     </BottomSheet>
   );
 }
 
-function PlanForm({ plan, onSaved, onDeleted }: Omit<PlanSheetProps, "open" | "onClose">) {
+function PlanForm({ plan, onSaved }: Omit<PlanSheetProps, "open" | "onClose">) {
   const [title, setTitle] = useState(plan.title);
   const [startDate, setStartDate] = useState(plan.start_date);
   // Caught here so the message can name the field, which the API's "is required" can't.
   const [titleError, setTitleError] = useState<string | null>(null);
-  const confirm = useSheet("delete-plan");
 
-  // PUT replaces every field, so the note the builder doesn't show is sent back unchanged.
+  // PUT replaces every field, so the note the profile doesn't show is sent back unchanged.
   const save = useMutation({
     mutationFn: () =>
       updatePlan(plan.id, { title: title.trim(), start_date: startDate, note: plan.note }),
@@ -62,7 +54,7 @@ function PlanForm({ plan, onSaved, onDeleted }: Omit<PlanSheetProps, "open" | "o
 
   return (
     <>
-      <div className={s.sheetFields}>
+      <div className={s.fields}>
         <TextField
           label="عنوان"
           value={title}
@@ -76,25 +68,14 @@ function PlanForm({ plan, onSaved, onDeleted }: Omit<PlanSheetProps, "open" | "o
           error={errors.start_date}
         />
       </div>
-      <div className={s.sheetActs}>
-        <BigButton onClick={submit} disabled={save.isPending}>
-          ذخیره
-        </BigButton>
-        <BigButton outline onClick={confirm.show}>
-          <TrashIcon /> حذف برنامه
-        </BigButton>
-      </div>
+      <BigButton onClick={submit} disabled={save.isPending}>
+        ذخیره
+      </BigButton>
       {save.isError && Object.keys(errors).length === 0 && (
-        <p className={s.lineError} role="alert">
+        <p className={s.error} role="alert">
           {save.error.message}
         </p>
       )}
-      <DeletePlanSheet
-        open={confirm.open}
-        onClose={confirm.close}
-        plan={plan}
-        onDeleted={onDeleted}
-      />
     </>
   );
 }
@@ -102,7 +83,7 @@ function PlanForm({ plan, onSaved, onDeleted }: Omit<PlanSheetProps, "open" | "o
 type DeletePlanSheetProps = {
   open: boolean;
   onClose: () => void;
-  plan: PlanFields;
+  plan: PlanSummary;
   onDeleted: () => void;
 };
 

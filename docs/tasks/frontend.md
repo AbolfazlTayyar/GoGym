@@ -13,7 +13,7 @@ Several screens need a backend task from Phase 2 of [backend.md](backend.md) fir
 | 8-1 day view, builder | Warm-up and cool-down as cream strips outside the numbering | Every block is numbered | The rule for spotting them is undecided; see the deferred *Warm-up and cool-down strips* task |
 | 8-1 builder, day view | The هرپا / هرسمت options, "۱۵ تکرار هرپا" | Reps or seconds only | The API has no per-side field yet; see the deferred *Builder: per-side reps…* task |
 | 8-2 profile | Older plans show only their start date | Older plans also show their day count and size | *Plan summaries* added that data; the board predates it |
-| Not drawn | Deleting an athlete, deleting a plan or a day, editing a plan's title and date, the sign-out sheet, empty and error states | Built from the boards' existing parts (sheet, pink pill, white sheet, yellow strip) | The backend supports them and the coach needs them |
+| Not drawn | Deleting an athlete, deleting a plan (a swipe on its profile row) or a day, editing a plan's title and date (the same swipe), the sign-out sheet, empty and error states | Built from the boards' existing parts (sheet, pink pill, white sheet, yellow strip) | The backend supports them and the coach needs them |
 
 > **Mobile first.** The coach does everything on a phone, building whole plans included ([stakeholder-brief.md](../stakeholder-brief.md) §2). Every screen is designed and checked at 360–430px wide first, on a real phone before it's called done. Wider screens get the same phone-width column, centered, not a desktop layout.
 
@@ -423,9 +423,8 @@ reps or seconds, set sets, make or break a superset, move up or down, delete). �
 the whole draft with PUT /api/v1/days/:id/blocks, then replaces it with the response.
 
 - /plans/:planId/edit?day=<label>. Header: "برنامه <title>", the athlete's name, "کپی از
-  <source_plan_title>" when GET /plans/:id returns one, the ذخیره pill, and back. Tapping
-  the title opens a sheet to change the title and start date (PUT /plans/:id) or delete the plan (DELETE /plans/:id after a
-  confirmation, then the profile).
+  <source_plan_title>" when GET /plans/:id returns one, the ذخیره pill, and back. A plan's
+  title, start date and deletion are on the profile's plan rows, not here.
 - Day letters with "+", which adds the next free label (A-G) at the next order_index
   through POST /plans/:id/days. Deleting a day (DELETE /days/:id) sits behind a long press
   or a small menu, with a confirmation.
@@ -478,6 +477,9 @@ docs/design/src/concept-8-2-athlete.html and blush.css.
   each day's line count (from GET /plans/:id, the same query the day view uses); older
   plans sit under برنامه‌های قبلی with their start date, day count and block_count. A plan
   opens its day view.
+- Swiping a plan right to left, as in iOS Messages, shows حذف and ویرایش behind its right
+  edge. ویرایش opens a sheet to change the title and start date (PUT /plans/:id); حذف asks
+  first, then DELETE /plans/:id.
 - "+ برنامه جدید" pinned at the bottom opens the new-plan screen.
 ```
 

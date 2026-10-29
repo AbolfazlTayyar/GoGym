@@ -1,14 +1,4 @@
 /* concept-8-1's fourth phone: the day view's sheet, editable, with the search pinned under it. */
-.titleButton {
-  display: block;
-  max-width: 100%;
-  text-align: start;
-  font: inherit;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
 .sheet {
   margin: 0 14px 14px;
   background: #fff;
@@ -324,24 +314,4 @@
   color: var(--faint);
   font-weight: 500;
   font-size: 15px;
-}
-
-.sheetFields {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-bottom: 18px;
-}
-
-.sheetActs {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.sheetActs button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
 }

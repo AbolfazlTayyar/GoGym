@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Link, useNavigate, useParams, useSearchParams } from "react-router";
+import { Link, useParams, useSearchParams } from "react-router";
 import { getAthlete } from "../api/athletes";
 import { queryKeys } from "../api/keys";
 import { listMeasurements } from "../api/measurements";
@@ -13,6 +13,7 @@ import { AlertIcon, BackIcon, ChevLIcon, EditIcon, PhoneIcon } from "../componen
 import { MeasurementSheet } from "../components/MeasurementSheet";
 import { PillTabs } from "../components/PillTabs";
 import { PlanMini } from "../components/PlanMini";
+import { DeletePlanSheet, PlanSheet } from "../components/PlanSheet";
 import { Screen, ScreenContent } from "../components/Screen";
 import { SwipeRow } from "../components/SwipeRow";
 import { useSheet } from "../components/useSheet";
@@ -22,7 +23,6 @@ import { athleteTypeLabels, experienceLabels } from "../lib/labels";
 import { paths } from "../lib/paths";
 import { planSizeText } from "../lib/planSize";
 import { useGoBack } from "../lib/useGoBack";
-import { DeletePlanSheet, PlanSheet } from "./builder/PlanSheet";
 import { MeasurementsTab } from "./MeasurementsTab";
 import s from "./ProfilePage.module.css";
 
@@ -161,14 +161,12 @@ function PlansTab({ plans }: { plans: PlanSummary[] | undefined }) {
     enabled: current !== null,
   });
   const queryClient = useQueryClient();
-  const navigate = useNavigate();
   // One row open at a time, as in iOS: swiping another closes this one.
   const [swipedId, setSwipedId] = useState<string | null>(null);
   // The plan a row's edit or delete was tapped on, kept after its sheet closes so the sheet slides down whole.
   const [target, setTarget] = useState<PlanSummary | null>(null);
   const editSheet = useSheet("plan");
-  // Not PlanSheet's own "delete-plan", or its delete button would open this sheet as well.
-  const deleteSheet = useSheet("delete-swiped-plan");
+  const deleteSheet = useSheet("delete-plan");
 
   const swipe = (p: PlanSummary) => ({
     open: swipedId === p.id,
@@ -184,10 +182,6 @@ function PlansTab({ plans }: { plans: PlanSummary[] | undefined }) {
       deleteSheet.show();
     },
   });
-  const forget = (planId: string) => {
-    queryClient.removeQueries({ queryKey: queryKeys.plans("detail", planId) });
-    queryClient.invalidateQueries({ queryKey: queryKeys.plans() });
-  };
 
   if (!plans) return <p className={s.note}>در حال بارگذاری…</p>;
   if (plans.length === 0) {
@@ -270,11 +264,6 @@ function PlansTab({ plans }: { plans: PlanSummary[] | undefined }) {
               queryClient.invalidateQueries({ queryKey: queryKeys.plans() });
               editSheet.close();
             }}
-            onDeleted={() => {
-              forget(target.id);
-              // Its confirm sheet is open over it, and both history entries go.
-              navigate(-2);
-            }}
           />
           <DeletePlanSheet
             key={target.id}
@@ -282,7 +271,8 @@ function PlansTab({ plans }: { plans: PlanSummary[] | undefined }) {
             onClose={deleteSheet.close}
             plan={target}
             onDeleted={() => {
-              forget(target.id);
+              queryClient.removeQueries({ queryKey: queryKeys.plans("detail", target.id) });
+              queryClient.invalidateQueries({ queryKey: queryKeys.plans() });
               deleteSheet.close();
             }}
           />

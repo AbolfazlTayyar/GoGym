@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useReducer, useRef, useState } from "react";
-import { useBlocker, useNavigate, useParams, useSearchParams } from "react-router";
+import { useBlocker, useParams, useSearchParams } from "react-router";
 import { getAthlete } from "../../api/athletes";
 import { ApiError } from "../../api/client";
 import { queryKeys } from "../../api/keys";
@@ -23,7 +23,6 @@ import { Adder } from "./Adder";
 import s from "./Builder.module.css";
 import { draftReducer, fromDay, newKey, toBody } from "./draft";
 import { OpenLine } from "./OpenLine";
-import { PlanSheet } from "./PlanSheet";
 
 const dayParam = "day";
 const dayLetters = "ABCDEFG";
@@ -90,11 +89,9 @@ type BuilderScreenProps = { plan: PlanDetail; athlete: Athlete; day: Day | undef
 
 function BuilderScreen({ plan, athlete, day }: BuilderScreenProps) {
   const queryClient = useQueryClient();
-  const navigate = useNavigate();
   const [, setParams] = useSearchParams();
   const goBack = useGoBack(paths.dayView(plan.id, day?.label));
   const viewport = useVisualViewportStyle();
-  const planSheet = useSheet("plan");
   const deleteDaySheet = useSheet("delete-day");
 
   const [baseline, setBaseline] = useState(day);
@@ -103,8 +100,6 @@ function BuilderScreen({ plan, athlete, day }: BuilderScreenProps) {
   const [joinKey, setJoinKey] = useState<string | null>(null);
   const [pending, setPending] = useState<{ label: string } | "add" | null>(null);
   const [savedNotice, setSavedNotice] = useState(false);
-  // Set before navigating away on purpose (after deleting the plan), so the unsaved-changes guard lets it through.
-  const leaving = useRef(false);
   const sheetRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
 
@@ -166,7 +161,7 @@ function BuilderScreen({ plan, athlete, day }: BuilderScreenProps) {
   // Back, the bottom bar or any link out of the builder asks first while the draft has changes.
   const blocker = useBlocker(
     ({ currentLocation, nextLocation }) =>
-      dirty && !leaving.current && currentLocation.pathname !== nextLocation.pathname,
+      dirty && currentLocation.pathname !== nextLocation.pathname,
   );
   // Closing the tab or reloading too; the browser shows its own question.
   useEffect(() => {
@@ -227,14 +222,7 @@ function BuilderScreen({ plan, athlete, day }: BuilderScreenProps) {
         <RoundButton label="بازگشت" onClick={() => goBack()}>
           <BackIcon />
         </RoundButton>
-        <HeaderTitle
-          title={
-            <button type="button" className={s.titleButton} onClick={planSheet.show}>
-              {plan.title}
-            </button>
-          }
-          subtitle={subtitle}
-        />
+        <HeaderTitle title={plan.title} subtitle={subtitle} />
         <PillButton onClick={() => save.mutate()} disabled={!day || save.isPending}>
           {savedNotice ? "ذخیره شد ✓" : "ذخیره"}
         </PillButton>
@@ -319,22 +307,6 @@ function BuilderScreen({ plan, athlete, day }: BuilderScreenProps) {
       </div>
       {day && <Adder inputRef={searchRef} joining={joinKey !== null} onPick={onPick} />}
 
-      <PlanSheet
-        open={planSheet.open}
-        onClose={planSheet.close}
-        plan={plan}
-        onSaved={(updated) => {
-          queryClient.setQueryData<PlanDetail>(detailKey, (p) => p && { ...updated, days: p.days });
-          refreshSummaries();
-          planSheet.close();
-        }}
-        onDeleted={() => {
-          queryClient.removeQueries({ queryKey: detailKey });
-          refreshSummaries();
-          leaving.current = true;
-          navigate(paths.profile(plan.athlete_id), { replace: true });
-        }}
-      />
       {day && (
         <ConfirmSheet
           open={deleteDaySheet.open}
