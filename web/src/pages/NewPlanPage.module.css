@@ -30,6 +30,11 @@
   box-shadow: 0 10px 26px rgba(255, 0, 87, 0.16);
 }
 
+/* Closing the picker sheet hands focus back to a card as focus-visible, and the pink ring reads as a second selection. */
+.ch:focus-visible {
+  outline: none;
+}
+
 .radio {
   width: 22px;
   height: 22px;
