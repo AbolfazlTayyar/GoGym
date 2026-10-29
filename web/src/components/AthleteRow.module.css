@@ -1,14 +1,11 @@
 /* Concept 2's home rows on one white sheet (blush.css .ath, .dl). */
+/* White, so the swipe actions behind it on home don't show through. */
 .ath {
   display: flex;
   align-items: center;
   gap: 10px;
   height: 60px;
-  border-bottom: 1px solid var(--line);
-}
-
-.ath:last-child {
-  border-bottom: 0;
+  background: #fff;
 }
 
 .nm {

@@ -7,8 +7,19 @@
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  /* A swiped row slides under the sheet's edge, not into a sideways scroll. */
+  overflow-x: hidden;
   overscroll-behavior: contain;
   box-shadow: var(--soft);
+}
+
+/* The line sits on the row, not the athlete a swipe slides, so it stays put under a swipe. */
+.row {
+  border-bottom: 1px solid var(--line);
+}
+
+.row:last-child {
+  border-bottom: 0;
 }
 
 /* Search results sit right under the search box, with no switch in between. */

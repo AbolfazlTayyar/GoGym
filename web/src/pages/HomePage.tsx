@@ -1,18 +1,20 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
-import { useSearchParams } from "react-router";
+import { useNavigate, useSearchParams } from "react-router";
 import { listAthletes } from "../api/athletes";
 import { queryKeys } from "../api/keys";
 import { getCurrentPlans } from "../api/plans";
 import type { Athlete, AthleteType, PlanSummary } from "../api/types";
 import { AthleteRow } from "../components/AthleteRow";
 import { BigButton } from "../components/BigButton";
+import { DeleteAthleteSheet } from "../components/DeleteAthleteSheet";
 import { EmptyState } from "../components/EmptyState";
 import { Header, HeaderTitle, KickerButton, RoundButton } from "../components/Header";
 import { PlusIcon, SparkIcon, UsersIcon } from "../components/icons";
 import { PillTabs } from "../components/PillTabs";
 import { SearchBox } from "../components/SearchBox";
 import { SignOutSheet } from "../components/SignOutSheet";
+import { SwipeRow } from "../components/SwipeRow";
 import { useSheet } from "../components/useSheet";
 import { dayColumns } from "../lib/days";
 import { toPersianDigits } from "../lib/digits";
@@ -33,6 +35,10 @@ export function HomePage() {
   const [text, setText] = useState(params.get(searchParam) ?? "");
   const q = useDebouncedValue(text.trim(), searchDebounceMs);
   const account = useSheet("account");
+  const deleteSheet = useSheet("delete-athlete");
+  const [deleting, setDeleting] = useState<Athlete | null>(null);
+  const [swipedId, setSwipedId] = useState<string | null>(null);
+  const navigate = useNavigate();
   const rosterRef = useRef<HTMLDivElement>(null);
 
   // The search lives in the URL too, so back from a day opened from the results returns to them.
@@ -74,13 +80,25 @@ export function HomePage() {
 
   const rows = (list: Athlete[], highlight?: string) =>
     list.map((a) => (
-      <AthleteRow
+      <SwipeRow
         key={a.id}
-        athlete={a}
-        plan={plans.get(a.id) ?? null}
-        columns={columns}
-        highlight={highlight}
-      />
+        className={s.row}
+        open={swipedId === a.id}
+        onOpenChange={(o) => setSwipedId(o ? a.id : null)}
+        onEdit={() => navigate(paths.editAthlete(a.id))}
+        onDelete={() => {
+          setSwipedId(null);
+          setDeleting(a);
+          deleteSheet.show();
+        }}
+      >
+        <AthleteRow
+          athlete={a}
+          plan={plans.get(a.id) ?? null}
+          columns={columns}
+          highlight={highlight}
+        />
+      </SwipeRow>
     ));
 
   const setType = (next: AthleteType) =>
@@ -190,6 +208,15 @@ export function HomePage() {
       )}
       {body}
       <SignOutSheet open={account.open} onClose={account.close} />
+      {deleting && (
+        <DeleteAthleteSheet
+          key={deleting.id}
+          open={deleteSheet.open}
+          onClose={deleteSheet.close}
+          athlete={deleting}
+          onDeleted={deleteSheet.close}
+        />
+      )}
     </>
   );
 }

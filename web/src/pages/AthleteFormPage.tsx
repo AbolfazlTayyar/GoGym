@@ -1,18 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, type FormEvent } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router";
-import {
-  createAthlete,
-  deleteAthlete,
-  getAthlete,
-  updateAthlete,
-  type AthleteInput,
-} from "../api/athletes";
+import { createAthlete, getAthlete, updateAthlete, type AthleteInput } from "../api/athletes";
 import { fieldErrors } from "../api/client";
 import { queryKeys } from "../api/keys";
 import type { Athlete, AthleteType, ExperienceLevel } from "../api/types";
 import { BigButton } from "../components/BigButton";
 import { ConfirmSheet } from "../components/ConfirmSheet";
+import { DeleteAthleteSheet } from "../components/DeleteAthleteSheet";
 import { EmptyState } from "../components/EmptyState";
 import f from "../components/Field.module.css";
 import { Header, HeaderTitle, PillButton, RoundButton } from "../components/Header";
@@ -122,28 +117,13 @@ function AthleteForm({ athlete, initial }: { athlete?: Athlete; initial: FormSta
 
   const dirty = JSON.stringify(form) !== JSON.stringify(initial);
 
-  // The plan rows on home come from the current plans, which a deleted athlete leaves too.
-  const invalidate = () =>
-    Promise.all([
-      queryClient.invalidateQueries({ queryKey: queryKeys.athletes() }),
-      queryClient.invalidateQueries({ queryKey: queryKeys.plans() }),
-    ]);
-
   const save = useMutation({
     mutationFn: (input: AthleteInput) =>
       athlete ? updateAthlete(athlete.id, input) : createAthlete(input),
     onSuccess: async (saved) => {
-      await invalidate();
+      await queryClient.invalidateQueries({ queryKey: queryKeys.athletes() });
       // Replacing the form, so back from the profile doesn't reopen it.
       navigate(paths.profile(saved.id), { replace: true });
-    },
-  });
-
-  const del = useMutation({
-    mutationFn: () => deleteAthlete(athlete!.id),
-    onSuccess: async () => {
-      await invalidate();
-      navigate(paths.home, { replace: true });
     },
   });
 
@@ -280,15 +260,11 @@ function AthleteForm({ athlete, initial }: { athlete?: Athlete; initial: FormSta
         onConfirm={() => goBack(1)}
       />
       {athlete && (
-        <ConfirmSheet
+        <DeleteAthleteSheet
           open={remove.open}
           onClose={remove.close}
-          title={`حذف ${athlete.first_name} ${athlete.last_name}؟`}
-          text="شاگرد از فهرست شما حذف می‌شود و برنامه‌ها و اندازه‌هایش دیگر دیده نمی‌شوند."
-          confirmLabel="حذف"
-          onConfirm={() => del.mutate()}
-          pending={del.isPending}
-          error={del.isError ? del.error.message : null}
+          athlete={athlete}
+          onDeleted={() => navigate(paths.home, { replace: true })}
         />
       )}
     </Screen>
