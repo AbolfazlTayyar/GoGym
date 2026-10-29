@@ -34,6 +34,8 @@
   color: var(--dim);
 }
 
+/* Stretched because .big has no inline padding; shrink-wrapped, its label touches the pill's ends. */
 .action {
   margin-top: 8px;
+  align-self: stretch;
 }
