@@ -11,8 +11,9 @@ export function useVisualViewportStyle(): CSSProperties | undefined {
     const vv = window.visualViewport;
     if (!vv) return;
     const update = () => {
-      // vv.height is fractional and innerHeight a whole number, so a gap under a pixel is only rounding.
-      const layoutTallerThanVisible = window.innerHeight - vv.height > 1;
+      // clientHeight, not innerHeight: iOS can shrink innerHeight with the keyboard, which reads as a resized
+      // layout. vv.height is fractional and clientHeight a whole number, so a gap under a pixel is only rounding.
+      const layoutTallerThanVisible = document.documentElement.clientHeight - vv.height > 1;
       setStyle(
         layoutTallerThanVisible
           ? { height: `${vv.height}px`, transform: `translateY(${vv.offsetTop}px)` }
