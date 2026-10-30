@@ -1,4 +1,4 @@
-import type { Dispatch } from "react";
+import type { Dispatch, RefObject } from "react";
 import { TrashIcon, XIcon } from "../../components/icons";
 import { Segmented } from "../../components/Segmented";
 import { toPersianDigits } from "../../lib/digits";
@@ -15,6 +15,7 @@ import {
 } from "./draft";
 
 type OpenLineProps = {
+  ref: RefObject<HTMLDivElement | null>;
   index: number;
   block: DraftBlock;
   isFirst: boolean;
@@ -39,12 +40,12 @@ const presetLabel = (p: (typeof presets)[number]) =>
 // A line opened in place: everything is a tap (type, +/-, presets, superset, move, delete); nothing is typed.
 // Rest is hidden: her plans never prescribe it (docs/design/README.md).
 export function OpenLine(props: OpenLineProps) {
-  const { index, block, isFirst, isLast, joining, dispatch, onClose, onJoin, error } = props;
+  const { ref, index, block, isFirst, isLast, joining, dispatch, onClose, onJoin, error } = props;
   const superset = block.movements.length > 1;
   const blockKey = block.key;
 
   return (
-    <div className={s.open}>
+    <div ref={ref} className={s.open}>
       <div className={s.oh}>
         <span className={s.num}>{toPersianDigits(index + 1)}</span>
         <button type="button" className={s.ohTitle} onClick={onClose}>

@@ -27,6 +27,8 @@ import { OpenLine } from "./OpenLine";
 const dayParam = "day";
 const dayLetters = "ABCDEFG";
 const savedNoticeMs = 2000;
+// The open line's own top margin, so a line scrolled to the top isn't flush with the sheet's rounded edge.
+const openLineGap = 8;
 
 // The next day "+" adds: the first slot whose letter and order_index are both free.
 function nextDay(days: Day[]): { label: string; orderIndex: number } | null {
@@ -100,7 +102,9 @@ function BuilderScreen({ plan, athlete, day }: BuilderScreenProps) {
   const [joinKey, setJoinKey] = useState<string | null>(null);
   const [pending, setPending] = useState<{ label: string } | "add" | null>(null);
   const [savedNotice, setSavedNotice] = useState(false);
+  const [pickedKey, setPickedKey] = useState<string | null>(null);
   const sheetRef = useRef<HTMLDivElement>(null);
+  const openLineRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
 
   const dirty =
@@ -171,13 +175,15 @@ function BuilderScreen({ plan, athlete, day }: BuilderScreenProps) {
     return () => window.removeEventListener("beforeunload", warn);
   }, [dirty]);
 
-  // A new line opens and scrolls into view, so its reps can be set right away.
-  const lastKey = draft.at(-1)?.key;
+  // A picked movement's line comes to the top of the sheet, so its reps can be set right away. Top, not
+  // bottom: the keyboard is still closing, and the sheet growing afterward leaves a top-aligned line in place.
   useEffect(() => {
-    if (lastKey && lastKey === openKey) {
-      sheetRef.current?.scrollTo({ top: sheetRef.current.scrollHeight, behavior: "smooth" });
-    }
-  }, [lastKey, openKey]);
+    const sheet = sheetRef.current;
+    const line = openLineRef.current;
+    if (!pickedKey || !sheet || !line) return;
+    const offset = line.getBoundingClientRect().top - sheet.getBoundingClientRect().top;
+    sheet.scrollTo({ top: sheet.scrollTop + offset - openLineGap, behavior: "smooth" });
+  }, [pickedKey]);
 
   const switchDay = (label: string) => {
     if (label === day?.label) return;
@@ -201,14 +207,16 @@ function BuilderScreen({ plan, athlete, day }: BuilderScreenProps) {
   };
 
   const onPick = (movement: { id: string; name: string }) => {
+    const movementKey = newKey();
+    setPickedKey(movementKey);
     if (joinKey) {
-      dispatch({ type: "join", blockKey: joinKey, movementKey: newKey(), movement });
+      dispatch({ type: "join", blockKey: joinKey, movementKey, movement });
       setOpenKey(joinKey);
       setJoinKey(null);
       return;
     }
     const blockKey = newKey();
-    dispatch({ type: "add", blockKey, movementKey: newKey(), movement });
+    dispatch({ type: "add", blockKey, movementKey, movement });
     setOpenKey(blockKey);
   };
 
@@ -272,6 +280,7 @@ function BuilderScreen({ plan, athlete, day }: BuilderScreenProps) {
             {draft.map((block, i) =>
               block.key === openKey ? (
                 <OpenLine
+                  ref={openLineRef}
                   key={block.key}
                   index={i}
                   block={block}

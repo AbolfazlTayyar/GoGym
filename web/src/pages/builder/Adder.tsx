@@ -40,12 +40,14 @@ export function Adder({ inputRef, joining, onPick }: AdderProps) {
   const pick = (m: { id: string; name: string }) => {
     onPick(m);
     setText("");
+    // Nothing in the new line is typed, so the keyboard would only cover it.
+    inputRef.current?.blur();
   };
 
   const typed = text.trim();
   const results = q && typed ? (found.data ?? []).slice(0, maxSuggestions) : [];
   const exact = results.some((m) => m.name === typed);
-  // Keeps the input focused, and the keyboard up, when a chip is tapped.
+  // Keeps the keyboard up until the tap lands: closing it on press would move the chip from under the finger.
   const keepFocus = (e: { preventDefault: () => void }) => e.preventDefault();
 
   return (
