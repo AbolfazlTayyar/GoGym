@@ -33,7 +33,11 @@ export function BottomSheet({ open, onClose, title, children }: BottomSheetProps
 
   useEffect(() => {
     const dialog = ref.current;
-    if (open && dialog && !dialog.open) dialog.showModal();
+    if (open && dialog && !dialog.open) {
+      dialog.showModal();
+      // showModal focuses the close button, and its focus ring makes it look already selected.
+      dialog.focus();
+    }
   }, [open]);
 
   // The dialog closes once the panel has slid down, not when open turns false.
@@ -63,6 +67,7 @@ export function BottomSheet({ open, onClose, title, children }: BottomSheetProps
   return (
     <dialog
       ref={ref}
+      tabIndex={-1}
       className={closing ? `${s.dialog} ${s.closing}` : s.dialog}
       onCancel={(e) => {
         // Escape: close through onClose so the history entry goes too.

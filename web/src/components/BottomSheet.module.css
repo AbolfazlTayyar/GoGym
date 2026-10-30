@@ -20,6 +20,11 @@
   display: flex;
 }
 
+/* It takes focus on opening; a ring around the whole screen would mean nothing. */
+.dialog:focus-visible {
+  outline: none;
+}
+
 .dialog::backdrop {
   background: rgba(43, 26, 32, 0.38);
   /* A slow start, so the page dims along with the rising panel instead of all at once. */
