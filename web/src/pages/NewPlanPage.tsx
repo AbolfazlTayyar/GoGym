@@ -17,7 +17,7 @@ import { Screen, ScreenContent } from "../components/Screen";
 import { TextField } from "../components/TextField";
 import { useSheet } from "../components/useSheet";
 import { msgTitleEmpty } from "../lib/formMessages";
-import { firstOfNextJalaliMonth, planTitleFor, todayISO } from "../lib/jalali";
+import { planTitleFor, todayISO } from "../lib/jalali";
 import { paths } from "../lib/paths";
 import { planSizeText } from "../lib/planSize";
 import { useGoBack } from "../lib/useGoBack";
@@ -61,7 +61,7 @@ function NewPlanForm({ athlete, latest }: { athlete: Athlete; latest: PlanSummar
   const picker = useSheet("copy-from");
   const [choice, setChoice] = useState<Choice>(latest ? "latest" : "empty");
   const [other, setOther] = useState<{ athlete: Athlete; plan: PlanSummary } | null>(null);
-  const [startDate, setStartDate] = useState(() => firstOfNextJalaliMonth(todayISO()));
+  const [startDate, setStartDate] = useState(() => todayISO());
   const [title, setTitle] = useState(() => planTitleFor(startDate));
   // Caught here so the message can name the field, which the API's "is required" can't.
   const [titleError, setTitleError] = useState<string | null>(null);

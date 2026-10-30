@@ -67,14 +67,6 @@ export function todayISO(now: Date = new Date()): string {
   return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
 }
 
-// The new-plan default start: the 1st of the Jalali month after the one `iso` falls in.
-export function firstOfNextJalaliMonth(iso: string): string {
-  const { jy, jm } = isoToJalali(iso);
-  return jm === 12
-    ? jalaliToISO({ jy: jy + 1, jm: 1, jd: 1 })
-    : jalaliToISO({ jy, jm: jm + 1, jd: 1 });
-}
-
 export function jalaliMonthName(iso: string): string {
   return jalaliMonthNames[isoToJalali(iso).jm - 1];
 }

@@ -12,6 +12,7 @@ Several screens need a backend task from Phase 2 of [backend.md](backend.md) fir
 |---|---|---|---|
 | 8-1 day view, builder | Warm-up and cool-down as cream strips outside the numbering | Every block is numbered | The rule for spotting them is undecided; see the deferred *Warm-up and cool-down strips* task |
 | 8-1 builder, day view | The هرپا / هرسمت options, "۱۵ تکرار هرپا" | Reps or seconds only | The API has no per-side field yet; see the deferred *Builder: per-side reps…* task |
+| 8-1 new plan | Start date ۱ آبان, the first of next month | Start date is today and the title names this month | Asked for |
 | 8-2 profile | Older plans show only their start date | Older plans also show their day count and size | *Plan summaries* added that data; the board predates it |
 | Not drawn | Deleting an athlete, deleting a plan (a swipe on its profile row) or a day, editing a plan's title and date (the same swipe), the sign-out sheet, empty and error states | Built from the boards' existing parts (sheet, pink pill, white sheet, yellow strip) | The backend supports them and the coach needs them |
 | Not drawn | Swipe actions | Plan, check-in, movement and athlete rows swipe right to left, as in iOS Messages, to show حذف and ویرایش; built-in movements don't swipe | Asked for. A plan is edited and deleted only this way; the other lists' tap and sheet still do both |
@@ -205,14 +206,13 @@ Add web/src/lib/digits.ts and web/src/lib/jalali.ts, and a Jalali date field.
   Intl.DateTimeFormat("fa-IR-u-ca-persian"), with no library. Convert between Jalali
   year/month/day and ISO with jalaali-js for the date field. Also: today as an ISO date
   in the phone's local time, not UTC (a check-in logged at 01:00 in Tehran must not land
-  on yesterday), the first day of next Jalali month (the new-plan default), and the
-  Jalali month names.
+  on yesterday), and the Jalali month names.
 - A Jalali date field: shows the date and opens a picker sheet for year, month and day.
   Keep it simple. Only two forms use it, and both pre-fill the date.
 
 Unit tests: Persian, Arabic and mixed input; "۶۸٫۵" → 68.5; 1405/01/01 = 2026-03-21 and
 1403/12/30 = 2025-03-20 (1403 is a leap year); "today" just after midnight in
-Asia/Tehran; next month across the Esfand → Farvardin year boundary.
+Asia/Tehran.
 ```
 
 **Checkpoint:** `npm test` passes. On a phone with a Persian keyboard, typing ۶۸٫۵ into a test field shows `68.5` as the parsed value.
@@ -393,8 +393,7 @@ docs/design/src/concept-8-1-home-and-plans.html and blush.css.
   - a copy of another athlete's plan: pick the athlete with the same search as home,
     then one of their plans;
   - an empty plan.
-- Title pre-filled "برنامه <next Jalali month name>", start date the first day of next
-  Jalali month, both editable.
+- Title pre-filled "برنامه <this Jalali month name>", start date today, both editable.
 - ادامه: POST /api/v1/plans, with source_plan_id for a copy. For an empty plan, also POST
   /plans/:id/days with label A and order_index 0, so the builder has a day to open. Then
   open the builder on the first day, replacing this screen in history so back doesn't

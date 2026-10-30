@@ -1,12 +1,11 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
-  firstOfNextJalaliMonth,
   formatJalali,
   formatJalaliShort,
   isoToJalali,
   jalaliMonthLength,
-  jalaliMonthName,
   jalaliToISO,
+  planTitleFor,
   todayISO,
 } from "./jalali";
 
@@ -43,13 +42,9 @@ describe("todayISO", () => {
   });
 });
 
-describe("firstOfNextJalaliMonth", () => {
-  it("moves to the 1st of the next month", () => {
-    expect(firstOfNextJalaliMonth("2026-10-19")).toBe("2026-10-23"); // 27 Mehr → 1 Aban
-  });
-
-  it("crosses Esfand into Farvardin of the next year", () => {
-    expect(firstOfNextJalaliMonth("2026-03-01")).toBe("2026-03-21"); // 10 Esfand 1404 → 1 Farvardin 1405
-    expect(jalaliMonthName(firstOfNextJalaliMonth("2026-03-01"))).toBe("فروردین");
+describe("planTitleFor", () => {
+  it("names the Jalali month the date falls in", () => {
+    expect(planTitleFor("2026-10-30")).toBe("برنامه آبان");
+    expect(planTitleFor("2026-03-21")).toBe("برنامه فروردین");
   });
 });
