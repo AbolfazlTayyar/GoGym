@@ -15,6 +15,17 @@ export const jalaliMonthNames = [
   "اسفند",
 ];
 
+// The Iranian week starts on Saturday.
+export const jalaliWeekdayNames = [
+  "شنبه",
+  "یکشنبه",
+  "دوشنبه",
+  "سه‌شنبه",
+  "چهارشنبه",
+  "پنجشنبه",
+  "جمعه",
+];
+
 export type JalaliDate = { jy: number; jm: number; jd: number };
 
 const pad = (n: number) => String(n).padStart(2, "0");
@@ -65,6 +76,11 @@ export function jalaliMonthLength(jy: number, jm: number): number {
 // Today on the phone's clock, not UTC: a check-in logged at 01:00 in Tehran is today's, not yesterday's.
 export function todayISO(now: Date = new Date()): string {
   return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+}
+
+// The date's place in jalaliWeekdayNames: 2026-09-23, a Wednesday → 4.
+export function jalaliWeekdayIndex(iso: string): number {
+  return (isoToUTCDate(iso).getUTCDay() + 1) % 7;
 }
 
 export function jalaliMonthName(iso: string): string {

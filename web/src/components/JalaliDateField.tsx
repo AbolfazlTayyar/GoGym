@@ -6,6 +6,8 @@ import {
   jalaliMonthLength,
   jalaliMonthNames,
   jalaliToISO,
+  jalaliWeekdayIndex,
+  jalaliWeekdayNames,
   type JalaliDate,
 } from "../lib/jalali";
 import { BottomSheet } from "./BottomSheet";
@@ -52,6 +54,7 @@ function Picker({ initial, onPick }: { initial: JalaliDate; onPick: (iso: string
   const [jm, setMonth] = useState(initial.jm);
   const length = jalaliMonthLength(jy, jm);
   const isPicked = (jd: number) => jy === initial.jy && jm === initial.jm && jd === initial.jd;
+  const firstWeekday = jalaliWeekdayIndex(jalaliToISO({ jy, jm, jd: 1 }));
 
   return (
     <>
@@ -86,12 +89,18 @@ function Picker({ initial, onPick }: { initial: JalaliDate; onPick: (iso: string
           </button>
         ))}
       </div>
+      <div className={s.weekdays}>
+        {jalaliWeekdayNames.map((name) => (
+          <span key={name}>{name}</span>
+        ))}
+      </div>
       <div className={s.days}>
         {Array.from({ length }, (_, i) => i + 1).map((jd) => (
           <button
             key={jd}
             type="button"
             className={isPicked(jd) ? s.on : undefined}
+            style={jd === 1 ? { gridColumnStart: firstWeekday + 1 } : undefined}
             onClick={() => onPick(jalaliToISO({ jy, jm, jd }))}
           >
             {toPersianDigits(jd)}

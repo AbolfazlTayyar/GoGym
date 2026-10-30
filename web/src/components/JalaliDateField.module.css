@@ -50,11 +50,22 @@
   box-shadow: var(--soft);
 }
 
+.weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+  margin-top: 14px;
+  color: var(--dim);
+  font-size: 10.5px;
+  font-weight: 700;
+  text-align: center;
+}
+
 .days {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   gap: 6px;
-  margin-top: 12px;
+  margin-top: 6px;
 }
 
 .days button {

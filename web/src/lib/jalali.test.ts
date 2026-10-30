@@ -5,6 +5,8 @@ import {
   isoToJalali,
   jalaliMonthLength,
   jalaliToISO,
+  jalaliWeekdayIndex,
+  jalaliWeekdayNames,
   planTitleFor,
   todayISO,
 } from "./jalali";
@@ -39,6 +41,14 @@ describe("todayISO", () => {
     vi.stubEnv("TZ", "Asia/Tehran");
     // 01:00 on 19 Oct in Tehran is still 18 Oct in UTC.
     expect(todayISO(new Date("2026-10-18T21:30:00Z"))).toBe("2026-10-19");
+  });
+});
+
+describe("jalaliWeekdayIndex", () => {
+  it("counts from Saturday", () => {
+    expect(jalaliWeekdayNames[jalaliWeekdayIndex("2026-10-24")]).toBe("شنبه");
+    expect(jalaliWeekdayNames[jalaliWeekdayIndex("2026-09-23")]).toBe("چهارشنبه");
+    expect(jalaliWeekdayNames[jalaliWeekdayIndex("2026-10-30")]).toBe("جمعه");
   });
 });
 

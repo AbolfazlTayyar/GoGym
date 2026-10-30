@@ -206,13 +206,14 @@ Add web/src/lib/digits.ts and web/src/lib/jalali.ts, and a Jalali date field.
   Intl.DateTimeFormat("fa-IR-u-ca-persian"), with no library. Convert between Jalali
   year/month/day and ISO with jalaali-js for the date field. Also: today as an ISO date
   in the phone's local time, not UTC (a check-in logged at 01:00 in Tehran must not land
-  on yesterday), and the Jalali month names.
-- A Jalali date field: shows the date and opens a picker sheet for year, month and day.
+  on yesterday), and the Jalali month and weekday names.
+- A Jalali date field: shows the date and opens a picker sheet for year, month and day,
+  with the days under their weekday columns, Saturday first.
   Keep it simple. Only two forms use it, and both pre-fill the date.
 
 Unit tests: Persian, Arabic and mixed input; "۶۸٫۵" → 68.5; 1405/01/01 = 2026-03-21 and
 1403/12/30 = 2025-03-20 (1403 is a leap year); "today" just after midnight in
-Asia/Tehran.
+Asia/Tehran; a date's weekday, counted from Saturday.
 ```
 
 **Checkpoint:** `npm test` passes. On a phone with a Persian keyboard, typing ۶۸٫۵ into a test field shows `68.5` as the parsed value.
