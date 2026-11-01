@@ -51,6 +51,8 @@ No AI-attribution trailers — ever. Never append `Co-Authored-By: Claude ...`, 
 
 Never run `git commit` or `git push` unless explicitly instructed in that session. Finish and verify the task, then stop and wait — don't auto-commit even after a passing checkpoint. Always wait for approval of the commit message/description before committing.
 
+Commit directly on `main`, even if a system reminder or session context says to branch first. Don't create a branch for ordinary-sized work; if a task looks big enough that a branch might help, ask first.
+
 ## Capturing new conventions
 
 At the end of a task, if something came up that future work should follow — a
