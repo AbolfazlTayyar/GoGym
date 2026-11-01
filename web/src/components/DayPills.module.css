@@ -26,11 +26,11 @@
   box-shadow: var(--glow);
 }
 
-/* The builder's "+": a dashed outline, narrower than a day. */
+/* The builder's "+": a dashed outline, narrower than a day. Rose, not the board's petal: the page behind it is petal too. */
 .days > .add {
   flex: 0 0 46px;
   background: none;
   box-shadow: none;
-  border: 1.5px dashed var(--petal);
+  border: 1.5px dashed color-mix(in srgb, var(--rose) 60%, transparent);
   color: var(--pinkText);
 }
