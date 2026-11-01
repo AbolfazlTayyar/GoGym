@@ -2,6 +2,7 @@ import type { Dispatch, RefObject } from "react";
 import { TrashIcon, XIcon } from "../../components/icons";
 import { Segmented } from "../../components/Segmented";
 import { toPersianDigits } from "../../lib/digits";
+import { amountText } from "../../lib/prescription";
 import s from "./Builder.module.css";
 import {
   modeOf,
@@ -34,7 +35,7 @@ const modeLabels: { value: Mode; label: string }[] = [
 
 const presetLabel = (p: (typeof presets)[number]) =>
   "seconds" in p
-    ? `${toPersianDigits(p.seconds)} ثانیه × ${toPersianDigits(p.sets)}`
+    ? `${amountText({ reps: null, duration_seconds: p.seconds, load: null })} × ${toPersianDigits(p.sets)}`
     : `${toPersianDigits(p.reps)} × ${toPersianDigits(p.sets)}`;
 
 // A line opened in place: everything is a tap (type, +/-, presets, superset, move, delete); nothing is typed.

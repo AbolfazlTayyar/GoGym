@@ -23,8 +23,11 @@ export function amountText(part: Part): string {
 }
 
 // A block's line under its movements, as her plans write it: "۱۵ تکرار + ۴۵ ثانیه × ۳ ست".
+// One timed set is just the time ("دوچرخه ۱۰ دقیقه"): nothing repeats, so there's no count to read.
 export function prescriptionText(block: Prescribed): string {
   const amounts = block.movements.map(amountText).filter(Boolean).join(" + ");
   const sets = `${toPersianDigits(block.sets)} ست`;
-  return amounts ? `${amounts} × ${sets}` : sets;
+  if (!amounts) return sets;
+  const timed = block.movements.every((m) => m.duration_seconds !== null);
+  return block.sets === 1 && timed ? amounts : `${amounts} × ${sets}`;
 }

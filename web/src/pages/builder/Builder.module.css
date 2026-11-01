@@ -184,10 +184,10 @@
 
 .presets {
   display: flex;
-  gap: 5px;
+  flex-wrap: wrap;
+  /* The row gap matches the buttons' ::after reach, so one row's touch area never covers the next row's chip. */
+  gap: 10px 5px;
   margin-top: 9px;
-  overflow-x: auto;
-  scrollbar-width: none;
 }
 
 .presets button {

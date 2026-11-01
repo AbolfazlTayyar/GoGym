@@ -121,6 +121,38 @@ describe("draft", () => {
     expect(lines(one)[0]).toBe("3×[لانژ 1r]");
   });
 
+  it("steps seconds by a minute past two minutes, and back by five below them", () => {
+    const secondsAfter = (from: number, delta: 1 | -1) => {
+      const seeded: Draft = start.map((b) =>
+        b.key === "b2"
+          ? { ...b, movements: b.movements.map((m) => ({ ...m, duration_seconds: from })) }
+          : b,
+      );
+      const after = run(seeded, { type: "step", blockKey: "b2", movementKey: "bm2", delta });
+      return after[1].movements[0].duration_seconds;
+    };
+    expect(secondsAfter(115, 1)).toBe(120);
+    expect(secondsAfter(120, 1)).toBe(180);
+    expect(secondsAfter(600, 1)).toBe(660);
+    expect(secondsAfter(600, -1)).toBe(540);
+    expect(secondsAfter(180, -1)).toBe(120);
+    expect(secondsAfter(120, -1)).toBe(115);
+    expect(secondsAfter(5, -1)).toBe(5);
+    expect(secondsAfter(47, 1)).toBe(50);
+    expect(secondsAfter(47, -1)).toBe(45);
+    expect(secondsAfter(150, 1)).toBe(180);
+    expect(secondsAfter(150, -1)).toBe(120);
+    expect(secondsAfter(14400, 1)).toBe(14400);
+  });
+
+  it("offers the ten-minute single set, and recognizes it", () => {
+    const preset = presets[5];
+    const after = run(start, { type: "preset", blockKey: "b1", preset });
+    expect(lines(after)[0]).toBe("1×[لانژ 600s]");
+    expect(presetMatches(after[0], preset)).toBe(true);
+    expect(presetMatches(after[0], presets[4])).toBe(false);
+  });
+
   it("changes sets within 1-50", () => {
     expect(lines(run(start, { type: "sets", blockKey: "b1", delta: 1 }))[0]).toBe("4×[لانژ 12r]");
     const many = Array.from(

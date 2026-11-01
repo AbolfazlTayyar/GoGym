@@ -25,13 +25,14 @@ export type Draft = DraftBlock[];
 
 export type Mode = "reps" | "seconds";
 
-// The coach's common prescriptions (docs/design/src/data.js PRESETS).
+// The coach's common prescriptions (docs/design/src/data.js PRESETS), plus the 10-minute bike her days open with.
 export const presets = [
   { reps: 12, sets: 3 },
   { reps: 15, sets: 3 },
   { reps: 20, sets: 3 },
   { reps: 15, sets: 4 },
   { seconds: 30, sets: 3 },
+  { seconds: 600, sets: 1 },
 ] as const;
 export type Preset = (typeof presets)[number];
 
@@ -42,7 +43,7 @@ const defaultSeconds = 30;
 const bounds = {
   sets: { min: 1, max: 50, step: 1 },
   reps: { min: 1, max: 1000, step: 1 },
-  seconds: { min: 5, max: 4 * 60 * 60, step: 5 },
+  seconds: { min: 5, max: 4 * 60 * 60, step: 5, longFrom: 2 * 60, longStep: 60 },
 };
 
 export type Action =
@@ -190,12 +191,19 @@ function setMode(m: DraftMovement, mode: Mode): DraftMovement {
 
 function step(m: DraftMovement, delta: 1 | -1): DraftMovement {
   if (modeOf(m) === "seconds") {
-    const b = bounds.seconds;
-    // Off-step values (a copied 45) snap to the step grid on the first tap.
-    const snapped = Math.round(m.duration_seconds! / b.step) * b.step;
-    return { ...m, duration_seconds: clamp(snapped + delta * b.step, b) };
+    return { ...m, duration_seconds: stepSeconds(m.duration_seconds!, delta) };
   }
   return { ...m, reps: clamp((m.reps ?? firstLine.reps) + delta * bounds.reps.step, bounds.reps) };
+}
+
+// Past two minutes a tap is a whole minute: holds need the fine steps, a long bike ride doesn't.
+function stepSeconds(seconds: number, delta: 1 | -1): number {
+  const b = bounds.seconds;
+  const long = delta > 0 ? seconds >= b.longFrom : seconds > b.longFrom;
+  const size = long ? b.longStep : b.step;
+  // An off-step value (a copied 47) lands on the next step in the tap's direction.
+  const snapped = (delta > 0 ? Math.floor : Math.ceil)(seconds / size) * size;
+  return clamp(snapped + delta * size, b);
 }
 
 // A preset sets the line's sets and gives every movement in it the same amount.

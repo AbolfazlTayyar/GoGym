@@ -22,9 +22,31 @@ describe("prescriptionText", () => {
     expect(prescriptionText({ sets: 2, movements: [part({ duration_seconds: 120 })] })).toBe(
       "۲ دقیقه × ۲ ست",
     );
-    expect(prescriptionText({ sets: 1, movements: [part({ duration_seconds: 90 })] })).toBe(
-      "۹۰ ثانیه × ۱ ست",
+    expect(prescriptionText({ sets: 2, movements: [part({ duration_seconds: 90 })] })).toBe(
+      "۹۰ ثانیه × ۲ ست",
     );
+  });
+
+  it("leaves the count off a single timed set", () => {
+    expect(prescriptionText({ sets: 1, movements: [part({ duration_seconds: 600 })] })).toBe(
+      "۱۰ دقیقه",
+    );
+    expect(
+      prescriptionText({
+        sets: 1,
+        movements: [part({ duration_seconds: 30 }), part({ duration_seconds: 45 })],
+      }),
+    ).toBe("۳۰ ثانیه + ۴۵ ثانیه");
+  });
+
+  it("keeps the count on one set that has reps", () => {
+    expect(prescriptionText({ sets: 1, movements: [part({ reps: 15 })] })).toBe("۱۵ تکرار × ۱ ست");
+    expect(
+      prescriptionText({
+        sets: 1,
+        movements: [part({ reps: 15 }), part({ duration_seconds: 45 })],
+      }),
+    ).toBe("۱۵ تکرار + ۴۵ ثانیه × ۱ ست");
   });
 
   it("puts the load after its movement", () => {
