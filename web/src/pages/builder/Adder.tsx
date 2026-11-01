@@ -2,11 +2,13 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, type RefObject } from "react";
 import { queryKeys } from "../../api/keys";
 import { createMovement, listMovements } from "../../api/movements";
+import type { Movement } from "../../api/types";
 import { SearchIcon } from "../../components/icons";
 import { useDebouncedValue } from "../../lib/useDebouncedValue";
 import s from "./Builder.module.css";
 
-const searchDebounceMs = 200;
+// Longer than the gap between keys on a phone, so the chips change when the coach pauses, not at each character.
+const searchDebounceMs = 400;
 const maxSuggestions = 8;
 
 type AdderProps = {
@@ -21,7 +23,8 @@ type AdderProps = {
 export function Adder({ inputRef, joining, onPick }: AdderProps) {
   const queryClient = useQueryClient();
   const [text, setText] = useState("");
-  const q = useDebouncedValue(text.trim(), searchDebounceMs);
+  const typed = text.trim();
+  const q = useDebouncedValue(typed, searchDebounceMs);
 
   // The movement library's query, so a movement added or renamed there shows up here too.
   const found = useQuery({
@@ -29,6 +32,13 @@ export function Adder({ inputRef, joining, onPick }: AdderProps) {
     queryFn: () => listMovements(q),
     enabled: q !== "",
   });
+
+  // The chips stay until the next search is ready, or the row would collapse and reappear at each one. Not
+  // keepPreviousData: that also brings back the search before a pick when the next one starts.
+  const [shown, setShown] = useState<Movement[] | null>(null);
+  const latest = !typed ? null : q && found.data ? found.data : shown;
+  if (latest !== shown) setShown(latest);
+
   const create = useMutation({
     mutationFn: (name: string) => createMovement({ name, category: null, description: null }),
     onSuccess: (m) => {
@@ -44,8 +54,7 @@ export function Adder({ inputRef, joining, onPick }: AdderProps) {
     inputRef.current?.blur();
   };
 
-  const typed = text.trim();
-  const results = q && typed ? (found.data ?? []).slice(0, maxSuggestions) : [];
+  const results = shown ?? [];
   const exact = results.some((m) => m.name === typed);
   // Keeps the keyboard up until the tap lands: closing it on press would move the chip from under the finger.
   const keepFocus = (e: { preventDefault: () => void }) => e.preventDefault();
@@ -61,17 +70,18 @@ export function Adder({ inputRef, joining, onPick }: AdderProps) {
     <div className={s.adder}>
       {typed && (
         <div className={s.sug}>
-          {results.map((m) => (
+          {results.slice(0, maxSuggestions).map((m) => (
             <button key={m.id} type="button" onPointerDown={keepFocus} onClick={() => pick(m)}>
               {m.name}
             </button>
           ))}
-          {!exact && q === typed && !found.isFetching && (
+          {(shown || found.isError) && !exact && (
             <button
               type="button"
               className={s.create}
               onPointerDown={keepFocus}
-              disabled={create.isPending}
+              // Until the search for this exact text is back, it may yet find the name already in the library.
+              disabled={create.isPending || q !== typed || found.isFetching}
               onClick={() => create.mutate(typed)}
             >
               + افزودن «{typed}»
