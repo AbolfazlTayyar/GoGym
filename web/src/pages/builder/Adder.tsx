@@ -49,6 +49,13 @@ export function Adder({ inputRef, joining, onPick }: AdderProps) {
   const exact = results.some((m) => m.name === typed);
   // Keeps the keyboard up until the tap lands: closing it on press would move the chip from under the finger.
   const keepFocus = (e: { preventDefault: () => void }) => e.preventDefault();
+  // iOS pans the page to reveal a tapped input, and the screen can only follow once the pan has ended, so the
+  // search flies up and snaps back. Focusing it ourselves skips the pan; once focused, a tap just places the caret.
+  const focusWithoutPan = (e: { preventDefault: () => void }) => {
+    if (document.activeElement === inputRef.current) return;
+    e.preventDefault();
+    inputRef.current?.focus({ preventScroll: true });
+  };
 
   return (
     <div className={s.adder}>
@@ -72,7 +79,7 @@ export function Adder({ inputRef, joining, onPick }: AdderProps) {
           )}
         </div>
       )}
-      <label className={s.field}>
+      <label className={s.field} onTouchEnd={focusWithoutPan}>
         <SearchIcon />
         <input
           ref={inputRef}

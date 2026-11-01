@@ -291,7 +291,7 @@ function BuilderScreen({ plan, athlete, day }: BuilderScreenProps) {
                   onClose={() => setOpenKey(null)}
                   onJoin={() => {
                     setJoinKey(joinKey === block.key ? null : block.key);
-                    searchRef.current?.focus();
+                    searchRef.current?.focus({ preventScroll: true });
                   }}
                   error={errors.get(i)}
                 />
