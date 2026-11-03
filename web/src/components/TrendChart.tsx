@@ -36,7 +36,7 @@ export function TrendChart({ data, unit }: TrendChartProps) {
           <span className={s.delta}>
             {change === 0
               ? `بدون تغییر از ${formatJalaliShort(data[0].date)}`
-              : `${formatValue(Math.abs(change))} ${change < 0 ? "کمتر" : "بیشتر"} از ${formatJalaliShort(data[0].date)}`}
+              : `${formatValue(Math.abs(change))} ${unit} ${change < 0 ? "کمتر" : "بیشتر"} از ${formatJalaliShort(data[0].date)}`}
           </span>
         )}
       </div>
