@@ -89,6 +89,7 @@ export function DayViewPage() {
           <p className={s.note}>این برنامه هنوز روزی ندارد.</p>
         ) : (
           <>
+            {plan.data?.note && <p className={s.planNote}>{plan.data.note}</p>}
             <DayHeading label={day.label} lines={day.blocks.length} />
             {day.blocks.length === 0 && <p className={s.note}>این روز هنوز حرکتی ندارد.</p>}
             {day.blocks.map((block, i) => (

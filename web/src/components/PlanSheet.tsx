@@ -7,7 +7,7 @@ import { BigButton } from "./BigButton";
 import { BottomSheet } from "./BottomSheet";
 import { ConfirmSheet } from "./ConfirmSheet";
 import { JalaliDateField } from "./JalaliDateField";
-import { TextField } from "./TextField";
+import { TextAreaField, TextField } from "./TextField";
 import { msgTitleEmpty } from "../lib/formMessages";
 import s from "./PlanSheet.module.css";
 
@@ -18,7 +18,7 @@ type PlanSheetProps = {
   onSaved: () => void;
 };
 
-// Behind a profile plan row's edit: the plan's title and start date.
+// Behind a profile plan row's edit: the plan's title, start date and note.
 export function PlanSheet({ open, onClose, plan, onSaved }: PlanSheetProps) {
   return (
     <BottomSheet open={open} onClose={onClose} title="برنامه">
@@ -31,13 +31,17 @@ export function PlanSheet({ open, onClose, plan, onSaved }: PlanSheetProps) {
 function PlanForm({ plan, onSaved }: Omit<PlanSheetProps, "open" | "onClose">) {
   const [title, setTitle] = useState(plan.title);
   const [startDate, setStartDate] = useState(plan.start_date);
+  const [note, setNote] = useState(plan.note ?? "");
   // Caught here so the message can name the field, which the API's "is required" can't.
   const [titleError, setTitleError] = useState<string | null>(null);
 
-  // PUT replaces every field, so the note the profile doesn't show is sent back unchanged.
   const save = useMutation({
     mutationFn: () =>
-      updatePlan(plan.id, { title: title.trim(), start_date: startDate, note: plan.note }),
+      updatePlan(plan.id, {
+        title: title.trim(),
+        start_date: startDate,
+        note: note.trim() || null,
+      }),
     onSuccess: onSaved,
   });
   const errors = fieldErrors(save.error);
@@ -66,6 +70,13 @@ function PlanForm({ plan, onSaved }: Omit<PlanSheetProps, "open" | "onClose">) {
           value={startDate}
           onChange={setStartDate}
           error={errors.start_date}
+        />
+        <TextAreaField
+          label="یادداشت"
+          optional
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          error={errors.note}
         />
       </div>
       <BigButton onClick={submit} disabled={save.isPending}>

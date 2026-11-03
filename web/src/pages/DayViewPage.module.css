@@ -11,6 +11,19 @@
   box-shadow: var(--soft);
 }
 
+/* The plan's note over every day; pre-wrap keeps the line breaks the coach typed. */
+.planNote {
+  margin-top: 12px;
+  padding: 10px 14px;
+  border-radius: 16px;
+  background: var(--blush);
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
 .note {
   padding: 24px 0;
   text-align: center;

@@ -14,7 +14,7 @@ import { ChevLIcon, XIcon } from "../components/icons";
 import { JalaliDateField } from "../components/JalaliDateField";
 import { PlanMini } from "../components/PlanMini";
 import { Screen, ScreenContent } from "../components/Screen";
-import { TextField } from "../components/TextField";
+import { TextAreaField, TextField } from "../components/TextField";
 import { useSheet } from "../components/useSheet";
 import { msgTitleEmpty } from "../lib/formMessages";
 import { planTitleFor, todayISO } from "../lib/jalali";
@@ -63,6 +63,7 @@ function NewPlanForm({ athlete, latest }: { athlete: Athlete; latest: PlanSummar
   const [other, setOther] = useState<{ athlete: Athlete; plan: PlanSummary } | null>(null);
   const [startDate, setStartDate] = useState(() => todayISO());
   const [title, setTitle] = useState(() => planTitleFor(startDate));
+  const [note, setNote] = useState("");
   // Caught here so the message can name the field, which the API's "is required" can't.
   const [titleError, setTitleError] = useState<string | null>(null);
   // A retried save reuses the plan the first attempt created, so a failed day A doesn't leave two plans.
@@ -80,6 +81,7 @@ function NewPlanForm({ athlete, latest }: { athlete: Athlete; latest: PlanSummar
         athlete_id: athlete.id,
         title: title.trim(),
         start_date: startDate,
+        note: note.trim() || null,
         ...(sourceId ? { source_plan_id: sourceId } : {}),
       });
       const plan = created.current;
@@ -175,6 +177,13 @@ function NewPlanForm({ athlete, latest }: { athlete: Athlete; latest: PlanSummar
             value={startDate}
             onChange={setStartDate}
             error={errors.start_date}
+          />
+          <TextAreaField
+            label="یادداشت"
+            optional
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            error={errors.note}
           />
         </div>
       </ScreenContent>

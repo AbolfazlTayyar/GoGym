@@ -13,6 +13,7 @@ export type CreatePlanInput = {
   athlete_id: string;
   title: string;
   start_date: string;
+  note: string | null;
   // A copy of this plan's days; omitted for an empty plan.
   source_plan_id?: string;
 };
