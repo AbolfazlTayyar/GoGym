@@ -47,8 +47,8 @@ Create the frontend app in web/ at the repo root (docs/adr/0030).
   initial-scale=1, viewport-fit=cover), a theme-color, and the title GoGym.
 - Fonts: the boards' two fonts, self-hosted: Vazirmatn (@fontsource-variable/vazirmatn)
   for the text, and Inter (@fontsource-variable/inter) where docs/design/src/blush.css
-  uses it (day letters, counts, the GoGym wordmark). Not Google Fonts, which is
-  unreliable from Iran and would also block offline use later.
+  uses it (day letters, counts, the GoGym wordmark). Not Google Fonts, which
+  would block offline use later.
 - vite.config.ts proxies /api and /healthz to http://localhost:8080. `npm run dev --
   --host` serves the app on the LAN, for testing on a real phone.
 - Makefile targets web-dev, web-build and web-test that run in web/; the Go targets stay

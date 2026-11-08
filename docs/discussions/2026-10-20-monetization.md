@@ -19,7 +19,6 @@ Before asking anything, Claude read [product-direction.md](../product-direction.
 |---|---|
 | Where does the app stand with the one coach right now? | **Not using it yet.** v1 is still being built and the notebook hasn't moved in. |
 | Who do you picture paying? | **All four:** other coaches (SaaS), athletes through coaches (a cut of plan sales), athletes directly, and third parties (supplement shops, gyms, brands). |
-| Is the market Iran, with Iranian payment rails (Zarinpal/IDPay, no recurring card billing)? | **Not decided.** |
 | What are you aiming for, and how much time can you put into it? | **Side income:** some money each month from a few hours a week, mostly hands-off. |
 
 ### Round 2
@@ -37,7 +36,7 @@ Before asking anything, Claude read [product-direction.md](../product-direction.
 |---|---|
 | How many coaches could your coach realistically introduce you to? | **Under 5.** |
 | What's your relationship with the coach if this makes money? | "We will make an agreement, I trust her." Not formalized yet. |
-| Have you looked at what Iranian coaches already use for this? | Nothing good exists, and coaches find it hard to pay for organizing tools. Many prefer handwritten plans. |
+| Have you looked at what coaches already use for this? | Nothing good exists, and coaches find it hard to pay for organizing tools. Many prefer handwritten plans. |
 
 ## The recommendation
 
@@ -75,28 +74,26 @@ important:
 - Give it away first and watch whether they're still using it after a month without nudging.
   That tells you more than any survey.
 - Then charge one simple price: free up to about 3 athletes, paid above that. Sell **prepaid
-  periods** (3, 6 or 12 months), not monthly. That fits Iranian payments, and a coach who pays
-  for a year doesn't quietly cancel.
-- **Collect payment by hand at first:** a card-to-card transfer, then extend the coach's access
+  periods** (3, 6 or 12 months), not monthly. A coach who pays for a year doesn't quietly
+  cancel.
+- **Collect payment by hand at first:** a bank transfer, then extend the coach's access
   with `coachctl`. With fewer than 10 coaches, a payment gateway, invoices and subscription
   tables are exactly the machinery [CLAUDE.md](../../CLAUDE.md) warns against. A `paid_until`
   column can wait until it's needed, because adding it later is one migration with no backfill.
-  Getting a gateway like Zarinpal usually needs a registered business and an eNamad trust seal,
-  so that's another reason to wait until manual renewals become a chore.
+  Getting a payment gateway usually needs a registered business, so that's another reason to
+  wait until manual renewals become a chore.
 - **Agree on the coach's share now**, while it costs nothing. A simple version is a percentage
   of what each coach she brings in pays, for a year. That gives her a reason to sell the app to
   other coaches.
 
 ### Dropped for now
 
-- **A cut of athlete payments.** She rarely sells online, and handling money for other people on
-  Iranian payment rails is a legal and payment-processing project on its own.
+- **A cut of athlete payments.** She rarely sells online, and handling money for other people is
+  a legal and payment-processing project on its own.
 - **Athletes paying directly.** It needs athlete accounts, and athletes already get a link
   instead.
 - **Third parties (supplement shops, brands).** They only pay for reach, and a reach of tens of
   athletes is worth nothing to them.
-- **Iran vs. diaspora.** Left undecided. Nothing to be built in the next six months depends on
-  it.
 
 ### What to expect
 
@@ -110,6 +107,5 @@ for it.
 ## Open after this discussion
 
 - The agreement with the coach: her share, and for how long.
-- Iran only, or Persian-speaking coaches abroad too.
 - What prepaid price the first 3–4 coaches will accept, tested once they've used it free for a
   month.

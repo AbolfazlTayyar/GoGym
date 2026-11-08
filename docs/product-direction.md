@@ -92,11 +92,11 @@ That is **coach ↔ athlete** money. Selling the product introduces a second, un
 different owners, different failure modes — they should not share tables, and the roadmap's
 modular-monolith boundaries should keep them apart from the start.
 
-**Market assumption worth confirming:** the RTL/Persian design constraint implies an Iranian
-market, where card-on-file recurring subscriptions are effectively unavailable. If so, model the
-coach's subscription as *"an expiry date renewed by a manual gateway payment"* (Zarinpal/IDPay or
-similar), not as the webhook-driven state machine you would build against Stripe. This changes the
-data model enough to be worth settling before the module is designed.
+**Payment model worth settling first:** where the coaches are decides the payment provider, and
+the provider decides the model. Card-on-file recurring billing (Stripe or similar)
+means a webhook-driven subscription state machine. Without it, the subscription is *"an expiry
+date renewed by a manual payment"*. The two data models differ enough to be worth settling before
+the module is designed.
 
 **Metering:** athlete count is the natural lever the existing schema already provides — free up to
 ~3 athletes, paid beyond. It aligns price with value and lets a coach trial it on a real client.
@@ -169,7 +169,7 @@ being entirely untested.
 
 - Would the coach this was built for pay for it? At what price? What would they *stop* paying for?
 - Find **two coaches who are not friends** and ask the same. Three data points beats this document.
-- Is the market assumption in §5 (Iran / RTL / no recurring card payments) correct?
+- Where are the paying coaches, and can they pay by card on file? §5's payment model depends on it.
 - Freelance coaches or gyms? §7's schema hedge is cheap; committing to the gym model is not.
 - Does the athlete want an app, or does the athlete want a link? Assume link until proven otherwise.
 

@@ -380,7 +380,7 @@ Shape — every /api/v1 response body, success or failure:
     "error": {
       "code":    "validation_failed",
       "message": "invalid request",
-      "fields":  { "phone": "must be an Iranian mobile number" }  // omitted when empty
+      "fields":  { "phone": "must be a valid mobile number" }  // omitted when empty
     }
   }
 
@@ -463,7 +463,7 @@ UPDATE.
 
 - Remove POST /api/v1/auth/signup with its handler, request type and swagger
   annotations, and rerun `make swagger`. Login and /coaches/me stay as they are.
-- Move the input rules the handler enforced (Iranian mobile format, a password of at
+- Move the input rules the handler enforced (mobile format, a password of at
   least 8 characters) into coach.Service, rename Signup to Create, and add
   ResetPassword(phone, password), which returns ErrNotFound for an unknown phone.
 - Add cmd/coachctl with two subcommands: `create -first-name -last-name -phone` and
