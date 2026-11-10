@@ -248,10 +248,6 @@
   inset: -12px -6px;
 }
 
-.links button:disabled {
-  color: var(--faint);
-}
-
 .links .joining {
   background: var(--pink);
   color: #fff;

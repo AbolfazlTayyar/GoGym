@@ -225,38 +225,18 @@ describe("draft", () => {
     ).toEqual(["4×[پل باسن 45s]"]);
   });
 
-  it("moves a line past a superset whole", () => {
-    const draft = run(
-      start,
-      { type: "join", blockKey: "b2", movementKey: "nm1", movement: plank },
-      { type: "add", blockKey: "n3", movementKey: "nm3", movement: squat },
-    );
-    expect(lines(draft)).toEqual(["3×[لانژ 12r]", "4×[پل باسن 45s + پلانک 45s]", "4×[اسکوات 45s]"]);
-
-    const down = run(draft, { type: "move", blockKey: "b1", delta: 1 });
-    expect(lines(down)).toEqual(["4×[پل باسن 45s + پلانک 45s]", "3×[لانژ 12r]", "4×[اسکوات 45s]"]);
-    const up = run(draft, { type: "move", blockKey: "n3", delta: -1 });
-    expect(lines(up)).toEqual(["3×[لانژ 12r]", "4×[اسکوات 45s]", "4×[پل باسن 45s + پلانک 45s]"]);
-    expect(run(draft, { type: "move", blockKey: "b1", delta: -1 })).toBe(draft);
-  });
-
   it("deletes a line", () => {
     expect(lines(run(start, { type: "remove", blockKey: "b1" }))).toEqual(["4×[پل باسن 45s]"]);
   });
 
   it("turns into the request body, in order, without keys or names", () => {
-    const draft = run(
-      start,
-      { type: "join", blockKey: "b1", movementKey: "nm1", movement: plank },
-      { type: "move", blockKey: "b2", delta: -1 },
-    );
+    const draft = run(start, {
+      type: "join",
+      blockKey: "b1",
+      movementKey: "nm1",
+      movement: plank,
+    });
     expect(toBody(draft)).toEqual([
-      {
-        sets: 4,
-        rest_seconds: 60,
-        notes: "کند",
-        movements: [{ movement_id: bridge.id, reps: null, duration_seconds: 45, load_kg: 10 }],
-      },
       {
         sets: 3,
         rest_seconds: null,
@@ -265,6 +245,12 @@ describe("draft", () => {
           { movement_id: lunge.id, reps: 12, duration_seconds: null, load_kg: null },
           { movement_id: plank.id, reps: 12, duration_seconds: null, load_kg: null },
         ],
+      },
+      {
+        sets: 4,
+        rest_seconds: 60,
+        notes: "کند",
+        movements: [{ movement_id: bridge.id, reps: null, duration_seconds: 45, load_kg: 10 }],
       },
     ]);
   });

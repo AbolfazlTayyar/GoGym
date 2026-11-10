@@ -20,8 +20,6 @@ type OpenLineProps = {
   ref: RefObject<HTMLDivElement | null>;
   index: number;
   block: DraftBlock;
-  isFirst: boolean;
-  isLast: boolean;
   joining: boolean;
   dispatch: Dispatch<Action>;
   onClose: () => void;
@@ -39,11 +37,11 @@ const presetLabel = (p: (typeof presets)[number]) =>
     ? `${amountText({ reps: null, duration_seconds: p.seconds, load_kg: null })} × ${toPersianDigits(p.sets)}`
     : `${toPersianDigits(p.reps)} × ${toPersianDigits(p.sets)}`;
 
-// A line opened in place: everything is a tap (type, +/-, presets, superset, move, delete), and a weight can
+// A line opened in place: everything is a tap (type, +/-, presets, superset, delete), and a weight can
 // also be typed, since 40 kg is too many taps.
 // Rest is hidden: her plans never prescribe it (docs/design/README.md).
 export function OpenLine(props: OpenLineProps) {
-  const { ref, index, block, isFirst, isLast, joining, dispatch, onClose, onJoin, error } = props;
+  const { ref, index, block, joining, dispatch, onClose, onJoin, error } = props;
   const superset = block.movements.length > 1;
   const blockKey = block.key;
 
@@ -132,20 +130,6 @@ export function OpenLine(props: OpenLineProps) {
             جدا کردن
           </button>
         )}
-        <button
-          type="button"
-          disabled={isFirst}
-          onClick={() => dispatch({ type: "move", blockKey, delta: -1 })}
-        >
-          ↑ بالا
-        </button>
-        <button
-          type="button"
-          disabled={isLast}
-          onClick={() => dispatch({ type: "move", blockKey, delta: 1 })}
-        >
-          ↓ پایین
-        </button>
       </div>
       {error && (
         <p className={s.lineError} role="alert">

@@ -313,8 +313,6 @@ function BuilderScreen({ plan, athlete, day }: BuilderScreenProps) {
                   key={block.key}
                   index={i}
                   block={block}
-                  isFirst={i === 0}
-                  isLast={i === draft.length - 1}
                   joining={joinKey === block.key}
                   dispatch={dispatch}
                   onClose={() => setOpenKey(null)}

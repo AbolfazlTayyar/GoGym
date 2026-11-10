@@ -56,7 +56,6 @@ export type Action =
   | { type: "kg"; blockKey: string; movementKey: string; kg: number | null }
   | { type: "sets"; blockKey: string; delta: 1 | -1 }
   | { type: "preset"; blockKey: string; preset: Preset }
-  | { type: "move"; blockKey: string; delta: 1 | -1 }
   | { type: "remove"; blockKey: string }
   | { type: "removeMovement"; blockKey: string; movementKey: string }
   | { type: "split"; blockKey: string; keys: string[] };
@@ -131,8 +130,6 @@ export function draftReducer(draft: Draft, action: Action): Draft {
       }));
     case "preset":
       return editBlock(draft, action.blockKey, (b) => applyPreset(b, action.preset));
-    case "move":
-      return move(draft, action.blockKey, action.delta);
     case "remove":
       return draft.filter((b) => b.key !== action.blockKey);
     case "removeMovement":
@@ -244,16 +241,6 @@ export function presetMatches(b: DraftBlock, preset: Preset): boolean {
         : m.reps === preset.reps && m.duration_seconds === null,
     )
   );
-}
-
-// A superset is one block, so moving past it swaps whole lines and never splits it.
-function move(draft: Draft, blockKey: string, delta: 1 | -1): Draft {
-  const from = draft.findIndex((b) => b.key === blockKey);
-  const to = from + delta;
-  if (from < 0 || to < 0 || to >= draft.length) return draft;
-  const next = [...draft];
-  [next[from], next[to]] = [next[to], next[from]];
-  return next;
 }
 
 // Taking the last movement out of a line takes the line too.
