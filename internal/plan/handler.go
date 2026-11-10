@@ -85,14 +85,14 @@ type blockResponse struct {
 
 // blockMovementResponse carries the library's name and category so the client needs no lookup per movement.
 type blockMovementResponse struct {
-	ID              string  `json:"id" example:"2a3b4c5d-6e7f-4a8b-9c0d-1e2f3a4b5c6d"`
-	MovementID      string  `json:"movement_id" example:"8e9f0a1b-2c3d-4e5f-8a6b-7c8d9e0f1a2b"`
-	Name            string  `json:"name" example:"Pull-up"`
-	Category        *string `json:"category" example:"strength"`
-	Reps            *int    `json:"reps" example:"10"`
-	DurationSeconds *int    `json:"duration_seconds"`
-	Load            *string `json:"load" example:"bodyweight"`
-	OrderInBlock    int     `json:"order_in_block" example:"0"`
+	ID              string   `json:"id" example:"2a3b4c5d-6e7f-4a8b-9c0d-1e2f3a4b5c6d"`
+	MovementID      string   `json:"movement_id" example:"8e9f0a1b-2c3d-4e5f-8a6b-7c8d9e0f1a2b"`
+	Name            string   `json:"name" example:"Pull-up"`
+	Category        *string  `json:"category" example:"strength"`
+	Reps            *int     `json:"reps" example:"10"`
+	DurationSeconds *int     `json:"duration_seconds"`
+	LoadKg          *float64 `json:"load_kg" example:"17.5"`
+	OrderInBlock    int      `json:"order_in_block" example:"0"`
 }
 
 // The create requests have no binding tags on purpose: the service owns every rule, presence included.
@@ -132,19 +132,19 @@ type saveBlockRequest struct {
 }
 
 type saveMovementRequest struct {
-	MovementID      string  `json:"movement_id" example:"8e9f0a1b-2c3d-4e5f-8a6b-7c8d9e0f1a2b"`
-	Reps            *int    `json:"reps" example:"12"`
-	DurationSeconds *int    `json:"duration_seconds" example:"45"`
-	Load            *string `json:"load" example:"bodyweight"`
+	MovementID      string   `json:"movement_id" example:"8e9f0a1b-2c3d-4e5f-8a6b-7c8d9e0f1a2b"`
+	Reps            *int     `json:"reps" example:"12"`
+	DurationSeconds *int     `json:"duration_seconds" example:"45"`
+	LoadKg          *float64 `json:"load_kg" example:"17.5"`
 }
 
 // addMovementRequest gives every field an example: Swagger UI pre-fills a missing one with 0, which fails validation.
 type addMovementRequest struct {
-	MovementID      string  `json:"movement_id" example:"8e9f0a1b-2c3d-4e5f-8a6b-7c8d9e0f1a2b"`
-	Reps            *int    `json:"reps" example:"10"`
-	DurationSeconds *int    `json:"duration_seconds" example:"30"`
-	Load            *string `json:"load" example:"bodyweight"`
-	OrderInBlock    *int    `json:"order_in_block" example:"0"`
+	MovementID      string   `json:"movement_id" example:"8e9f0a1b-2c3d-4e5f-8a6b-7c8d9e0f1a2b"`
+	Reps            *int     `json:"reps" example:"10"`
+	DurationSeconds *int     `json:"duration_seconds" example:"30"`
+	LoadKg          *float64 `json:"load_kg" example:"17.5"`
+	OrderInBlock    *int     `json:"order_in_block" example:"0"`
 }
 
 func newPlanDetailResponse(p *Plan) planDetailResponse {
@@ -212,7 +212,7 @@ func newBlockMovementResponse(bm *BlockMovement) blockMovementResponse {
 		Category:        bm.Movement.Category,
 		Reps:            bm.Reps,
 		DurationSeconds: bm.DurationSeconds,
-		Load:            bm.Load,
+		LoadKg:          bm.LoadKg,
 		OrderInBlock:    bm.OrderInBlock,
 	}
 }
@@ -335,7 +335,7 @@ func (h *Handler) Get(c *gin.Context) {
 // Create starts an empty plan for one of the authenticated coach's athletes.
 //
 //	@Summary		Create a plan, empty or as a copy
-//	@Description	Creates a plan for the athlete. athlete_id, start_date (YYYY-MM-DD) and title are required, note is optional. Without source_plan_id the plan is empty: the response has an empty days array. With source_plan_id the plan is a copy of that plan's days, blocks and block movements (labels, order, sets, rest, notes, reps, duration and load, movements deleted from the library since included); title, note and start_date still come from the request. The source can be any of the coach's athletes' plans; one the coach can't use is a 400 on source_plan_id. A copy's response is its full detail, and the copy names its source in source_plan_id and source_plan_title. An athlete that belongs to another coach is reported as not found.
+//	@Description	Creates a plan for the athlete. athlete_id, start_date (YYYY-MM-DD) and title are required, note is optional. Without source_plan_id the plan is empty: the response has an empty days array. With source_plan_id the plan is a copy of that plan's days, blocks and block movements (labels, order, sets, rest, notes, reps, duration and load_kg, movements deleted from the library since included); title, note and start_date still come from the request. The source can be any of the coach's athletes' plans; one the coach can't use is a 400 on source_plan_id. A copy's response is its full detail, and the copy names its source in source_plan_id and source_plan_title. An athlete that belongs to another coach is reported as not found.
 //	@Tags			plans
 //	@Accept			json
 //	@Produce		json
@@ -535,7 +535,7 @@ func (h *Handler) AddBlock(c *gin.Context) {
 // AddMovements adds one or more movements to a block in a single all-or-nothing call, so a superset is never half-created.
 //
 //	@Summary		Add movements to a block
-//	@Description	Adds every movement in the array to the block, or none of them. Send two or more to build a superset in one call. Each entry needs movement_id and order_in_block (0-999); reps (1-1000), duration_seconds (1-14400) and load (free text, e.g. "70kg", "75% 1RM", "RPE 8", "bodyweight") are optional. Every movement_id must be in the coach's library: their own movements or a universal one. A movement that isn't, or any other invalid entry, rejects the whole batch with a 400 whose fields are keyed by array position, e.g. "[1].movement_id". The response lists the created movements with their library name and category. A block whose plan's athlete belongs to another coach is reported as not found.
+//	@Description	Adds every movement in the array to the block, or none of them. Send two or more to build a superset in one call. Each entry needs movement_id and order_in_block (0-999); reps (1-1000), duration_seconds (1-14400) and load_kg (the weight in kg, 0.01-500, stored to two decimals) are optional. Every movement_id must be in the coach's library: their own movements or a universal one. A movement that isn't, or any other invalid entry, rejects the whole batch with a 400 whose fields are keyed by array position, e.g. "[1].movement_id". The response lists the created movements with their library name and category. A block whose plan's athlete belongs to another coach is reported as not found.
 //	@Tags			plans
 //	@Accept			json
 //	@Produce		json
@@ -588,7 +588,7 @@ func (h *Handler) AddMovements(c *gin.Context) {
 // SaveDay replaces a day's blocks with the builder's whole draft in one request.
 //
 //	@Summary		Save a day: replace its blocks
-//	@Description	Replaces every block of the day with the blocks in the array, in one transaction: all of them are saved, or none and the day is unchanged. Order comes from array position, for blocks and for each block's movements. An empty array clears the day. A block needs sets (1-50) and at least one movement (at most 10); rest_seconds (0-3600) and notes are optional. Each movement needs movement_id; reps (1-1000), duration_seconds (1-14400) and load are optional. A movement must be in the coach's library, own or universal, or already used in this day (a movement deleted from the library since still saves). At most 40 blocks. Errors are reported together, keyed by position, e.g. "[2].sets" or "[2].movements[1].movement_id". Block and block movement ids are new on every save, so a client must not hold on to them. Two saves of the same day at once: the later one wins whole. The response is the saved day in the plan detail's day shape. A day whose plan's athlete belongs to another coach is reported as not found.
+//	@Description	Replaces every block of the day with the blocks in the array, in one transaction: all of them are saved, or none and the day is unchanged. Order comes from array position, for blocks and for each block's movements. An empty array clears the day. A block needs sets (1-50) and at least one movement (at most 10); rest_seconds (0-3600) and notes are optional. Each movement needs movement_id; reps (1-1000), duration_seconds (1-14400) and load_kg (the weight in kg, 0.01-500, stored to two decimals) are optional. A movement must be in the coach's library, own or universal, or already used in this day (a movement deleted from the library since still saves). At most 40 blocks. Errors are reported together, keyed by position, e.g. "[2].sets" or "[2].movements[1].movement_id". Block and block movement ids are new on every save, so a client must not hold on to them. Two saves of the same day at once: the later one wins whole. The response is the saved day in the plan detail's day shape. A day whose plan's athlete belongs to another coach is reported as not found.
 //	@Tags			plans
 //	@Accept			json
 //	@Produce		json

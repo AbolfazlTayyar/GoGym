@@ -94,7 +94,7 @@ erDiagram
         uuid movement_id FK
         int reps
         int duration_seconds
-        text load "nullable, free text — see notes"
+        numeric load_kg "nullable, weight in kg — see notes"
         int order_in_block
         timestamptz created_at
     }
@@ -120,7 +120,7 @@ erDiagram
 - **Timestamps:** every table gets `created_at`. `updated_at` is added only to tables edited in place after creation (`Coach`, `Athlete`, `AthleteMeasurement`, `Plan`, `Movement`); `Day`, `Block`, and `BlockMovement` are typically deleted and recreated by the plan builder rather than edited, so they carry `created_at` only.
 - **`Athlete.experience_level` is nullable:** a coach may add an athlete before assessing their experience level.
 - **`Athlete.athlete_type` (`private` | `public`, added in migration `000002`) is the coach's service tier for that athlete, not a training format:** `private` athletes pay more and are managed by the coach on an ongoing basis — their plans belong on the coach's home screen. `public` athletes pay less and get a single plan delivered as a share link (see [product-direction.md](product-direction.md)'s plan-share-link idea); once sent, the coach does no further work with them. `NOT NULL DEFAULT 'private'`, enforced by a `CHECK` constraint since dashboard/home-screen filtering depends on this value always being one of the two.
-- **`BlockMovement.load` (added in migration `000003`) is free text, not a numeric kg column — an explicit judgment call:** coaches prescribe load as "%1RM", RPE, "bodyweight", or a plain kg figure interchangeably, and a numeric-only column would force lossy conversion at entry time for anything that isn't a plain weight. Nullable, since not every movement (e.g. a timed hold) carries a load. Revisit toward a structured/numeric model once the plan builder or reporting needs to compute or chart load directly.
+- **`BlockMovement.load_kg` (migration `000007`, replacing the free-text `load` from `000003`) is the prescribed weight in kg, `NUMERIC(5,2)`:** the builder sets it with +/− or by typing, and a number can be summed and charted once workout logging exists. Nullable, since not every movement (e.g. a timed hold) carries a weight. Loads that aren't kg (%1RM, RPE, "bodyweight") have no field — see [ADR 0034](adr/0034-load-in-kg.md).
 - **`Movement.media_url` (added in migration `000003`) is a nullable link to a demo video/image.** Adding the column now does not commit v1 to building an upload flow — it only implies that flow, when built, will need object storage (S3, MinIO, or a local provider). No upload flow is built as part of this change.
 - **`Movement` has no muscle group or equipment:** name search and `category` are enough for one coach's library. Bringing them back is a deferred task in [tasks/backend.md](tasks/backend.md) — see [ADR 0028](adr/0028-drop-movement-filters.md).
 - **Universal movements are seeded (migration `000005`):** a starter set with `coach_id NULL`, fixed ids, and a `category` on every row. `media_url` is left `NULL`.

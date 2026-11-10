@@ -53,8 +53,9 @@ func TestCurrentPlanID(t *testing.T) {
 	})
 }
 
-func intptr(i int) *int       { return &i }
-func strptr(s string) *string { return &s }
+func intptr(i int) *int           { return &i }
+func strptr(s string) *string     { return &s }
+func floatptr(f float64) *float64 { return &f }
 
 func requireFields(t *testing.T, err error) map[string]string {
 	t.Helper()
@@ -198,15 +199,15 @@ func TestBuildBlockMovement(t *testing.T) {
 		bm := buildBlockMovement(fields, 0, blockID, AddMovementInput{
 			MovementID:   movementID.String(),
 			Reps:         intptr(8),
-			Load:         strptr(" 75% 1RM "),
+			LoadKg:       floatptr(17.5),
 			OrderInBlock: intptr(0),
 		})
 
 		assert.Empty(t, fields)
 		assert.Equal(t, blockID, bm.BlockID)
 		assert.Equal(t, movementID, bm.MovementID)
-		require.NotNil(t, bm.Load)
-		assert.Equal(t, "75% 1RM", *bm.Load, "load is free text, kept as written apart from trimming")
+		require.NotNil(t, bm.LoadKg)
+		assert.Equal(t, 17.5, *bm.LoadKg)
 		assert.Nil(t, bm.DurationSeconds)
 	})
 
@@ -217,16 +218,29 @@ func TestBuildBlockMovement(t *testing.T) {
 			MovementID:      "not-a-uuid",
 			Reps:            intptr(0),
 			DurationSeconds: intptr(maxDurationSeconds + 1),
-			Load:            strptr(strings.Repeat("x", maxLoadLength+1)),
+			LoadKg:          floatptr(500.5),
 		})
 
 		assert.Equal(t, map[string]string{
 			"[2].movement_id":      msgUUID,
 			"[2].reps":             "must be between 1 and 1000",
 			"[2].duration_seconds": "must be between 1 and 14400",
-			"[2].load":             "must be at most 100 characters",
+			"[2].load_kg":          "must be between 0.01 and 500",
 			"[2].order_in_block":   httpx.MsgFieldRequired,
 		}, fields)
+	})
+
+	t.Run("a weight of zero is out of range; no weight is none", func(t *testing.T) {
+		fields := map[string]string{}
+		buildBlockMovement(fields, 0, blockID, AddMovementInput{
+			MovementID: movementID.String(), LoadKg: floatptr(0), OrderInBlock: intptr(0),
+		})
+		assert.Equal(t, map[string]string{"[0].load_kg": "must be between 0.01 and 500"}, fields)
+
+		fields = map[string]string{}
+		bm := buildBlockMovement(fields, 0, blockID, AddMovementInput{MovementID: movementID.String(), OrderInBlock: intptr(0)})
+		assert.Empty(t, fields)
+		assert.Nil(t, bm.LoadKg)
 	})
 
 	t.Run("a missing movement_id is required, not malformed", func(t *testing.T) {

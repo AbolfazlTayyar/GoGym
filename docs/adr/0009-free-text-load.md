@@ -1,6 +1,6 @@
 # 0009 — Prescribed load is free text
 
-- Status: accepted
+- Status: superseded by [0034](0034-load-in-kg.md)
 - Date: 2026-09-19
 - Deciders: Abolfazl Tayyar
 

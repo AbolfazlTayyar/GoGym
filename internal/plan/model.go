@@ -71,14 +71,13 @@ func (Block) TableName() string {
 	return "block"
 }
 
-// BlockMovement.Load is free text, not kg: coaches prescribe %1RM, RPE, or bodyweight just as often.
 type BlockMovement struct {
 	ID              uuid.UUID         `gorm:"column:id;type:uuid;primaryKey"`
 	BlockID         uuid.UUID         `gorm:"column:block_id;type:uuid;not null"`
 	MovementID      uuid.UUID         `gorm:"column:movement_id;type:uuid;not null"`
 	Reps            *int              `gorm:"column:reps;type:int"`
 	DurationSeconds *int              `gorm:"column:duration_seconds;type:int"`
-	Load            *string           `gorm:"column:load;type:text"`
+	LoadKg          *float64          `gorm:"column:load_kg;type:numeric(5,2)"`
 	OrderInBlock    int               `gorm:"column:order_in_block;type:int;not null"`
 	CreatedAt       time.Time         `gorm:"column:created_at;type:timestamptz;not null"`
 	Movement        movement.Movement `gorm:"foreignKey:MovementID"`

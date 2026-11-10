@@ -13,7 +13,7 @@ One file per decision, [MADR](https://adr.github.io/madr/)-style. Process rules 
 | [0006](0006-ci-fail-fast-pinned-tools.md) | Fail-fast CI with pinned tool versions | 2026-09-17 | accepted |
 | [0007](0007-swagger-dev-only-root-basepath.md) | swaggo docs, dev-only UI, root basePath | 2026-09-17 | accepted |
 | [0008](0008-soft-delete.md) | Soft delete for athletes and movements, hard delete for measurements | 2026-09-19 | accepted |
-| [0009](0009-free-text-load.md) | Prescribed load is free text | 2026-09-19 | accepted |
+| [0009](0009-free-text-load.md) | Prescribed load is free text | 2026-09-19 | superseded by [0034](0034-load-in-kg.md) |
 | [0010](0010-coach-jwt-auth.md) | Coach-only JWT auth with in-process rate limiting | 2026-09-20 | accepted |
 | [0011](0011-tenant-isolation-single-helper.md) | Tenant isolation through one scoping helper | 2026-09-20 | accepted |
 | [0012](0012-no-organization-layer.md) | No organization layer above coach | 2026-09-20 | accepted |
@@ -38,3 +38,4 @@ One file per decision, [MADR](https://adr.github.io/madr/)-style. Process rules 
 | [0031](0031-auth-token-in-httponly-cookie.md) | The browser's auth token lives in an httpOnly cookie, with no CORS | 2026-10-19 | accepted |
 | [0032](0032-current-plans-endpoint.md) | Each athlete's current plan comes from its own endpoint, not the athlete list | 2026-10-19 | accepted |
 | [0033](0033-save-day-replaces-blocks.md) | The builder saves a whole day by replacing its blocks | 2026-10-19 | accepted |
+| [0034](0034-load-in-kg.md) | Prescribed load is a weight in kg | 2026-11-10 | accepted |

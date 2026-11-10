@@ -610,6 +610,25 @@ func TestSaveDay_ReplacesTheBlocksInOrder(t *testing.T) {
 	assert.Equal(t, 1, day.Blocks[2].Movements[1].OrderInBlock)
 }
 
+func TestSaveDay_RoundTripsTheWeight(t *testing.T) {
+	f := newSaveFixture(t, "09121110612", "09121230612")
+	weighted := line(3, f.lunge, 12, f.bridge, 15)
+	weighted["movements"].([]map[string]any)[0]["load_kg"] = 17.5
+
+	f.save(t, saveBody(t, weighted), http.StatusOK)
+
+	got, _ := getPlan(t, f.router, f.token, f.planID.String())
+	movements := got.Days[0].Blocks[0].Movements
+	require.Len(t, movements, 2)
+	require.NotNil(t, movements[0].LoadKg)
+	assert.Equal(t, 17.5, *movements[0].LoadKg)
+	assert.Nil(t, movements[1].LoadKg, "a movement without a weight has none")
+
+	weighted["movements"].([]map[string]any)[0]["load_kg"] = 501
+	env := f.save(t, saveBody(t, weighted), http.StatusBadRequest)
+	assert.Equal(t, map[string]string{"[0].movements[0].load_kg": "must be between 0.01 and 500"}, env.Error.Fields)
+}
+
 func TestSaveDay_AnEmptyArrayClearsTheDay(t *testing.T) {
 	f := newSaveFixture(t, "09121110602", "09121230602")
 	f.save(t, saveBody(t, line(3, f.lunge, 12)), http.StatusOK)
@@ -782,8 +801,8 @@ func treeOf(t *testing.T, router *gin.Engine, token, planID string) []string {
 			parts := make([]string, 0, len(b.Movements))
 			for _, m := range b.Movements {
 				load := ""
-				if m.Load != nil {
-					load = " " + *m.Load
+				if m.LoadKg != nil {
+					load = fmt.Sprintf(" %gkg", *m.LoadKg)
 				}
 				parts = append(parts, fmt.Sprintf("%s:%d%s", m.Name, *m.Reps, load))
 			}
@@ -806,6 +825,8 @@ func TestCopyPlan_MatchesTheSourceApartFromIdsTitleAndDate(t *testing.T) {
 	ss := insertBlock(t, f.db, dayA, 0, 3, &superset)
 	insertBlockMovement(t, f.db, ss, f.lunge, 12, 0)
 	insertBlockMovement(t, f.db, ss, f.bridge, 15, 1)
+	require.NoError(t, f.db.Table("block_movement").Where("block_id = ? AND movement_id = ?", ss, f.lunge).
+		Update("load_kg", 17.5).Error)
 	single := insertBlock(t, f.db, f.dayID, 0, 4, nil)
 	insertBlockMovement(t, f.db, single, f.squat, 8, 0)
 	require.NoError(t, f.db.Delete(&movement.Movement{}, "id = ?", f.squat).Error)
@@ -1014,13 +1035,13 @@ type planDetail struct {
 			RestSeconds *int    `json:"rest_seconds"`
 			Notes       *string `json:"notes"`
 			Movements   []struct {
-				ID           string  `json:"id"`
-				MovementID   string  `json:"movement_id"`
-				Name         string  `json:"name"`
-				Category     *string `json:"category"`
-				Reps         *int    `json:"reps"`
-				Load         *string `json:"load"`
-				OrderInBlock int     `json:"order_in_block"`
+				ID           string   `json:"id"`
+				MovementID   string   `json:"movement_id"`
+				Name         string   `json:"name"`
+				Category     *string  `json:"category"`
+				Reps         *int     `json:"reps"`
+				LoadKg       *float64 `json:"load_kg"`
+				OrderInBlock int      `json:"order_in_block"`
 			} `json:"movements"`
 		} `json:"blocks"`
 	} `json:"days"`
@@ -1411,18 +1432,18 @@ func TestBuilder_FullPlanBuildUp(t *testing.T) {
 	assert.JSONEq(t, `[]`, string(createdBlock.Movements))
 
 	supersetBody := fmt.Sprintf(`[
-		{"movement_id":%q,"reps":10,"load":"bodyweight","order_in_block":0},
+		{"movement_id":%q,"reps":10,"load_kg":17.5,"order_in_block":0},
 		{"movement_id":%q,"reps":12,"order_in_block":1}
 	]`, pullUp, ringDip)
 	env = decodeEnvelope(t, do(t, router, http.MethodPost, movementsPath(createdBlock.ID), token, supersetBody), http.StatusCreated)
 	var createdMovements []struct {
-		ID           string  `json:"id"`
-		MovementID   string  `json:"movement_id"`
-		Name         string  `json:"name"`
-		Category     *string `json:"category"`
-		Reps         *int    `json:"reps"`
-		Load         *string `json:"load"`
-		OrderInBlock int     `json:"order_in_block"`
+		ID           string   `json:"id"`
+		MovementID   string   `json:"movement_id"`
+		Name         string   `json:"name"`
+		Category     *string  `json:"category"`
+		Reps         *int     `json:"reps"`
+		LoadKg       *float64 `json:"load_kg"`
+		OrderInBlock int      `json:"order_in_block"`
 	}
 	require.NoError(t, json.Unmarshal(env.Data, &createdMovements))
 	require.Len(t, createdMovements, 2)
@@ -1431,9 +1452,9 @@ func TestBuilder_FullPlanBuildUp(t *testing.T) {
 	assert.Equal(t, pullUp.String(), createdMovements[0].MovementID)
 	require.NotNil(t, createdMovements[0].Category)
 	assert.Equal(t, "strength", *createdMovements[0].Category)
-	require.NotNil(t, createdMovements[0].Load)
-	assert.Equal(t, "bodyweight", *createdMovements[0].Load)
-	assert.Nil(t, createdMovements[1].Load)
+	require.NotNil(t, createdMovements[0].LoadKg)
+	assert.Equal(t, 17.5, *createdMovements[0].LoadKg)
+	assert.Nil(t, createdMovements[1].LoadKg)
 	require.NotNil(t, createdMovements[1].Reps)
 	assert.Equal(t, 12, *createdMovements[1].Reps)
 
@@ -1448,8 +1469,8 @@ func TestBuilder_FullPlanBuildUp(t *testing.T) {
 	require.Len(t, block.Movements, 2, "both movements landed in one block: a superset")
 	assert.Equal(t, []string{createdMovements[0].ID, createdMovements[1].ID}, []string{block.Movements[0].ID, block.Movements[1].ID})
 	assert.Equal(t, []int{0, 1}, []int{block.Movements[0].OrderInBlock, block.Movements[1].OrderInBlock})
-	require.NotNil(t, block.Movements[0].Load)
-	assert.Equal(t, "bodyweight", *block.Movements[0].Load)
+	require.NotNil(t, block.Movements[0].LoadKg)
+	assert.Equal(t, 17.5, *block.Movements[0].LoadKg)
 
 	listed := listPlans(t, router, token, athleteID)
 	require.Len(t, listed, 1)

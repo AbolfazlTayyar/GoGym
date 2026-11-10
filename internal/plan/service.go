@@ -19,7 +19,6 @@ import (
 const (
 	maxTitleLength = 100
 	maxNotesLength = 2000
-	maxLoadLength  = 100
 )
 
 // A saved day is bounded so one request can't insert thousands of rows; her days are 6-9 lines with at
@@ -36,6 +35,9 @@ const (
 	maxReps            = 1000
 	maxRestSeconds     = 60 * 60
 	maxDurationSeconds = 4 * 60 * 60
+	// load_kg is NUMERIC(5,2): below a hundredth it would round to 0.
+	minLoadKg = 0.01
+	maxLoadKg = 500.0
 	// maxPosition bounds block and movement ordering keys; sparse keys like 10, 20, 30 still fit.
 	maxPosition = 999
 )
@@ -50,6 +52,7 @@ const (
 	msgUUID         = "must be a UUID"
 	msgMaxLength    = "must be at most %d characters"
 	msgRange        = "must be between %d and %d"
+	msgLoadKgRange  = "must be between %g and %g"
 	msgDayLabel     = "must be one of A-G or day1-day7"
 	msgDaySlotTaken = "is already used by another day in this plan"
 	// msgNotFound answers an id in the body the coach can't use, without saying whether it exists.
@@ -116,7 +119,7 @@ type SaveMovementInput struct {
 	MovementID      string
 	Reps            *int
 	DurationSeconds *int
-	Load            *string
+	LoadKg          *float64
 }
 
 // The int pointers below tell a missing value from 0, which is a valid order_index.
@@ -137,7 +140,7 @@ type AddMovementInput struct {
 	MovementID      string
 	Reps            *int
 	DurationSeconds *int
-	Load            *string
+	LoadKg          *float64
 	OrderInBlock    *int
 }
 
@@ -302,7 +305,7 @@ func copyDays(planID uuid.UUID, source []Day) []Day {
 			for _, m := range b.Movements {
 				block.Movements = append(block.Movements, BlockMovement{
 					ID: uuid.New(), BlockID: block.ID, MovementID: m.MovementID,
-					Reps: m.Reps, DurationSeconds: m.DurationSeconds, Load: m.Load, OrderInBlock: m.OrderInBlock,
+					Reps: m.Reps, DurationSeconds: m.DurationSeconds, LoadKg: m.LoadKg, OrderInBlock: m.OrderInBlock,
 				})
 			}
 			day.Blocks = append(day.Blocks, block)
@@ -465,13 +468,14 @@ func (s *Service) SaveDay(ctx context.Context, coachID, dayID uuid.UUID, inputs 
 			key := prefix + "." + fieldMovementID
 			optionalInt(fields, prefix+".reps", m.Reps, 1, maxReps)
 			optionalInt(fields, prefix+".duration_seconds", m.DurationSeconds, 1, maxDurationSeconds)
+			optionalLoadKg(fields, prefix+".load_kg", m.LoadKg)
 			movements = append(movements, BlockMovement{
 				ID:              uuid.New(),
 				BlockID:         block.ID,
 				MovementID:      requiredUUID(fields, key, m.MovementID),
 				Reps:            m.Reps,
 				DurationSeconds: m.DurationSeconds,
-				Load:            optionalText(fields, prefix+".load", m.Load, maxLoadLength),
+				LoadKg:          m.LoadKg,
 				OrderInBlock:    j,
 			})
 			movementKeys = append(movementKeys, key)
@@ -735,7 +739,7 @@ func buildBlockMovement(fields map[string]string, i int, blockID uuid.UUID, inpu
 	movementID := requiredUUID(fields, elementField(i, fieldMovementID), input.MovementID)
 	optionalInt(fields, elementField(i, "reps"), input.Reps, 1, maxReps)
 	optionalInt(fields, elementField(i, "duration_seconds"), input.DurationSeconds, 1, maxDurationSeconds)
-	load := optionalText(fields, elementField(i, "load"), input.Load, maxLoadLength)
+	optionalLoadKg(fields, elementField(i, "load_kg"), input.LoadKg)
 	orderInBlock := requiredInt(fields, elementField(i, "order_in_block"), input.OrderInBlock, 0, maxPosition)
 
 	return BlockMovement{
@@ -744,7 +748,7 @@ func buildBlockMovement(fields map[string]string, i int, blockID uuid.UUID, inpu
 		MovementID:      movementID,
 		Reps:            input.Reps,
 		DurationSeconds: input.DurationSeconds,
-		Load:            load,
+		LoadKg:          input.LoadKg,
 		OrderInBlock:    orderInBlock,
 	}
 }
@@ -809,5 +813,11 @@ func requiredInt(fields map[string]string, name string, value *int, lo, hi int) 
 func optionalInt(fields map[string]string, name string, value *int, lo, hi int) {
 	if value != nil && (*value < lo || *value > hi) {
 		fields[name] = fmt.Sprintf(msgRange, lo, hi)
+	}
+}
+
+func optionalLoadKg(fields map[string]string, name string, value *float64) {
+	if value != nil && (*value < minLoadKg || *value > maxLoadKg) {
+		fields[name] = fmt.Sprintf(msgLoadKgRange, minLoadKg, maxLoadKg)
 	}
 }

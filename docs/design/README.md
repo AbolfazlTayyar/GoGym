@@ -66,8 +66,8 @@ Found while mapping her plans onto `block` / `block_movement`. Most of her plans
 whole number, sets per block, supersets as several movements in a block, duration in seconds. These
 don't:
 
-- **Per leg / per side has no field.** `block_movement` has `reps`, `duration_seconds` and `load`.
-  "15 each leg" needs a marker of its own. Writing it into `load` would misuse that field.
+- **Per leg / per side has no field.** `block_movement` has `reps`, `duration_seconds` and `load_kg`.
+  "15 each leg" needs a marker of its own.
 - **A day has no note.** "Do day E with minimal rest" belongs to the day, but `day` only has a
   `label`.
 - **Warm-up and cool-down cardio** fit as a one-movement block with `duration_seconds`. Showing
@@ -77,7 +77,7 @@ don't:
   delete*, *Save a day* and *New plan from a copy* tasks in [tasks/backend.md](../tasks/backend.md).
 
 Already supported: the same movement twice in one block ("10 with weight + 10 without").
-`block_movement` has no uniqueness on `(block_id, movement_id)`, and `load` tells the two apart.
+`block_movement` has no uniqueness on `(block_id, movement_id)`, and `load_kg` tells the two apart.
 
 Found while drawing the other screens. Each one is a task in
 [tasks/backend.md](../tasks/backend.md), Phase 2:

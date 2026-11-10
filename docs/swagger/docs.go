@@ -687,7 +687,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Adds every movement in the array to the block, or none of them. Send two or more to build a superset in one call. Each entry needs movement_id and order_in_block (0-999); reps (1-1000), duration_seconds (1-14400) and load (free text, e.g. \"70kg\", \"75% 1RM\", \"RPE 8\", \"bodyweight\") are optional. Every movement_id must be in the coach's library: their own movements or a universal one. A movement that isn't, or any other invalid entry, rejects the whole batch with a 400 whose fields are keyed by array position, e.g. \"[1].movement_id\". The response lists the created movements with their library name and category. A block whose plan's athlete belongs to another coach is reported as not found.",
+                "description": "Adds every movement in the array to the block, or none of them. Send two or more to build a superset in one call. Each entry needs movement_id and order_in_block (0-999); reps (1-1000), duration_seconds (1-14400) and load_kg (the weight in kg, 0.01-500, stored to two decimals) are optional. Every movement_id must be in the coach's library: their own movements or a universal one. A movement that isn't, or any other invalid entry, rejects the whole batch with a 400 whose fields are keyed by array position, e.g. \"[1].movement_id\". The response lists the created movements with their library name and category. A block whose plan's athlete belongs to another coach is reported as not found.",
                 "consumes": [
                     "application/json"
                 ],
@@ -884,7 +884,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Replaces every block of the day with the blocks in the array, in one transaction: all of them are saved, or none and the day is unchanged. Order comes from array position, for blocks and for each block's movements. An empty array clears the day. A block needs sets (1-50) and at least one movement (at most 10); rest_seconds (0-3600) and notes are optional. Each movement needs movement_id; reps (1-1000), duration_seconds (1-14400) and load are optional. A movement must be in the coach's library, own or universal, or already used in this day (a movement deleted from the library since still saves). At most 40 blocks. Errors are reported together, keyed by position, e.g. \"[2].sets\" or \"[2].movements[1].movement_id\". Block and block movement ids are new on every save, so a client must not hold on to them. Two saves of the same day at once: the later one wins whole. The response is the saved day in the plan detail's day shape. A day whose plan's athlete belongs to another coach is reported as not found.",
+                "description": "Replaces every block of the day with the blocks in the array, in one transaction: all of them are saved, or none and the day is unchanged. Order comes from array position, for blocks and for each block's movements. An empty array clears the day. A block needs sets (1-50) and at least one movement (at most 10); rest_seconds (0-3600) and notes are optional. Each movement needs movement_id; reps (1-1000), duration_seconds (1-14400) and load_kg (the weight in kg, 0.01-500, stored to two decimals) are optional. A movement must be in the coach's library, own or universal, or already used in this day (a movement deleted from the library since still saves). At most 40 blocks. Errors are reported together, keyed by position, e.g. \"[2].sets\" or \"[2].movements[1].movement_id\". Block and block movement ids are new on every save, so a client must not hold on to them. Two saves of the same day at once: the later one wins whole. The response is the saved day in the plan detail's day shape. A day whose plan's athlete belongs to another coach is reported as not found.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1458,7 +1458,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Creates a plan for the athlete. athlete_id, start_date (YYYY-MM-DD) and title are required, note is optional. Without source_plan_id the plan is empty: the response has an empty days array. With source_plan_id the plan is a copy of that plan's days, blocks and block movements (labels, order, sets, rest, notes, reps, duration and load, movements deleted from the library since included); title, note and start_date still come from the request. The source can be any of the coach's athletes' plans; one the coach can't use is a 400 on source_plan_id. A copy's response is its full detail, and the copy names its source in source_plan_id and source_plan_title. An athlete that belongs to another coach is reported as not found.",
+                "description": "Creates a plan for the athlete. athlete_id, start_date (YYYY-MM-DD) and title are required, note is optional. Without source_plan_id the plan is empty: the response has an empty days array. With source_plan_id the plan is a copy of that plan's days, blocks and block movements (labels, order, sets, rest, notes, reps, duration and load_kg, movements deleted from the library since included); title, note and start_date still come from the request. The source can be any of the coach's athletes' plans; one the coach can't use is a 400 on source_plan_id. A copy's response is its full detail, and the copy names its source in source_plan_id and source_plan_title. An athlete that belongs to another coach is reported as not found.",
                 "consumes": [
                     "application/json"
                 ],
@@ -2416,9 +2416,9 @@ const docTemplate = `{
                     "type": "integer",
                     "example": 30
                 },
-                "load": {
-                    "type": "string",
-                    "example": "bodyweight"
+                "load_kg": {
+                    "type": "number",
+                    "example": 17.5
                 },
                 "movement_id": {
                     "type": "string",
@@ -2448,9 +2448,9 @@ const docTemplate = `{
                     "type": "string",
                     "example": "2a3b4c5d-6e7f-4a8b-9c0d-1e2f3a4b5c6d"
                 },
-                "load": {
-                    "type": "string",
-                    "example": "bodyweight"
+                "load_kg": {
+                    "type": "number",
+                    "example": 17.5
                 },
                 "movement_id": {
                     "type": "string",
@@ -2681,9 +2681,9 @@ const docTemplate = `{
                     "type": "integer",
                     "example": 45
                 },
-                "load": {
-                    "type": "string",
-                    "example": "bodyweight"
+                "load_kg": {
+                    "type": "number",
+                    "example": 17.5
                 },
                 "movement_id": {
                     "type": "string",
