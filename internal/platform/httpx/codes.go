@@ -18,16 +18,21 @@ const (
 )
 
 const (
-	MsgUnauthorized       = "unauthorized"
-	MsgInvalidRequest     = "invalid request"
-	MsgTooManyRequests    = "too many requests"
-	MsgInternalError      = "internal error"
+	MsgUnauthorized    = "unauthorized"
+	MsgInvalidRequest  = "invalid request"
+	MsgTooManyRequests = "too many requests"
+	MsgInternalError   = "internal error"
+	// MsgNotFound also answers an id in a request body the coach can't use, without saying whether it exists.
 	MsgNotFound           = "not found"
 	MsgMethodNotAllowed   = "method not allowed"
 	MsgInvalidCredentials = "invalid credentials"
 )
 
-// MsgFieldRequired is shared by binding-tag and service-level validation so a missing field reads the same either way.
-const MsgFieldRequired = "is required"
-
-const MsgDateFormat = "must be a date in YYYY-MM-DD format"
+// Field messages, here and in each module, are matched word for word by web/src/api/fields.ts: reword one only together with its rule there.
+const (
+	// MsgFieldRequired is shared by binding-tag and service-level validation so a missing field reads the same either way.
+	MsgFieldRequired = "is required"
+	MsgDateFormat    = "must be a date in YYYY-MM-DD format"
+	// MsgMaxLength takes the limit as an int from services or as a string from binding tags, hence %v.
+	MsgMaxLength = "must be at most %v characters"
+)

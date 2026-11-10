@@ -47,7 +47,7 @@ func validationMessage(fe validator.FieldError) string {
 	case "min":
 		return fmt.Sprintf("must be at least %s characters", fe.Param())
 	case "max":
-		return fmt.Sprintf("must be at most %s characters", fe.Param())
+		return fmt.Sprintf(MsgMaxLength, fe.Param())
 	default:
 		return fmt.Sprintf("failed the %q rule", fe.Tag())
 	}

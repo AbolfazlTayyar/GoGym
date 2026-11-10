@@ -18,8 +18,6 @@ const (
 	maxDescriptionLength = 2000
 )
 
-const msgMaxLength = "must be at most %d characters"
-
 // ErrUniversal is for a movement the coach can see but not change; one they can't see is ErrNotFound.
 var ErrUniversal = errors.New("movement: universal movements are read-only")
 
@@ -144,7 +142,7 @@ func requiredText(fields map[string]string, name, value string, maxLength int) s
 	case trimmed == "":
 		fields[name] = httpx.MsgFieldRequired
 	case utf8.RuneCountInString(trimmed) > maxLength:
-		fields[name] = fmt.Sprintf(msgMaxLength, maxLength)
+		fields[name] = fmt.Sprintf(httpx.MsgMaxLength, maxLength)
 	}
 	return trimmed
 }
@@ -165,7 +163,7 @@ func optionalText(value *string) *string {
 
 func boundedText(fields map[string]string, name string, value *string, maxLength int) *string {
 	if value != nil && utf8.RuneCountInString(*value) > maxLength {
-		fields[name] = fmt.Sprintf(msgMaxLength, maxLength)
+		fields[name] = fmt.Sprintf(httpx.MsgMaxLength, maxLength)
 	}
 	return value
 }

@@ -50,15 +50,12 @@ const (
 
 const (
 	msgUUID         = "must be a UUID"
-	msgMaxLength    = "must be at most %d characters"
 	msgRange        = "must be between %d and %d"
 	msgLoadKgRange  = "must be between %g and %g"
 	msgDayLabel     = "must be one of A-G or day1-day7"
 	msgDaySlotTaken = "is already used by another day in this plan"
-	// msgNotFound answers an id in the body the coach can't use, without saying whether it exists.
-	msgNotFound    = "not found"
-	msgTooMany     = "must have at most %d items"
-	msgNoMovements = "at least one movement is required"
+	msgTooMany      = "must have at most %d items"
+	msgNoMovements  = "at least one movement is required"
 )
 
 // dayLabels names each of a plan's MaxDaysPerPlan slots, in either the letter or the numbered scheme.
@@ -274,7 +271,7 @@ func (s *Service) Create(ctx context.Context, coachID uuid.UUID, input CreateInp
 	// (docs/adr/0019), and the copy names its movements as the source does, deleted ones included.
 	if _, err := s.ownedPlan(ctx, coachID, *p.SourcePlanID); err != nil {
 		if errors.Is(err, ErrNotFound) {
-			return nil, &ValidationError{Fields: map[string]string{fieldSourcePlanID: msgNotFound}}
+			return nil, &ValidationError{Fields: map[string]string{fieldSourcePlanID: httpx.MsgNotFound}}
 		}
 		return nil, err
 	}
@@ -532,7 +529,7 @@ func (s *Service) checkDayMovements(ctx context.Context, coachID, dayID uuid.UUI
 
 	for k := range movements {
 		if _, flagged := fields[keys[k]]; !flagged && !usable[movements[k].MovementID] {
-			fields[keys[k]] = msgNotFound
+			fields[keys[k]] = httpx.MsgNotFound
 		}
 	}
 	return nil
@@ -609,7 +606,7 @@ func (s *Service) attachLibrary(ctx context.Context, coachID uuid.UUID, movement
 
 		m, ok := library[movements[i].MovementID]
 		if !ok {
-			fields[key] = msgNotFound
+			fields[key] = httpx.MsgNotFound
 			continue
 		}
 		movements[i].Movement = m
@@ -777,7 +774,7 @@ func requiredText(fields map[string]string, name, value string, maxLength int) s
 	case trimmed == "":
 		fields[name] = httpx.MsgFieldRequired
 	case utf8.RuneCountInString(trimmed) > maxLength:
-		fields[name] = fmt.Sprintf(msgMaxLength, maxLength)
+		fields[name] = fmt.Sprintf(httpx.MsgMaxLength, maxLength)
 	}
 	return trimmed
 }
@@ -794,7 +791,7 @@ func optionalText(fields map[string]string, name string, value *string, maxLengt
 	}
 
 	if utf8.RuneCountInString(trimmed) > maxLength {
-		fields[name] = fmt.Sprintf(msgMaxLength, maxLength)
+		fields[name] = fmt.Sprintf(httpx.MsgMaxLength, maxLength)
 	}
 	return &trimmed
 }
