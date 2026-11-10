@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import { fieldErrors } from "../api/client";
+import { msgNoneFilled } from "../api/fields";
 import { queryKeys } from "../api/keys";
 import {
   createMeasurement,
@@ -22,9 +23,6 @@ import { TrashIcon } from "./icons";
 import { JalaliDateField } from "./JalaliDateField";
 import s from "./MeasurementSheet.module.css";
 import { useSheet } from "./useSheet";
-
-// The API's answer when no measurement is filled; it names every field, so it is shown once instead.
-const msgNoneFilled = "دست‌کم یکی را پر کنید.";
 
 type MeasurementSheetProps = {
   open: boolean;
@@ -74,6 +72,7 @@ function MeasurementForm({ onClose, athleteId, measurements, editing }: Measurem
   });
 
   const errors = fieldErrors(save.error);
+  // The API's answer when no measurement is filled names every field, so it is shown once instead.
   const noneFilled = metrics.every(({ key }) => errors[key] === msgNoneFilled);
 
   const submit = () => {

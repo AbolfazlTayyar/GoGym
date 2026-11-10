@@ -15,12 +15,14 @@ export const ErrorCode = {
   badResponse: "bad_response",
 } as const;
 
+export const msgNotFound = "پیدا نشد؛ شاید حذف شده باشد.";
+
 // What the coach reads. The server's error.message is English and never shown.
 const messages: Record<string, string> = {
   [ErrorCode.validationFailed]: "بعضی از فیلدها درست نیستند.",
   [ErrorCode.invalidCredentials]: "موبایل یا رمز عبور درست نیست.",
   [ErrorCode.unauthorized]: "لطفاً دوباره وارد شوید.",
-  [ErrorCode.notFound]: "پیدا نشد؛ شاید حذف شده باشد.",
+  [ErrorCode.notFound]: msgNotFound,
   [ErrorCode.forbidden]: "این مورد قابل تغییر نیست.",
   [ErrorCode.conflict]: "این تغییر با اطلاعات فعلی جور نیست.",
   [ErrorCode.rateLimited]: "تلاش‌ها زیاد بود؛ چند دقیقه دیگر دوباره امتحان کنید.",
