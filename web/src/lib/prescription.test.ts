@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { prescriptionText } from "./prescription";
+import { amountText, prescriptionText } from "./prescription";
 
-const part = (p: Partial<{ reps: number; duration_seconds: number; load: string }>) => ({
+const part = (p: Partial<{ reps: number; duration_seconds: number; load_kg: number }>) => ({
   reps: p.reps ?? null,
   duration_seconds: p.duration_seconds ?? null,
-  load: p.load ?? null,
+  load_kg: p.load_kg ?? null,
 });
 
 describe("prescriptionText", () => {
@@ -49,10 +49,11 @@ describe("prescriptionText", () => {
     ).toBe("۱۵ تکرار + ۴۵ ثانیه × ۱ ست");
   });
 
-  it("puts the load after its movement", () => {
-    expect(prescriptionText({ sets: 4, movements: [part({ reps: 8, load: "۲۰ کیلو" })] })).toBe(
+  it("puts the weight after its movement", () => {
+    expect(prescriptionText({ sets: 4, movements: [part({ reps: 8, load_kg: 20 })] })).toBe(
       "۸ تکرار (۲۰ کیلو) × ۴ ست",
     );
+    expect(amountText(part({ reps: 10, load_kg: 17.5 }))).toBe("۱۰ تکرار (۱۷٫۵ کیلو)");
   });
 
   it("joins a three-movement block with +", () => {
@@ -61,11 +62,11 @@ describe("prescriptionText", () => {
         sets: 3,
         movements: [
           part({ reps: 12 }),
-          part({ reps: 12, load: "بدون وزنه" }),
+          part({ reps: 12, load_kg: 5 }),
           part({ duration_seconds: 30 }),
         ],
       }),
-    ).toBe("۱۲ تکرار + ۱۲ تکرار (بدون وزنه) + ۳۰ ثانیه × ۳ ست");
+    ).toBe("۱۲ تکرار + ۱۲ تکرار (۵ کیلو) + ۳۰ ثانیه × ۳ ست");
   });
 
   it("falls back to sets alone when no amount is set", () => {

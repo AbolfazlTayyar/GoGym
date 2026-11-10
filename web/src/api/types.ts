@@ -79,7 +79,7 @@ export type BlockMovement = {
   category: string | null;
   reps: number | null;
   duration_seconds: number | null;
-  load: string | null;
+  load_kg: number | null;
   order_in_block: number;
 };
 

@@ -7,7 +7,7 @@ type LineMovement = {
   name: string;
   reps: number | null;
   duration_seconds: number | null;
-  load: string | null;
+  load_kg: number | null;
 };
 
 type BlockLineProps = {

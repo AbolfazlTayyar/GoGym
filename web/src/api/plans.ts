@@ -32,7 +32,7 @@ export type SaveBlock = {
     movement_id: string;
     reps: number | null;
     duration_seconds: number | null;
-    load: string | null;
+    load_kg: number | null;
   }[];
 };
 

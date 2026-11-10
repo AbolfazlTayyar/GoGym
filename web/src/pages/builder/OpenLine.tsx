@@ -1,7 +1,7 @@
-import type { Dispatch, RefObject } from "react";
+import { useState, type Dispatch, type RefObject } from "react";
 import { TrashIcon, XIcon } from "../../components/icons";
 import { Segmented } from "../../components/Segmented";
-import { toPersianDigits } from "../../lib/digits";
+import { parseNumber, toPersianDigits } from "../../lib/digits";
 import { amountText } from "../../lib/prescription";
 import s from "./Builder.module.css";
 import {
@@ -9,6 +9,7 @@ import {
   newKey,
   presetMatches,
   presets,
+  stepKg,
   type Action,
   type DraftBlock,
   type DraftMovement,
@@ -35,10 +36,11 @@ const modeLabels: { value: Mode; label: string }[] = [
 
 const presetLabel = (p: (typeof presets)[number]) =>
   "seconds" in p
-    ? `${amountText({ reps: null, duration_seconds: p.seconds, load: null })} × ${toPersianDigits(p.sets)}`
+    ? `${amountText({ reps: null, duration_seconds: p.seconds, load_kg: null })} × ${toPersianDigits(p.sets)}`
     : `${toPersianDigits(p.reps)} × ${toPersianDigits(p.sets)}`;
 
-// A line opened in place: everything is a tap (type, +/-, presets, superset, move, delete); nothing is typed.
+// A line opened in place: everything is a tap (type, +/-, presets, superset, move, delete), and a weight can
+// also be typed, since 40 kg is too many taps.
 // Rest is hidden: her plans never prescribe it (docs/design/README.md).
 export function OpenLine(props: OpenLineProps) {
   const { ref, index, block, isFirst, isLast, joining, dispatch, onClose, onJoin, error } = props;
@@ -84,17 +86,13 @@ export function OpenLine(props: OpenLineProps) {
               mode && dispatch({ type: "mode", blockKey, movementKey: m.key, mode })
             }
           />
-          {superset && (
-            <div className={s.nums}>
-              <Amount movement={m} blockKey={blockKey} dispatch={dispatch} />
-            </div>
-          )}
+          <div className={s.nums}>
+            <Amount movement={m} blockKey={blockKey} dispatch={dispatch} />
+            <Weight movement={m} blockKey={blockKey} dispatch={dispatch} />
+          </div>
         </div>
       ))}
       <div className={s.nums}>
-        {!superset && (
-          <Amount movement={block.movements[0]} blockKey={blockKey} dispatch={dispatch} />
-        )}
         <div>
           <label>ست</label>
           <Stepper
@@ -177,6 +175,64 @@ function Amount({
         label={label}
         onStep={(delta) => dispatch({ type: "step", blockKey, movementKey: movement.key, delta })}
       />
+    </div>
+  );
+}
+
+// The weight in kg; empty is no weight. The number is an input: the steppers' value until she types in it.
+function Weight({
+  movement,
+  blockKey,
+  dispatch,
+}: {
+  movement: DraftMovement;
+  blockKey: string;
+  dispatch: Dispatch<Action>;
+}) {
+  const kg = movement.load_kg;
+  // What she is typing, held while the field has focus so "17." isn't redrawn as "17".
+  const [typing, setTyping] = useState<string | null>(null);
+  const set = (value: number | null) =>
+    dispatch({ type: "kg", blockKey, movementKey: movement.key, kg: value });
+  const label = "وزنه (کیلو)";
+  return (
+    <div>
+      <label htmlFor={`kg-${movement.key}`}>{label}</label>
+      <div className={s.ctl}>
+        <button
+          type="button"
+          className={s.p}
+          aria-label={`${label} بیشتر`}
+          onClick={() => set(stepKg(kg, 1))}
+        >
+          +
+        </button>
+        <input
+          id={`kg-${movement.key}`}
+          inputMode="decimal"
+          enterKeyHint="done"
+          autoComplete="off"
+          placeholder="—"
+          value={typing ?? (kg === null ? "" : toPersianDigits(kg))}
+          onFocus={(e) => setTyping(e.currentTarget.value)}
+          onBlur={() => setTyping(null)}
+          onChange={(e) => {
+            const text = e.currentTarget.value;
+            setTyping(text);
+            if (text.trim() === "") set(null);
+            else {
+              const value = parseNumber(text);
+              if (value !== null) set(value);
+            }
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") e.currentTarget.blur();
+          }}
+        />
+        <button type="button" aria-label={`${label} کمتر`} onClick={() => set(stepKg(kg, -1))}>
+          −
+        </button>
+      </div>
     </div>
   );
 }

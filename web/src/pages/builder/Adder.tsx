@@ -18,7 +18,7 @@ type AdderProps = {
   onPick: (movement: { id: string; name: string }) => void;
 };
 
-// The search pinned under the day: the only typing in the builder. A pick adds a line; a name that isn't
+// The search pinned under the day. A pick adds a line; a name that isn't
 // in the library yet is added to it first.
 export function Adder({ inputRef, joining, onPick }: AdderProps) {
   const queryClient = useQueryClient();
@@ -50,7 +50,7 @@ export function Adder({ inputRef, joining, onPick }: AdderProps) {
   const pick = (m: { id: string; name: string }) => {
     onPick(m);
     setText("");
-    // Nothing in the new line is typed, so the keyboard would only cover it.
+    // A new line is set by taps (a weight only if she wants one), so the keyboard would only cover it.
     inputRef.current?.blur();
   };
 

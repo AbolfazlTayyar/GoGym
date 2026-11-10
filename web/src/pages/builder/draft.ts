@@ -10,7 +10,7 @@ export type DraftMovement = {
   name: string;
   reps: number | null;
   duration_seconds: number | null;
-  load: string | null;
+  load_kg: number | null;
 };
 
 export type DraftBlock = {
@@ -44,6 +44,7 @@ const bounds = {
   sets: { min: 1, max: 50, step: 1 },
   reps: { min: 1, max: 1000, step: 1 },
   seconds: { min: 5, max: 4 * 60 * 60, step: 5, longFrom: 2 * 60, longStep: 60 },
+  kg: { min: 0, max: 500, step: 1 },
 };
 
 export type Action =
@@ -52,6 +53,7 @@ export type Action =
   | { type: "join"; blockKey: string; movementKey: string; movement: { id: string; name: string } }
   | { type: "mode"; blockKey: string; movementKey: string; mode: Mode }
   | { type: "step"; blockKey: string; movementKey: string; delta: 1 | -1 }
+  | { type: "kg"; blockKey: string; movementKey: string; kg: number | null }
   | { type: "sets"; blockKey: string; delta: 1 | -1 }
   | { type: "preset"; blockKey: string; preset: Preset }
   | { type: "move"; blockKey: string; delta: 1 | -1 }
@@ -71,7 +73,7 @@ export function fromDay(day: Day): Draft {
       name: m.name,
       reps: m.reps,
       duration_seconds: m.duration_seconds,
-      load: m.load,
+      load_kg: m.load_kg,
     })),
   }));
 }
@@ -85,13 +87,25 @@ export function toBody(draft: Draft): SaveBlock[] {
       movement_id: m.movement_id,
       reps: m.reps,
       duration_seconds: m.duration_seconds,
-      load: m.load,
+      load_kg: m.load_kg,
     })),
   }));
 }
 
 export function modeOf(m: DraftMovement): Mode {
   return m.duration_seconds !== null ? "seconds" : "reps";
+}
+
+// A +/− tap on the weight: whole kilos, so a typed 17.5 goes to 18.5 or 16.5; below 1 kg is no weight.
+export function stepKg(kg: number | null, delta: 1 | -1): number | null {
+  const next = (kg ?? 0) + delta * bounds.kg.step;
+  return next < bounds.kg.step ? null : next;
+}
+
+function setKg(m: DraftMovement, kg: number | null): DraftMovement {
+  // Two decimals, as the API stores it; also keeps taps on a typed 0.1 from reading 2.1000000000000005.
+  const rounded = kg === null ? 0 : Math.round(clamp(kg, bounds.kg) * 100) / 100;
+  return { ...m, load_kg: rounded > bounds.kg.min ? rounded : null };
 }
 
 export function draftReducer(draft: Draft, action: Action): Draft {
@@ -108,6 +122,8 @@ export function draftReducer(draft: Draft, action: Action): Draft {
       );
     case "step":
       return editMovement(draft, action.blockKey, action.movementKey, (m) => step(m, action.delta));
+    case "kg":
+      return editMovement(draft, action.blockKey, action.movementKey, (m) => setKg(m, action.kg));
     case "sets":
       return editBlock(draft, action.blockKey, (b) => ({
         ...b,
@@ -149,7 +165,7 @@ function addLine(
           name: movement.name,
           reps: amount ? amount.reps : firstLine.reps,
           duration_seconds: amount ? amount.duration_seconds : null,
-          load: null,
+          load_kg: null,
         },
       ],
     },
@@ -175,7 +191,7 @@ function joinLine(
           name: movement.name,
           reps: last ? last.reps : firstLine.reps,
           duration_seconds: last ? last.duration_seconds : null,
-          load: null,
+          load_kg: null,
         },
       ],
     };

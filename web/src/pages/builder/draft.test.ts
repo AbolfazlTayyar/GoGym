@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Day } from "../../api/types";
-import { draftReducer, fromDay, presetMatches, presets, toBody, type Draft } from "./draft";
+import { draftReducer, fromDay, presetMatches, presets, stepKg, toBody, type Draft } from "./draft";
 
 const lunge = { id: "m-lunge", name: "لانژ" };
 const bridge = { id: "m-bridge", name: "پل باسن" };
@@ -26,7 +26,7 @@ const day: Day = {
           category: null,
           reps: 12,
           duration_seconds: null,
-          load: null,
+          load_kg: null,
           order_in_block: 0,
         },
       ],
@@ -45,7 +45,7 @@ const day: Day = {
           category: null,
           reps: null,
           duration_seconds: 45,
-          load: "۱۰ کیلو",
+          load_kg: 10,
           order_in_block: 0,
         },
       ],
@@ -79,13 +79,33 @@ describe("draft", () => {
   it("adds a line copying the previous line's sets and amount", () => {
     const after = run(start, { type: "add", blockKey: "n1", movementKey: "nm1", movement: squat });
     expect(lines(after).at(-1)).toBe("4×[اسکوات 45s]");
-    expect(after.at(-1)!.movements[0].load).toBeNull();
+    expect(after.at(-1)!.movements[0].load_kg).toBeNull();
   });
 
   it("adds a first line with the default prescription", () => {
     expect(
       lines(run([], { type: "add", blockKey: "n1", movementKey: "nm1", movement: squat })),
     ).toEqual(["3×[اسکوات 12r]"]);
+  });
+
+  it("sets a movement's weight in kg, and none at zero", () => {
+    const kg = (value: number | null) =>
+      run(start, { type: "kg", blockKey: "b1", movementKey: "bm1", kg: value })[0].movements[0]
+        .load_kg;
+    expect(kg(15)).toBe(15);
+    expect(kg(17.5)).toBe(17.5);
+    expect(kg(2.345)).toBe(2.35);
+    expect(kg(900)).toBe(500);
+    expect(kg(0)).toBeNull();
+    expect(kg(0.001)).toBeNull();
+    expect(kg(null)).toBeNull();
+  });
+
+  it("steps the weight by whole kilos, and below one is none", () => {
+    expect(stepKg(null, 1)).toBe(1);
+    expect(stepKg(17.5, 1)).toBe(18.5);
+    expect(stepKg(1, -1)).toBeNull();
+    expect(stepKg(null, -1)).toBeNull();
   });
 
   it("switches between reps and seconds", () => {
@@ -235,15 +255,15 @@ describe("draft", () => {
         sets: 4,
         rest_seconds: 60,
         notes: "کند",
-        movements: [{ movement_id: bridge.id, reps: null, duration_seconds: 45, load: "۱۰ کیلو" }],
+        movements: [{ movement_id: bridge.id, reps: null, duration_seconds: 45, load_kg: 10 }],
       },
       {
         sets: 3,
         rest_seconds: null,
         notes: null,
         movements: [
-          { movement_id: lunge.id, reps: 12, duration_seconds: null, load: null },
-          { movement_id: plank.id, reps: 12, duration_seconds: null, load: null },
+          { movement_id: lunge.id, reps: 12, duration_seconds: null, load_kg: null },
+          { movement_id: plank.id, reps: 12, duration_seconds: null, load_kg: null },
         ],
       },
     ]);
