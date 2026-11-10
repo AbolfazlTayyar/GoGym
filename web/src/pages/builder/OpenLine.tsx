@@ -214,6 +214,13 @@ function Weight({
           autoComplete="off"
           placeholder="—"
           value={typing ?? (kg === null ? "" : toPersianDigits(kg))}
+          // iOS pans the page to reveal a tapped input, then the screen shrinks for the keyboard and the
+          // field is left under it; focusing it ourselves skips the pan, and BuilderPage keeps it in view.
+          onTouchEnd={(e) => {
+            if (document.activeElement === e.currentTarget) return;
+            e.preventDefault();
+            e.currentTarget.focus({ preventScroll: true });
+          }}
           onFocus={(e) => setTyping(e.currentTarget.value)}
           onBlur={() => setTyping(null)}
           onChange={(e) => {

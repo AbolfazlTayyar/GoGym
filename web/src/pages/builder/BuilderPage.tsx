@@ -185,6 +185,35 @@ function BuilderScreen({ plan, athlete, day }: BuilderScreenProps) {
     sheet.scrollTo({ top: sheet.scrollTop + offset - openLineGap, behavior: "smooth" });
   }, [pickedKey]);
 
+  // A field typed in the sheet (a weight) keeps its row at the sheet's top while the keyboard shrinks the
+  // sheet under it, frame by frame; otherwise the sheet keeps its scroll and the row ends up below its edge.
+  useEffect(() => {
+    const sheet = sheetRef.current;
+    if (!sheet) return;
+    let row: Element | null = null;
+    const pin = () => {
+      if (!row) return;
+      const offset = row.getBoundingClientRect().top - sheet.getBoundingClientRect().top;
+      sheet.scrollTop += offset - openLineGap;
+    };
+    const onFocusIn = (e: FocusEvent) => {
+      row = e.target instanceof HTMLInputElement ? e.target.closest(`.${s.nums}`) : null;
+      pin();
+    };
+    const onFocusOut = () => {
+      row = null;
+    };
+    const resized = new ResizeObserver(pin);
+    resized.observe(sheet);
+    sheet.addEventListener("focusin", onFocusIn);
+    sheet.addEventListener("focusout", onFocusOut);
+    return () => {
+      resized.disconnect();
+      sheet.removeEventListener("focusin", onFocusIn);
+      sheet.removeEventListener("focusout", onFocusOut);
+    };
+  }, []);
+
   const switchDay = (label: string) => {
     if (label === day?.label) return;
     if (dirty) setPending({ label });
