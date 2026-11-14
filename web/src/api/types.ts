@@ -118,3 +118,12 @@ export type ShareLink = {
   token: string;
   expires_at: string;
 };
+
+// GET /public/plans/:token. An expired link still names the coach; athlete and plan are then null.
+export type SharedPlan = {
+  status: "active" | "expired";
+  expires_at: string;
+  coach: { first_name: string; last_name: string; phone: string };
+  athlete: { first_name: string; last_name: string } | null;
+  plan: { title: string; note: string | null; start_date: string; days: Day[] } | null;
+};

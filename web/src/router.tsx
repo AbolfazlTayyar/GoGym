@@ -8,11 +8,14 @@ import { HomePage } from "./pages/HomePage";
 import { LoginPage } from "./pages/LoginPage";
 import { NewPlanPage } from "./pages/NewPlanPage";
 import { ProfilePage } from "./pages/ProfilePage";
+import { SharedPlanPage } from "./pages/SharedPlanPage";
 import { MovementsPage } from "./pages/MovementsPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
 
 export const router = createBrowserRouter([
   { path: "/login", element: <LoginPage /> },
+  // The athlete opens a shared plan without an account, so it sits outside RequireAuth.
+  { path: "/p/:token", element: <SharedPlanPage /> },
   {
     element: <RequireAuth />,
     children: [

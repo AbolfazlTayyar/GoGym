@@ -5,4 +5,5 @@ export const queryKeys = {
   plans: (...parts: unknown[]) => ["plans", ...parts] as const,
   measurements: (...parts: unknown[]) => ["measurements", ...parts] as const,
   movements: (...parts: unknown[]) => ["movements", ...parts] as const,
+  sharedPlan: (token: string) => ["sharedPlan", token] as const,
 };
