@@ -1,4 +1,4 @@
-package coach
+package ratelimit
 
 import (
 	"testing"
@@ -8,8 +8,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestRateLimiter_AllowsUpToMax(t *testing.T) {
-	limiter := newRateLimiter(3, time.Minute)
+func TestLimiter_AllowsUpToMax(t *testing.T) {
+	limiter := New(3, time.Minute)
 
 	for i := 1; i <= 3; i++ {
 		assert.True(t, limiter.Allow("caller"), "attempt %d should be allowed", i)
@@ -18,9 +18,9 @@ func TestRateLimiter_AllowsUpToMax(t *testing.T) {
 	assert.True(t, limiter.Allow("other-caller"), "a different key has its own budget")
 }
 
-func TestRateLimiter_EvictsExpiredKeys(t *testing.T) {
+func TestLimiter_EvictsExpiredKeys(t *testing.T) {
 	window := 20 * time.Millisecond
-	limiter := newRateLimiter(authRateLimitMax, window)
+	limiter := New(10, window)
 
 	require.True(t, limiter.Allow("first-caller"))
 	require.Len(t, limiter.attempts, 1)
@@ -34,9 +34,9 @@ func TestRateLimiter_EvictsExpiredKeys(t *testing.T) {
 	assert.Len(t, limiter.attempts, 1)
 }
 
-func TestRateLimiter_SweepKeepsLiveKeys(t *testing.T) {
+func TestLimiter_SweepKeepsLiveKeys(t *testing.T) {
 	window := 50 * time.Millisecond
-	limiter := newRateLimiter(2, window)
+	limiter := New(2, window)
 
 	require.True(t, limiter.Allow("caller"))
 

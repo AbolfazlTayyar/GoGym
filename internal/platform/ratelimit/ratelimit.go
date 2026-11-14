@@ -1,17 +1,13 @@
-package coach
+// Package ratelimit counts attempts per key in a sliding window, in process.
+package ratelimit
 
 import (
 	"sync"
 	"time"
 )
 
-const (
-	authRateLimitMax    = 10
-	authRateLimitWindow = time.Minute
-)
-
-// rateLimiter is in-process only; a multi-instance deployment would need a shared store such as Redis.
-type rateLimiter struct {
+// Limiter is in-process only; a multi-instance deployment would need a shared store such as Redis.
+type Limiter struct {
 	mu        sync.Mutex
 	attempts  map[string][]time.Time
 	max       int
@@ -19,8 +15,8 @@ type rateLimiter struct {
 	lastSweep time.Time
 }
 
-func newRateLimiter(max int, window time.Duration) *rateLimiter {
-	return &rateLimiter{
+func New(max int, window time.Duration) *Limiter {
+	return &Limiter{
 		attempts:  make(map[string][]time.Time),
 		max:       max,
 		window:    window,
@@ -28,7 +24,7 @@ func newRateLimiter(max int, window time.Duration) *rateLimiter {
 	}
 }
 
-func (r *rateLimiter) Allow(key string) bool {
+func (r *Limiter) Allow(key string) bool {
 	now := time.Now()
 
 	r.mu.Lock()
@@ -48,7 +44,7 @@ func (r *rateLimiter) Allow(key string) bool {
 }
 
 // sweep evicts keys never hit again (e.g. one-off IPs), which Allow's pruning can't reach; caller holds mu.
-func (r *rateLimiter) sweep(now time.Time) {
+func (r *Limiter) sweep(now time.Time) {
 	if now.Sub(r.lastSweep) < r.window {
 		return
 	}

@@ -3,8 +3,10 @@ package coach
 import (
 	"errors"
 	"net/http"
+	"time"
 
 	"github.com/AbolfazlTayyar/gogym/internal/platform/httpx"
+	"github.com/AbolfazlTayyar/gogym/internal/platform/ratelimit"
 	"github.com/AbolfazlTayyar/gogym/internal/platform/tenant"
 	"github.com/gin-gonic/gin"
 )
@@ -31,6 +33,11 @@ type loginRequest struct {
 	Password string `json:"password" binding:"required" example:"correct-horse-battery-staple"`
 }
 
+const (
+	authRateLimitMax    = 10
+	authRateLimitWindow = time.Minute
+)
+
 // AuthCookieName carries the JWT for the browser; see docs/adr/0031.
 const AuthCookieName = "gogym_auth"
 
@@ -39,8 +46,8 @@ const authCookiePath = "/api/v1"
 
 type Handler struct {
 	svc          *Service
-	ipLimiter    *rateLimiter
-	phoneLimiter *rateLimiter
+	ipLimiter    *ratelimit.Limiter
+	phoneLimiter *ratelimit.Limiter
 	// secureCookie is off only in development, which is plain http (a phone on the LAN can't use https).
 	secureCookie bool
 }
@@ -48,8 +55,8 @@ type Handler struct {
 func NewHandler(svc *Service, secureCookie bool) *Handler {
 	return &Handler{
 		svc:          svc,
-		ipLimiter:    newRateLimiter(authRateLimitMax, authRateLimitWindow),
-		phoneLimiter: newRateLimiter(authRateLimitMax, authRateLimitWindow),
+		ipLimiter:    ratelimit.New(authRateLimitMax, authRateLimitWindow),
+		phoneLimiter: ratelimit.New(authRateLimitMax, authRateLimitWindow),
 		secureCookie: secureCookie,
 	}
 }
