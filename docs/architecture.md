@@ -99,6 +99,9 @@ athletes to another.
   then checks its parent through the parent's tenant-scoped lookup (`athlete.Service.Get`) before
   using it, so another coach's child 404s like a missing one — see
   [ADR 0015](adr/0015-child-ownership-via-parent-lookup.md).
+- A plan share link is the one read without a coach: its token proves access, so
+  `athlete.Repository.FindForSharedPlan` reads the athlete unscoped, for that path only and never to
+  pick a row to change — see [ADR 0035](adr/0035-plan-share-links.md).
 - A write to a universal row is the one 403 (`forbidden`): the coach can already read that row,
   so refusing it openly leaks nothing — see [ADR 0021](adr/0021-universal-rows-forbidden.md).
 - Postgres row-level security was considered as defense in depth and deliberately deferred:

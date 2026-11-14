@@ -2,6 +2,8 @@ package plan
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"slices"
@@ -10,6 +12,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/AbolfazlTayyar/gogym/internal/athlete"
+	"github.com/AbolfazlTayyar/gogym/internal/coach"
 	"github.com/AbolfazlTayyar/gogym/internal/movement"
 	"github.com/AbolfazlTayyar/gogym/internal/platform/httpx"
 	"github.com/google/uuid"
@@ -145,10 +148,11 @@ type Service struct {
 	repo      *Repository
 	athletes  *athlete.Service
 	movements *movement.Service
+	coaches   *coach.Service
 }
 
-func NewService(repo *Repository, athletes *athlete.Service, movements *movement.Service) *Service {
-	return &Service{repo: repo, athletes: athletes, movements: movements}
+func NewService(repo *Repository, athletes *athlete.Service, movements *movement.Service, coaches *coach.Service) *Service {
+	return &Service{repo: repo, athletes: athletes, movements: movements, coaches: coaches}
 }
 
 // List returns athlete.ErrNotFound rather than an empty list for another coach's athlete.
@@ -246,6 +250,85 @@ func (s *Service) Get(ctx context.Context, coachID, planID uuid.UUID) (*Plan, er
 	}
 
 	return p, nil
+}
+
+// shareLinkLifetime counts from the coach's latest share, which also replaces the token.
+const shareLinkLifetime = 30 * 24 * time.Hour
+
+// shareTokenBytes is 128 bits of randomness: unguessable, and 22 characters in a URL.
+const shareTokenBytes = 16
+
+type ShareLink struct {
+	Token     string
+	ExpiresAt time.Time
+}
+
+// Share gives the plan a new share link that works for shareLinkLifetime; the link it had stops working.
+func (s *Service) Share(ctx context.Context, coachID, planID uuid.UUID) (*ShareLink, error) {
+	if _, err := s.ownedPlan(ctx, coachID, planID); err != nil {
+		return nil, err
+	}
+
+	raw := make([]byte, shareTokenBytes)
+	if _, err := rand.Read(raw); err != nil {
+		return nil, fmt.Errorf("plan: failed to generate share token: %w", err)
+	}
+	link := &ShareLink{
+		Token:     base64.RawURLEncoding.EncodeToString(raw),
+		ExpiresAt: time.Now().Add(shareLinkLifetime),
+	}
+
+	if err := s.repo.SetShare(ctx, planID, link.Token, link.ExpiresAt); err != nil {
+		return nil, err
+	}
+	return link, nil
+}
+
+// SharedPlan is what a share token opens. An expired link still names the coach, so the athlete knows
+// whom to ask for a new one; Athlete and Plan are then nil.
+type SharedPlan struct {
+	Expired   bool
+	ExpiresAt time.Time
+	Coach     *coach.Coach
+	Athlete   *athlete.Athlete
+	Plan      *Plan
+}
+
+// Shared needs no coach: the token is the proof of access (docs/adr/0035). An unknown token and a
+// soft-deleted athlete's plan are both ErrNotFound, so a probe can't tell them apart.
+func (s *Service) Shared(ctx context.Context, token string) (*SharedPlan, error) {
+	p, err := s.repo.FindByShareToken(ctx, token)
+	if err != nil {
+		return nil, err
+	}
+
+	a, err := s.athletes.GetForSharedPlan(ctx, p.AthleteID)
+	if err != nil {
+		if errors.Is(err, athlete.ErrNotFound) {
+			return nil, ErrNotFound
+		}
+		return nil, err
+	}
+
+	c, err := s.coaches.Get(ctx, a.CoachID)
+	if err != nil {
+		return nil, err
+	}
+
+	shared := &SharedPlan{ExpiresAt: *p.ShareExpiresAt, Coach: c}
+	if !time.Now().Before(*p.ShareExpiresAt) {
+		shared.Expired = true
+		return shared, nil
+	}
+
+	days, err := s.repo.LoadDays(ctx, p.ID)
+	if err != nil {
+		return nil, err
+	}
+	p.Days = days
+	shared.Athlete = a
+	shared.Plan = p
+	return shared, nil
 }
 
 // Create validates before checking ownership: the athlete id is itself a body field and has to parse first.

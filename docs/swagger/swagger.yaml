@@ -577,6 +577,70 @@ definitions:
         example: 12
         type: integer
     type: object
+  internal_plan.shareResponse:
+    properties:
+      expires_at:
+        example: "2026-12-14T10:00:00Z"
+        type: string
+      token:
+        example: q3J9xK2mT0aLwV7nB4cD8e
+        type: string
+    type: object
+  internal_plan.sharedAthleteResponse:
+    properties:
+      first_name:
+        example: سارا
+        type: string
+      last_name:
+        example: محمدی
+        type: string
+    type: object
+  internal_plan.sharedCoachResponse:
+    properties:
+      first_name:
+        example: علی
+        type: string
+      last_name:
+        example: رضایی
+        type: string
+      phone:
+        example: "09121234567"
+        type: string
+    type: object
+  internal_plan.sharedPlanDetail:
+    properties:
+      days:
+        items:
+          $ref: '#/definitions/internal_plan.dayResponse'
+        type: array
+      note:
+        example: Deload every 4th week
+        type: string
+      start_date:
+        example: "2026-11-15"
+        type: string
+      title:
+        example: برنامه آبان
+        type: string
+    type: object
+  internal_plan.sharedPlanResponse:
+    properties:
+      athlete:
+        $ref: '#/definitions/internal_plan.sharedAthleteResponse'
+      coach:
+        $ref: '#/definitions/internal_plan.sharedCoachResponse'
+      expires_at:
+        example: "2026-12-14T10:00:00Z"
+        type: string
+      plan:
+        $ref: '#/definitions/internal_plan.sharedPlanDetail'
+      status:
+        enum:
+        - active
+        - expired
+        example: active
+        type: string
+    type: object
   internal_plan.updateRequest:
     properties:
       note:
@@ -1828,6 +1892,53 @@ paths:
       summary: Add a day to a plan
       tags:
       - plans
+  /api/v1/plans/{id}/share:
+    post:
+      description: 'Gives the plan a new share token that works for 30 days, and returns
+        it with its expiry. Every call makes a new token, so the plan''s previous
+        link stops working at once: a plan has at most one live link. The client builds
+        the link from its own origin as /p/<token>. A plan whose athlete belongs to
+        another coach is reported as not found.'
+      parameters:
+      - description: Plan ID
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.SuccessEnvelope'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_plan.shareResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.ValidationErrorEnvelope'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.UnauthorizedEnvelope'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.NotFoundEnvelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.InternalErrorEnvelope'
+      security:
+      - BearerAuth: []
+      summary: Share a plan
+      tags:
+      - plans
   /api/v1/plans/current:
     get:
       description: 'Returns the current plan of each of the coach''s athletes, private
@@ -1862,6 +1973,53 @@ paths:
       security:
       - BearerAuth: []
       summary: List the current plan of every athlete
+      tags:
+      - plans
+  /api/v1/public/plans/{token}:
+    get:
+      description: 'Needs no auth: the share token is the access. status is active
+        while the link works: the response carries the coach''s name and phone, the
+        athlete''s name, and the plan''s title, note, start_date and days in the plan
+        detail''s shape. Once the link has expired, status is expired, athlete and
+        plan are null, and the coach is still named so the athlete knows whom to ask
+        for a new link. A token that was replaced by a newer share, never existed,
+        or belongs to a deleted plan or athlete is a 404. Rate-limited per IP. Sent
+        with X-Robots-Tag: noindex.'
+      parameters:
+      - description: Share token
+        in: path
+        name: token
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          headers:
+            X-Robots-Tag:
+              description: noindex
+              type: string
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.SuccessEnvelope'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_plan.sharedPlanResponse'
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.NotFoundEnvelope'
+        "429":
+          description: Too Many Requests
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.RateLimitedEnvelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.InternalErrorEnvelope'
+      summary: Read a shared plan
       tags:
       - plans
   /healthz:

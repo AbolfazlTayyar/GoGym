@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -121,6 +122,34 @@ func (r *Repository) FindByID(ctx context.Context, id uuid.UUID) (*Plan, error) 
 		return nil, fmt.Errorf("plan: failed to find by id: %w", err)
 	}
 	return &p, nil
+}
+
+// FindByShareToken returns the plan whatever its expiry; Service decides what an expired link shows.
+func (r *Repository) FindByShareToken(ctx context.Context, token string) (*Plan, error) {
+	var p Plan
+	if err := r.db.WithContext(ctx).First(&p, "share_token = ?", token).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrNotFound
+		}
+		return nil, fmt.Errorf("plan: failed to find by share token: %w", err)
+	}
+	return &p, nil
+}
+
+// SetShare replaces the plan's share link, so the link it had stops working. UpdateColumns leaves
+// updated_at alone: sharing isn't an edit of the plan.
+func (r *Repository) SetShare(ctx context.Context, planID uuid.UUID, token string, expiresAt time.Time) error {
+	result := r.db.WithContext(ctx).
+		Model(&Plan{}).
+		Where("id = ?", planID).
+		UpdateColumns(map[string]any{"share_token": token, "share_expires_at": expiresAt})
+	if result.Error != nil {
+		return fmt.Errorf("plan: failed to set share link: %w", result.Error)
+	}
+	if result.RowsAffected == 0 {
+		return ErrNotFound
+	}
+	return nil
 }
 
 // AthleteIDOfDay only resolves which athlete the day hangs from; it says nothing about that athlete's coach.

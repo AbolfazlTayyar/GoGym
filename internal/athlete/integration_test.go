@@ -45,7 +45,7 @@ func newTestRouter(t *testing.T) (*gin.Engine, *gorm.DB) {
 	coach.RegisterRoutes(v1, protected, coach.NewHandler(coachSvc, false))
 	athlete.RegisterRoutes(protected, athlete.NewHandler(athleteSvc))
 	measurement.RegisterRoutes(protected, measurement.NewHandler(measurement.NewService(measurement.NewRepository(db), athleteSvc)))
-	plan.RegisterRoutes(protected, plan.NewHandler(plan.NewService(plan.NewRepository(db), athleteSvc, movement.NewService(movement.NewRepository(db)))))
+	plan.RegisterRoutes(v1, protected, plan.NewHandler(plan.NewService(plan.NewRepository(db), athleteSvc, movement.NewService(movement.NewRepository(db)), coachSvc)))
 
 	return router, db
 }

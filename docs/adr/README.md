@@ -39,3 +39,4 @@ One file per decision, [MADR](https://adr.github.io/madr/)-style. Process rules 
 | [0032](0032-current-plans-endpoint.md) | Each athlete's current plan comes from its own endpoint, not the athlete list | 2026-10-19 | accepted |
 | [0033](0033-save-day-replaces-blocks.md) | The builder saves a whole day by replacing its blocks | 2026-10-19 | accepted |
 | [0034](0034-load-in-kg.md) | Prescribed load is a weight in kg | 2026-11-10 | accepted |
+| [0035](0035-plan-share-links.md) | A plan is shared through one stored, expiring token | 2026-11-14 | accepted |

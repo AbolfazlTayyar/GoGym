@@ -20,9 +20,12 @@ type Plan struct {
 	StartDate    time.Time  `gorm:"column:start_date;type:date;not null"`
 	Title        string     `gorm:"column:title;type:text;not null"`
 	Note         *string    `gorm:"column:note;type:text"`
-	CreatedAt    time.Time  `gorm:"column:created_at;type:timestamptz;not null"`
-	UpdatedAt    time.Time  `gorm:"column:updated_at;type:timestamptz;not null"`
-	Days         []Day      `gorm:"foreignKey:PlanID"`
+	// ShareToken and ShareExpiresAt are the plan's one share link; both nil until it is first shared.
+	ShareToken     *string    `gorm:"column:share_token;type:text;unique"`
+	ShareExpiresAt *time.Time `gorm:"column:share_expires_at;type:timestamptz"`
+	CreatedAt      time.Time  `gorm:"column:created_at;type:timestamptz;not null"`
+	UpdatedAt      time.Time  `gorm:"column:updated_at;type:timestamptz;not null"`
+	Days           []Day      `gorm:"foreignKey:PlanID"`
 	// SourceTitle is filled by Service.Get for the builder's header, not stored.
 	SourceTitle *string `gorm:"-"`
 }

@@ -1216,7 +1216,7 @@ $ curl -s -X POST ... /plans -d '{"athlete_id":"<sara>","title":"x","start_date"
 
 ### Plan share links
 
-⬜ **Not started**
+✅ **Done** — see [ADR 0035](../adr/0035-plan-share-links.md)
 
 **Description:** Coaches send plans to athletes on WhatsApp and Telegram, today as a Canva PDF or a screenshot ([stakeholder-brief.md](../stakeholder-brief.md) §4). A share link (`/p/<token>`) lets the athlete open the plan on their phone with no login, and download it as a PDF from that page ([product-direction.md](../product-direction.md) §1). The coach taps share on a plan and gets a new link that works for 30 days. Each tap replaces the plan's previous link, so a plan has at most one link that works. The public page shows the coach's name and phone whenever the token matches a plan, so an athlete with an expired link knows whom to ask.
 

@@ -123,6 +123,11 @@ func (s *Service) Get(ctx context.Context, coachID, id uuid.UUID) (*Athlete, err
 	return s.repo.FindByID(ctx, coachID, id)
 }
 
+// GetForSharedPlan reads an athlete with no coach to scope by; only a valid share token may lead here.
+func (s *Service) GetForSharedPlan(ctx context.Context, id uuid.UUID) (*Athlete, error) {
+	return s.repo.FindForSharedPlan(ctx, id)
+}
+
 // IDs is for modules that hang something off every athlete at once, such as plan's current plans.
 func (s *Service) IDs(ctx context.Context, coachID uuid.UUID) ([]uuid.UUID, error) {
 	return s.repo.IDs(ctx, coachID)

@@ -2,7 +2,10 @@ package plan
 
 import "github.com/gin-gonic/gin"
 
-func RegisterRoutes(protected *gin.RouterGroup, h *Handler) {
+// v1 takes the one route without auth, the shared plan, whose token is its own proof of access.
+func RegisterRoutes(v1, protected *gin.RouterGroup, h *Handler) {
+	v1.GET("/public/plans/:"+paramShareToken, h.Shared)
+
 	plans := protected.Group("/athletes/:" + paramAthleteID + "/plans")
 	plans.GET("", h.List)
 
@@ -12,6 +15,7 @@ func RegisterRoutes(protected *gin.RouterGroup, h *Handler) {
 	protected.GET("/plans/:"+paramPlanID, h.Get)
 	protected.PUT("/plans/:"+paramPlanID, h.Update)
 	protected.DELETE("/plans/:"+paramPlanID, h.Delete)
+	protected.POST("/plans/:"+paramPlanID+"/share", h.Share)
 	protected.POST("/plans/:"+paramPlanID+"/days", h.AddDay)
 	protected.POST("/days/:"+paramDayID+"/blocks", h.AddBlock)
 	protected.PUT("/days/:"+paramDayID+"/blocks", h.SaveDay)

@@ -45,6 +45,19 @@ func (r *Repository) FindByID(ctx context.Context, coachID, id uuid.UUID) (*Athl
 	return &a, nil
 }
 
+// FindForSharedPlan is the one athlete read without tenant.Scope: a plan share link's token has already
+// proved access to this athlete's plan (docs/adr/0035). Never use it to pick a row to change.
+func (r *Repository) FindForSharedPlan(ctx context.Context, id uuid.UUID) (*Athlete, error) {
+	var a Athlete
+	if err := r.db.WithContext(ctx).First(&a, "id = ?", id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrNotFound
+		}
+		return nil, fmt.Errorf("athlete: failed to find for a shared plan: %w", err)
+	}
+	return &a, nil
+}
+
 // editableColumns are the ones Update writes, nil values included, so a cleared optional field becomes NULL.
 var editableColumns = []string{
 	"first_name", "last_name", "phone", "experience_level", "injuries", "goal", "height", "athlete_type", "updated_at",

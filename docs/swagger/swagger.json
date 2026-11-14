@@ -1851,6 +1851,142 @@
                 }
             }
         },
+        "/api/v1/plans/{id}/share": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Gives the plan a new share token that works for 30 days, and returns it with its expiry. Every call makes a new token, so the plan's previous link stops working at once: a plan has at most one live link. The client builds the link from its own origin as /p/\u003ctoken\u003e. A plan whose athlete belongs to another coach is reported as not found.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "plans"
+                ],
+                "summary": "Share a plan",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Plan ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.SuccessEnvelope"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/internal_plan.shareResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.ValidationErrorEnvelope"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.UnauthorizedEnvelope"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.NotFoundEnvelope"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.InternalErrorEnvelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/public/plans/{token}": {
+            "get": {
+                "description": "Needs no auth: the share token is the access. status is active while the link works: the response carries the coach's name and phone, the athlete's name, and the plan's title, note, start_date and days in the plan detail's shape. Once the link has expired, status is expired, athlete and plan are null, and the coach is still named so the athlete knows whom to ask for a new link. A token that was replaced by a newer share, never existed, or belongs to a deleted plan or athlete is a 404. Rate-limited per IP. Sent with X-Robots-Tag: noindex.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "plans"
+                ],
+                "summary": "Read a shared plan",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Share token",
+                        "name": "token",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.SuccessEnvelope"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/internal_plan.sharedPlanResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        "headers": {
+                            "X-Robots-Tag": {
+                                "type": "string",
+                                "description": "noindex"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.NotFoundEnvelope"
+                        }
+                    },
+                    "429": {
+                        "description": "Too Many Requests",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.RateLimitedEnvelope"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.InternalErrorEnvelope"
+                        }
+                    }
+                }
+            }
+        },
         "/healthz": {
             "get": {
                 "description": "Reports whether the service and its database connection are healthy. The result is cached for a few seconds.",
@@ -2685,6 +2821,98 @@
                 "reps": {
                     "type": "integer",
                     "example": 12
+                }
+            }
+        },
+        "internal_plan.shareResponse": {
+            "type": "object",
+            "properties": {
+                "expires_at": {
+                    "type": "string",
+                    "example": "2026-12-14T10:00:00Z"
+                },
+                "token": {
+                    "type": "string",
+                    "example": "q3J9xK2mT0aLwV7nB4cD8e"
+                }
+            }
+        },
+        "internal_plan.sharedAthleteResponse": {
+            "type": "object",
+            "properties": {
+                "first_name": {
+                    "type": "string",
+                    "example": "سارا"
+                },
+                "last_name": {
+                    "type": "string",
+                    "example": "محمدی"
+                }
+            }
+        },
+        "internal_plan.sharedCoachResponse": {
+            "type": "object",
+            "properties": {
+                "first_name": {
+                    "type": "string",
+                    "example": "علی"
+                },
+                "last_name": {
+                    "type": "string",
+                    "example": "رضایی"
+                },
+                "phone": {
+                    "type": "string",
+                    "example": "09121234567"
+                }
+            }
+        },
+        "internal_plan.sharedPlanDetail": {
+            "type": "object",
+            "properties": {
+                "days": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/internal_plan.dayResponse"
+                    }
+                },
+                "note": {
+                    "type": "string",
+                    "example": "Deload every 4th week"
+                },
+                "start_date": {
+                    "type": "string",
+                    "example": "2026-11-15"
+                },
+                "title": {
+                    "type": "string",
+                    "example": "برنامه آبان"
+                }
+            }
+        },
+        "internal_plan.sharedPlanResponse": {
+            "type": "object",
+            "properties": {
+                "athlete": {
+                    "$ref": "#/definitions/internal_plan.sharedAthleteResponse"
+                },
+                "coach": {
+                    "$ref": "#/definitions/internal_plan.sharedCoachResponse"
+                },
+                "expires_at": {
+                    "type": "string",
+                    "example": "2026-12-14T10:00:00Z"
+                },
+                "plan": {
+                    "$ref": "#/definitions/internal_plan.sharedPlanDetail"
+                },
+                "status": {
+                    "type": "string",
+                    "enum": [
+                        "active",
+                        "expired"
+                    ],
+                    "example": "active"
                 }
             }
         },

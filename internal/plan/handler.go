@@ -8,6 +8,7 @@ import (
 
 	"github.com/AbolfazlTayyar/gogym/internal/athlete"
 	"github.com/AbolfazlTayyar/gogym/internal/platform/httpx"
+	"github.com/AbolfazlTayyar/gogym/internal/platform/ratelimit"
 	"github.com/AbolfazlTayyar/gogym/internal/platform/tenant"
 	"github.com/gin-gonic/gin"
 )
@@ -16,9 +17,21 @@ import (
 const paramAthleteID = "id"
 
 const (
-	paramPlanID  = "id"
-	paramDayID   = "id"
-	paramBlockID = "id"
+	paramPlanID     = "id"
+	paramDayID      = "id"
+	paramBlockID    = "id"
+	paramShareToken = "token"
+)
+
+// The public plan page makes one request per open, so this only stops someone walking tokens.
+const (
+	sharedRateLimitMax    = 30
+	sharedRateLimitWindow = time.Minute
+)
+
+const (
+	shareStatusActive  = "active"
+	shareStatusExpired = "expired"
 )
 
 // planSummaryResponse is the one summary shape: the athlete's plan list and the current plans list both return it.
@@ -93,6 +106,70 @@ type blockMovementResponse struct {
 	DurationSeconds *int     `json:"duration_seconds"`
 	LoadKg          *float64 `json:"load_kg" example:"17.5"`
 	OrderInBlock    int      `json:"order_in_block" example:"0"`
+}
+
+type shareResponse struct {
+	Token     string `json:"token" example:"q3J9xK2mT0aLwV7nB4cD8e"`
+	ExpiresAt string `json:"expires_at" example:"2026-12-14T10:00:00Z"`
+}
+
+// sharedPlanResponse is all a share link reveals. athlete and plan are null when the link has expired;
+// the coach is always there, so the athlete knows whom to ask for a new link.
+type sharedPlanResponse struct {
+	Status    string                 `json:"status" enums:"active,expired" example:"active"`
+	ExpiresAt string                 `json:"expires_at" example:"2026-12-14T10:00:00Z"`
+	Coach     sharedCoachResponse    `json:"coach"`
+	Athlete   *sharedAthleteResponse `json:"athlete"`
+	Plan      *sharedPlanDetail      `json:"plan"`
+}
+
+type sharedCoachResponse struct {
+	FirstName string `json:"first_name" example:"علی"`
+	LastName  string `json:"last_name" example:"رضایی"`
+	Phone     string `json:"phone" example:"09121234567"`
+}
+
+// sharedAthleteResponse leaves out the athlete's phone, notes and everything else the page doesn't show.
+type sharedAthleteResponse struct {
+	FirstName string `json:"first_name" example:"سارا"`
+	LastName  string `json:"last_name" example:"محمدی"`
+}
+
+// sharedPlanDetail drops the source plan's title, which may be another athlete's plan.
+type sharedPlanDetail struct {
+	Title     string        `json:"title" example:"برنامه آبان"`
+	Note      *string       `json:"note" example:"Deload every 4th week"`
+	StartDate string        `json:"start_date" example:"2026-11-15"`
+	Days      []dayResponse `json:"days"`
+}
+
+func newSharedPlanResponse(sp *SharedPlan) sharedPlanResponse {
+	resp := sharedPlanResponse{
+		Status:    shareStatusExpired,
+		ExpiresAt: sp.ExpiresAt.UTC().Format(time.RFC3339),
+		Coach: sharedCoachResponse{
+			FirstName: sp.Coach.FirstName,
+			LastName:  sp.Coach.LastName,
+			Phone:     sp.Coach.Phone,
+		},
+	}
+	if sp.Expired {
+		return resp
+	}
+
+	resp.Status = shareStatusActive
+	resp.Athlete = &sharedAthleteResponse{FirstName: sp.Athlete.FirstName, LastName: sp.Athlete.LastName}
+	days := make([]dayResponse, 0, len(sp.Plan.Days))
+	for i := range sp.Plan.Days {
+		days = append(days, newDayResponse(&sp.Plan.Days[i]))
+	}
+	resp.Plan = &sharedPlanDetail{
+		Title:     sp.Plan.Title,
+		Note:      sp.Plan.Note,
+		StartDate: sp.Plan.StartDate.Format(time.DateOnly),
+		Days:      days,
+	}
+	return resp
 }
 
 // The create requests have no binding tags on purpose: the service owns every rule, presence included.
@@ -218,11 +295,12 @@ func newBlockMovementResponse(bm *BlockMovement) blockMovementResponse {
 }
 
 type Handler struct {
-	svc *Service
+	svc           *Service
+	sharedLimiter *ratelimit.Limiter
 }
 
 func NewHandler(svc *Service) *Handler {
-	return &Handler{svc: svc}
+	return &Handler{svc: svc, sharedLimiter: ratelimit.New(sharedRateLimitMax, sharedRateLimitWindow)}
 }
 
 // List returns an athlete's plans, newest first, with the one in effect today marked.
@@ -668,6 +746,71 @@ func (h *Handler) DeleteDay(c *gin.Context) {
 	}
 
 	httpx.NoContent(c)
+}
+
+// Share replaces the plan's share link with a new one.
+//
+//	@Summary		Share a plan
+//	@Description	Gives the plan a new share token that works for 30 days, and returns it with its expiry. Every call makes a new token, so the plan's previous link stops working at once: a plan has at most one live link. The client builds the link from its own origin as /p/<token>. A plan whose athlete belongs to another coach is reported as not found.
+//	@Tags			plans
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			id	path		string	true	"Plan ID"	format(uuid)
+//	@Success		201	{object}	httpx.SuccessEnvelope{data=shareResponse}
+//	@Failure		400	{object}	httpx.ValidationErrorEnvelope
+//	@Failure		401	{object}	httpx.UnauthorizedEnvelope
+//	@Failure		404	{object}	httpx.NotFoundEnvelope
+//	@Failure		500	{object}	httpx.InternalErrorEnvelope
+//	@Router			/api/v1/plans/{id}/share [post]
+func (h *Handler) Share(c *gin.Context) {
+	coachID, ok := tenant.CoachIDFromContext(c)
+	if !ok {
+		httpx.Error(c, http.StatusUnauthorized, httpx.CodeUnauthorized, httpx.MsgUnauthorized)
+		return
+	}
+
+	planID, ok := httpx.PathUUID(c, paramPlanID)
+	if !ok {
+		return
+	}
+
+	link, err := h.svc.Share(c.Request.Context(), coachID, planID)
+	if err != nil {
+		writeServiceError(c, err)
+		return
+	}
+
+	httpx.Created(c, shareResponse{Token: link.Token, ExpiresAt: link.ExpiresAt.UTC().Format(time.RFC3339)})
+}
+
+// Shared is the athlete's view of a plan through its share link, with no login.
+//
+//	@Summary		Read a shared plan
+//	@Description	Needs no auth: the share token is the access. status is active while the link works: the response carries the coach's name and phone, the athlete's name, and the plan's title, note, start_date and days in the plan detail's shape. Once the link has expired, status is expired, athlete and plan are null, and the coach is still named so the athlete knows whom to ask for a new link. A token that was replaced by a newer share, never existed, or belongs to a deleted plan or athlete is a 404. Rate-limited per IP. Sent with X-Robots-Tag: noindex.
+//	@Tags			plans
+//	@Produce		json
+//	@Param			token	path		string	true	"Share token"
+//	@Success		200		{object}	httpx.SuccessEnvelope{data=sharedPlanResponse}
+//	@Header			200		{string}	X-Robots-Tag	"noindex"
+//	@Failure		404		{object}	httpx.NotFoundEnvelope
+//	@Failure		429		{object}	httpx.RateLimitedEnvelope
+//	@Failure		500		{object}	httpx.InternalErrorEnvelope
+//	@Router			/api/v1/public/plans/{token} [get]
+func (h *Handler) Shared(c *gin.Context) {
+	c.Header("X-Robots-Tag", "noindex")
+
+	if !h.sharedLimiter.Allow(c.ClientIP()) {
+		httpx.Error(c, http.StatusTooManyRequests, httpx.CodeRateLimited, httpx.MsgTooManyRequests)
+		return
+	}
+
+	shared, err := h.svc.Shared(c.Request.Context(), c.Param(paramShareToken))
+	if err != nil {
+		writeServiceError(c, err)
+		return
+	}
+
+	httpx.OK(c, newSharedPlanResponse(shared))
 }
 
 // writeServiceError hides unexpected errors behind a generic 500; the detail belongs in logs.
