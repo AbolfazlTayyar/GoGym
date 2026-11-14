@@ -16,7 +16,7 @@ import { Header, HeaderTitle, PillButton, RoundButton } from "../../components/H
 import { BackIcon, PlusIcon, TrashIcon } from "../../components/icons";
 import { Screen } from "../../components/Screen";
 import { useSheet } from "../../components/useSheet";
-import { paths } from "../../lib/paths";
+import { lineParam, paths } from "../../lib/paths";
 import { useGoBack } from "../../lib/useGoBack";
 import { useVisualViewportStyle } from "../../lib/useVisualViewport";
 import { Adder } from "./Adder";
@@ -91,18 +91,23 @@ type BuilderScreenProps = { plan: PlanDetail; athlete: Athlete; day: Day | undef
 
 function BuilderScreen({ plan, athlete, day }: BuilderScreenProps) {
   const queryClient = useQueryClient();
-  const [, setParams] = useSearchParams();
+  const [params, setParams] = useSearchParams();
   const goBack = useGoBack(paths.dayView(plan.id, day?.label));
   const viewport = useVisualViewportStyle();
   const deleteDaySheet = useSheet("delete-day");
 
   const [baseline, setBaseline] = useState(day);
   const [draft, dispatch] = useReducer(draftReducer, day, (d) => (d ? fromDay(d) : []));
-  const [openKey, setOpenKey] = useState<string | null>(null);
+  // A line tapped in the day view arrives open; an id that isn't on this day is ignored.
+  const [openKey, setOpenKey] = useState(() => {
+    const line = params.get(lineParam);
+    return draft.some((b) => b.key === line) ? line : null;
+  });
   const [joinKey, setJoinKey] = useState<string | null>(null);
   const [pending, setPending] = useState<{ label: string } | "add" | null>(null);
   const [savedNotice, setSavedNotice] = useState(false);
-  const [pickedKey, setPickedKey] = useState<string | null>(null);
+  // Changing it brings the open line to the top of the sheet.
+  const [revealKey, setRevealKey] = useState(openKey);
   const sheetRef = useRef<HTMLDivElement>(null);
   const openLineRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
@@ -175,15 +180,16 @@ function BuilderScreen({ plan, athlete, day }: BuilderScreenProps) {
     return () => window.removeEventListener("beforeunload", warn);
   }, [dirty]);
 
-  // A picked movement's line comes to the top of the sheet, so its reps can be set right away. Top, not
-  // bottom: the keyboard is still closing, and the sheet growing afterward leaves a top-aligned line in place.
+  // A picked movement's line, or the one the day view opened, comes to the top of the sheet, so its reps can be
+  // set right away. Top, not bottom: the keyboard is still closing, and the sheet growing afterward leaves a
+  // top-aligned line in place.
   useEffect(() => {
     const sheet = sheetRef.current;
     const line = openLineRef.current;
-    if (!pickedKey || !sheet || !line) return;
+    if (!revealKey || !sheet || !line) return;
     const offset = line.getBoundingClientRect().top - sheet.getBoundingClientRect().top;
     sheet.scrollTo({ top: sheet.scrollTop + offset - openLineGap, behavior: "smooth" });
-  }, [pickedKey]);
+  }, [revealKey]);
 
   // A field typed in the sheet (a weight) keeps its row at the sheet's top while the keyboard shrinks the
   // sheet under it, frame by frame; otherwise the sheet keeps its scroll and the row ends up below its edge.
@@ -237,7 +243,7 @@ function BuilderScreen({ plan, athlete, day }: BuilderScreenProps) {
 
   const onPick = (movement: { id: string; name: string }) => {
     const movementKey = newKey();
-    setPickedKey(movementKey);
+    setRevealKey(movementKey);
     if (joinKey) {
       dispatch({ type: "join", blockKey: joinKey, movementKey, movement });
       setOpenKey(joinKey);

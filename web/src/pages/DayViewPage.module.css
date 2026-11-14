@@ -25,8 +25,13 @@
 }
 
 .note {
+  display: block;
   padding: 24px 0;
   text-align: center;
   font-size: 13px;
   color: var(--dim);
+}
+
+.line {
+  display: block;
 }

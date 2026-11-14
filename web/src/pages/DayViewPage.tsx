@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useParams, useSearchParams } from "react-router";
+import { Link, useParams, useSearchParams } from "react-router";
 import { getAthlete } from "../api/athletes";
 import { queryKeys } from "../api/keys";
 import { getPlan } from "../api/plans";
@@ -91,9 +91,20 @@ export function DayViewPage() {
           <>
             {plan.data?.note && <p className={s.planNote}>{plan.data.note}</p>}
             <DayHeading label={day.label} lines={day.blocks.length} />
-            {day.blocks.length === 0 && <p className={s.note}>این روز هنوز حرکتی ندارد.</p>}
+            {day.blocks.length === 0 && (
+              <Link className={s.note} to={paths.builder(planId, day.label)}>
+                این روز هنوز حرکتی ندارد. برای افزودن بزنید.
+              </Link>
+            )}
+            {/* Coaches tap a line to edit it, as in the builder, so it opens there with this line open. */}
             {day.blocks.map((block, i) => (
-              <BlockLine key={block.id} index={i} block={block} />
+              <Link
+                key={block.id}
+                className={s.line}
+                to={paths.builder(planId, day.label, block.id)}
+              >
+                <BlockLine index={i} block={block} />
+              </Link>
             ))}
           </>
         )}
