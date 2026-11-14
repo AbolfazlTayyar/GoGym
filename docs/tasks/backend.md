@@ -1214,6 +1214,80 @@ $ curl -s -X POST ... /plans -d '{"athlete_id":"<sara>","title":"x","start_date"
 
 ---
 
+### Plan share links
+
+⬜ **Not started**
+
+**Description:** Coaches send plans to athletes on WhatsApp and Telegram, today as a Canva PDF or a screenshot ([stakeholder-brief.md](../stakeholder-brief.md) §4). A share link (`/p/<token>`) lets the athlete open the plan on their phone with no login, and download it as a PDF from that page ([product-direction.md](../product-direction.md) §1). The coach taps share on a plan and gets a new link that works for 30 days. Each tap replaces the plan's previous link, so a plan has at most one link that works. The public page shows the coach's name and phone whenever the token matches a plan, so an athlete with an expired link knows whom to ask.
+
+**Prompt:**
+```
+Add plan share links: a coach creates one, and anyone with the token reads the plan
+without logging in.
+
+- Migration: plan.share_token TEXT NULL UNIQUE and plan.share_expires_at TIMESTAMPTZ NULL.
+  They live on plan, not in a plan_share table, because a plan has at most one link that
+  works. Update docs/er-diagram.md in the same commit.
+- POST /api/v1/plans/:id/share (coach auth). It loads the plan through the usual ownership
+  chain (another coach's plan is a 404), sets share_token to a new random 128-bit value
+  (crypto/rand, base64url, no padding) and share_expires_at to now + 30 days, and returns
+  201 {"token": "...", "expires_at": "..."}. Every call makes a new token, so the previous
+  link stops working at once. The client builds the URL from its own origin
+  (location.origin + /p/<token>), so the API needs no base-URL config.
+- GET /api/v1/public/plans/:token, with no auth. Mount it outside the coach auth group
+  and rate-limit it by IP with the limiter login uses. That limiter lives in
+  internal/coach; move it to internal/platform/ratelimit, since a second feature now
+  needs it. The lookup is by token, not by coach, so it can't go through tenant.Scope:
+  it's the first read outside tenant scoping. Keep it in one repository method with a
+  comment saying why.
+  - Token matches, not expired: 200 {"status": "active", "expires_at",
+    "coach": {first_name, last_name, phone}, "athlete": {first_name, last_name},
+    "plan": the same plan shape GET /plans/:id returns (title, start_date, note, days with
+    blocks and movements)}. Never include the athlete's phone, notes, injuries,
+    measurements, or any ids the page doesn't need.
+  - Token matches but expired: 200 {"status": "expired", "coach": {...}, "athlete": null,
+    "plan": null}. It's a 200 rather than a 410 error because the page still needs the
+    coach's details, and an error envelope carries no data.
+  - Token matches nothing, or the plan's athlete is soft-deleted: 404 not_found, the same
+    for both, so a probe learns nothing.
+  - Send X-Robots-Tag: noindex on this endpoint.
+- Write ADR 0035 (and its README row): a stored random token rather than a signed one,
+  because a signed token can't be revoked once it sits in a WhatsApp chat; one link per
+  plan, with a new token on every share; a 30-day expiry; reading outside tenant.Scope;
+  expired as a 200 with a status field. Rejected: a signed token, a plan_share table
+  with several live links, a link with no expiry.
+
+Swagger annotations on both handlers with real nested types (a public plan response type,
+and httpx.NotFoundEnvelope for the 404), then make swagger. Integration tests: share returns
+a token and an expiry 30 days out; sharing again returns a different token and the first
+one is a 404; another coach sharing your plan gets a 404; GET with a valid token returns the
+coach's name and phone, the athlete's name and the whole plan, and no athlete phone (check
+the raw JSON); the same token with share_expires_at moved into the past gives
+status "expired", the coach's details and null plan and athlete; an unknown token, a deleted
+plan's token and a soft-deleted athlete's token are 404; GET needs no cookie or bearer.
+```
+
+**Checkpoint:** Share a plan, then open `GET /public/plans/<token>` with no auth: it returns the plan with the coach's details. Share again: the old token is a 404 and the new one works. Set `share_expires_at` in the past with SQL: the response is `expired` and still names the coach. Grep the response for the athlete's phone and find nothing.
+
+**Expected output:**
+```
+$ curl -s -X POST -H "Authorization: Bearer $TOKEN" localhost:8080/api/v1/plans/<id>/share
+{"success":true,"data":{"token":"q3J9...","expires_at":"2026-12-14T10:00:00Z"},"error":null}
+
+$ curl -s localhost:8080/api/v1/public/plans/q3J9...
+{"success":true,"data":{"status":"active","expires_at":"...","coach":{"first_name":"علی","last_name":"رضایی","phone":"0912..."},"athlete":{"first_name":"سارا","last_name":"محمدی"},"plan":{"title":"برنامه آبان",...,"days":[...]}},"error":null}
+
+$ curl -s localhost:8080/api/v1/public/plans/<expired token>
+{"success":true,"data":{"status":"expired","coach":{...},"athlete":null,"plan":null},"error":null}
+
+$ curl -s localhost:8080/api/v1/public/plans/nope
+{"success":false,"data":null,"error":{"code":"not_found","message":"not found"}}
+```
+
+**In short:** a plan can be opened from a link by anyone who has it, for 30 days, without logging in.
+
+---
+
 ## Deferred
 
 Not scheduled. Each task says what should trigger it.

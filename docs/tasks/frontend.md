@@ -563,6 +563,95 @@ docs/design/src/concept-8-3-search-movements-sign-in.html and blush.css.
 
 ---
 
+### Share a plan: copy the link
+
+⬜ **Not started** — needs *Plan share links* in [backend.md](backend.md).
+
+**Description:** The coach taps share on a plan, the link is copied, and a toast confirms it and says until when it works. The coach pastes it into WhatsApp, Telegram or anywhere else. Every tap makes a new link and the previous one stops working (ADR 0035). The boards have no toast, so this task adds one built from the blush tokens.
+
+**Prompt:**
+```
+Let the coach copy a plan's share link from the day view.
+
+- A LinkIcon button in the day view header, next to the profile and pencil buttons, with
+  the aria-label «اشتراک‌گذاری لینک». It calls POST /plans/:id/share (a new shareLink
+  in web/src/api/plans.ts) and copies location.origin + paths.sharedPlan(token).
+  Add sharedPlan: (token) => `/p/${token}` to paths.ts.
+- Copying: navigator.clipboard.writeText when it exists (https only). Otherwise, or if it
+  throws, fall back to a hidden readonly textarea, select(), document.execCommand('copy'),
+  then remove it. The fallback keeps copy working over plain http on the LAN
+  (npm run dev -- --host), on iOS and Android. Keep it in web/src/lib/clipboard.ts.
+  iOS only allows copying during the tap, and the request in between can make the
+  copy fail. If it does, use ClipboardItem with a promise of the text, or another fix,
+  and say which.
+- A Toast component, with no board: a pill above the bottom of the screen
+  (env(safe-area-inset-bottom)), using the blush tokens and --glow, role="status" so it
+  is announced, hidden after 2.5s. Only one at a time; a new one replaces the old one.
+  Success: «لینک کپی شد — تا <Jalali expires_at> فعال است». A failed request shows the
+  codes.ts message; a failed copy shows «کپی نشد».
+- The button is disabled while the request is in flight, so a double tap doesn't make
+  two links.
+
+Unit test clipboard.ts's fallback path and the toast text with a Jalali date.
+```
+
+**Checkpoint:** On the coach's phone, over the LAN over plain http, and after deploy over https: tap share, see the toast with the date 30 days out, paste into WhatsApp, and the link opens the plan. Tap share again: the old link shows «این لینک دیگر معتبر نیست».
+
+**In short:** one tap puts a working plan link on the coach's clipboard.
+
+---
+
+### Public plan page and PDF
+
+⬜ **Not started** — needs *Plan share links* in [backend.md](backend.md).
+
+**Description:** What the athlete sees when they open the link: the coach's name and phone, their own name, the plan, and a button that downloads it as a PDF. It replaces the Canva PDF, so it has to look good. The boards have no athlete-facing page, so it reuses the day view's look and is checked against the day view at 390px. The PDF is drawn by the browser from the page itself: Go and JS PDF libraries don't join Persian letters or lay out RTL text, and the print dialog's Save as PDF is buried on iPhone (ADR 0036).
+
+**Prompt:**
+```
+Build the public plan page at /p/:token, and the PDF download on it.
+
+- Route /p/:token outside RequireAuth, with no bottom nav. It calls
+  GET /api/v1/public/plans/:token (web/src/api/publicPlans.ts). A 401 from it must not
+  send the athlete to /login. Set <meta name="robots" content="noindex"> while it's
+  mounted.
+- Coach card on top, in every state where the API returned a coach: the coach's
+  first and last name and phone, with the phone as a tel: link with PhoneIcon.
+- active: under the coach card, a header with the athlete's name, the plan title and
+  «شروع <Jalali start_date>», then the plan note if set. Then every day, one after
+  another, each as the day view's sheet ("روز A · ۹ حرکت", the numbered lines,
+  supersets with the pink edge), reusing BlockLine and the day view's prescription
+  text, not a copy of them. Then «دریافت PDF» (BigButton) and the footer
+  «ساخته‌شده با gogymapp».
+- expired: the coach card and «این لینک منقضی شده است. برای لینک جدید به مربی خود پیام
+  دهید.».
+- 404: «این لینک دیگر معتبر نیست» with no coach card, since the token matches nothing.
+- PDF: dynamic-import html-to-image and jsPDF (pinned exactly), so neither loads anywhere
+  else in the app. Render the page's content (coach card, header, days, footer; not the
+  button) to one PNG at 2x, and put it on one PDF page as wide as the phone layout and
+  as tall as the content. Check a 7-day plan (the cap, docs/adr/0017) at 9 lines a day
+  stays under PDF's 14400pt page limit; if it doesn't, scale down to fit rather than
+  split. Save it as "<first> <last> - <title> - gogymapp.pdf". The fonts must have
+  loaded before rendering (document.fonts.ready), or the PDF falls back to a system
+  font.
+- index.html gets fixed Open Graph tags for every link: og:title «برنامهٔ تمرینی —
+  gogymapp», og:description, og:site_name gogymapp, og:locale fa_IR. They're the same
+  on every page, with nothing about the plan or the athlete in them. Per-plan previews
+  are the deferred Pre-rendered public pages task.
+- Write ADR 0036 (and its README row): the PDF is rendered to an image in the browser.
+  Rejected: the print dialog (hidden on iOS), a PDF generated by a Go or JS library
+  (Persian letters not joined), headless Chrome on the server (an extra service).
+  The cost: the PDF's text can't be selected or searched.
+
+Unit test the three states from mocked API responses.
+```
+
+**Checkpoint:** On a real iPhone and Android phone, open a shared link to a 5-day plan with a superset: the coach card, every day and the footer show, at 390px it matches the day view's sheets, and the phone link dials. Tap «دریافت PDF»: a file named «سارا محمدی - برنامه آبان - gogymapp.pdf» downloads as one long page, with joined Persian letters, right to left, and the right font. Send it on WhatsApp and open it on another phone. An expired link shows the coach card and the expired message; a replaced link shows «این لینک دیگر معتبر نیست». Pasting a link into WhatsApp shows the fixed gogymapp card.
+
+**In short:** the athlete opens the plan from WhatsApp and can keep it as a PDF.
+
+---
+
 ## Phase 2 — Ship
 
 ### Serve the app from Caddy
@@ -663,27 +752,6 @@ Let the app open and show already-loaded athletes and plans without a connection
 **Checkpoint:** Open home and a few plans, switch the phone to airplane mode, and close and reopen the app: home and those plans open, with the offline banner, and saving is disabled. Sign out and back in: nothing from before is shown.
 
 **In short:** a weak signal in the gym doesn't stop the coach reading a plan.
-
----
-
-### Print or save a day as PDF
-
-⏸ **Deferred** — start when a public athlete needs more than a screenshot.
-
-**Description:** The brief asks for a PDF only if it's easy ([stakeholder-brief.md](../stakeholder-brief.md) §4–5). The easy route is a print stylesheet plus the browser's "Save as PDF". Generating the PDF in code is not easy, because many PDF libraries don't join Persian letters or lay out RTL text.
-
-**Prompt:**
-```
-Add a print stylesheet so the browser's print / Save as PDF gives a clean plan: the whole
-plan with every day, one after another, with no app frame, buttons or bottom bar, and the
-athlete's name and plan title on top. Add a "PDF" action to the day view that opens the
-print dialog. Check the Persian text is joined and right to left in the saved PDF on the
-coach's phone; if mobile Save as PDF can't do it, say so before going further.
-```
-
-**Checkpoint:** A PDF saved from the coach's phone reads correctly, with joined Persian letters, every day of the plan and supersets grouped.
-
-**In short:** a public athlete can get a proper PDF, made by the browser.
 
 ---
 
