@@ -1,0 +1,30 @@
+/* No board has a toast: a pink pill in the board's button style, above the bottom of the screen. */
+.region {
+  position: fixed;
+  inset-inline: 16px;
+  bottom: calc(24px + env(safe-area-inset-bottom));
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.toast {
+  max-width: 448px;
+  padding: 12px 20px;
+  border-radius: 999px;
+  background: var(--pink);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.5;
+  text-align: center;
+  box-shadow: var(--glow);
+  animation: rise 0.2s ease-out;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}

@@ -39,9 +39,10 @@ type RoundButtonProps = {
   pink?: boolean;
   to?: string;
   onClick?: () => void;
+  disabled?: boolean;
 };
 
-export function RoundButton({ label, children, pink, to, onClick }: RoundButtonProps) {
+export function RoundButton({ label, children, pink, to, onClick, disabled }: RoundButtonProps) {
   const className = pink ? `${s.rb} ${s.pink}` : s.rb;
   if (to !== undefined) {
     return (
@@ -51,7 +52,13 @@ export function RoundButton({ label, children, pink, to, onClick }: RoundButtonP
     );
   }
   return (
-    <button type="button" className={className} aria-label={label} onClick={onClick}>
+    <button
+      type="button"
+      className={className}
+      aria-label={label}
+      onClick={onClick}
+      disabled={disabled}
+    >
       {children}
     </button>
   );

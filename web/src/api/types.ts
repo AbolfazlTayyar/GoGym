@@ -112,3 +112,9 @@ export type PlanDetail = {
   source_plan_title: string | null;
   days: Day[];
 };
+
+// POST /plans/:id/share. Each call makes a new token and ends the plan's previous link.
+export type ShareLink = {
+  token: string;
+  expires_at: string;
+};

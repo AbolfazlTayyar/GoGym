@@ -1,5 +1,5 @@
 import { api } from "./client";
-import type { Day, PlanDetail, PlanSummary } from "./types";
+import type { Day, PlanDetail, PlanSummary, ShareLink } from "./types";
 
 // Every athlete's current plan in one request; the home rows match them by athlete_id.
 export const getCurrentPlans = () => api.get<PlanSummary[]>("/plans/current");
@@ -47,3 +47,5 @@ export const updatePlan = (id: string, input: PlanUpdate) =>
   api.put<PlanDetail>(`/plans/${id}`, input);
 
 export const deletePlan = (id: string) => api.delete(`/plans/${id}`);
+
+export const sharePlan = (id: string) => api.post<ShareLink>(`/plans/${id}/share`);

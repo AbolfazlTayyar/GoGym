@@ -1,17 +1,22 @@
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router";
 import { getAthlete } from "../api/athletes";
+import { ApiError } from "../api/client";
 import { queryKeys } from "../api/keys";
-import { getPlan } from "../api/plans";
+import { getPlan, sharePlan } from "../api/plans";
 import { BigButton } from "../components/BigButton";
 import { BlockLine, DayHeading } from "../components/BlockLine";
 import { DayPills } from "../components/DayPills";
 import { EmptyState } from "../components/EmptyState";
 import { Header, HeaderTitle, RoundButton } from "../components/Header";
-import { BackIcon, EditIcon, UserIcon } from "../components/icons";
+import { BackIcon, EditIcon, LinkIcon, UserIcon } from "../components/icons";
 import { Screen } from "../components/Screen";
+import { useToast } from "../components/Toast";
+import { copyPendingText } from "../lib/clipboard";
 import { formatJalali } from "../lib/jalali";
 import { paths } from "../lib/paths";
+import { linkCopiedMessage, msgCopyFailed, sharedPlanURL } from "../lib/shareLink";
 import { useGoBack } from "../lib/useGoBack";
 import s from "./DayViewPage.module.css";
 
@@ -21,6 +26,8 @@ export function DayViewPage() {
   const { planId = "" } = useParams();
   const [params, setParams] = useSearchParams();
   const goBack = useGoBack(paths.home);
+  const { toast, show } = useToast();
+  const [sharing, setSharing] = useState(false);
 
   const plan = useQuery({
     queryKey: queryKeys.plans("detail", planId),
@@ -32,6 +39,27 @@ export function DayViewPage() {
     queryFn: () => getAthlete(athleteId),
     enabled: athleteId !== "",
   });
+
+  // Every tap makes a new link and ends the previous one (docs/adr/0035). The copy starts inside the tap,
+  // before the request answers, because iOS refuses a copy once the tap is over.
+  async function copyShareLink() {
+    setSharing(true);
+    const link = sharePlan(planId);
+    const copied = copyPendingText(link.then((l) => sharedPlanURL(l.token)));
+    try {
+      const { expires_at } = await link;
+      await copied.then(
+        () => show(linkCopiedMessage(expires_at)),
+        () => show(msgCopyFailed),
+      );
+    } catch (err) {
+      // The request failed, so the copy failed with it; its message is the one that matters.
+      copied.catch(() => {});
+      show(err instanceof ApiError ? err.message : msgCopyFailed);
+    } finally {
+      setSharing(false);
+    }
+  }
 
   const failed = plan.error ?? athlete.error;
   if (failed) {
@@ -72,6 +100,13 @@ export function DayViewPage() {
             <UserIcon />
           </RoundButton>
         )}
+        <RoundButton
+          label="اشتراک‌گذاری لینک"
+          onClick={() => void copyShareLink()}
+          disabled={sharing || !plan.data}
+        >
+          <LinkIcon />
+        </RoundButton>
         <RoundButton label="ویرایش برنامه" pink to={paths.builder(planId, day?.label)}>
           <EditIcon />
         </RoundButton>
@@ -109,6 +144,7 @@ export function DayViewPage() {
           </>
         )}
       </div>
+      {toast}
     </Screen>
   );
 }

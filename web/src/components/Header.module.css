@@ -76,6 +76,10 @@
   inset: -2px;
 }
 
+.rb:disabled {
+  opacity: 0.6;
+}
+
 .rb.pink {
   background: var(--pink);
   color: #fff;

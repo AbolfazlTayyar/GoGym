@@ -21,4 +21,6 @@ export const paths = {
   newAthlete: (type: AthleteType) => `/athletes/new?type=${type}`,
   editAthlete: (athleteId: string) => `/athletes/${athleteId}/edit`,
   newPlan: (athleteId: string) => `/athletes/${athleteId}/plans/new`,
+  // The athlete's page for a shared plan, opened without login.
+  sharedPlan: (token: string) => `/p/${token}`,
 };
