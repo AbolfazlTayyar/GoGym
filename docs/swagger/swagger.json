@@ -1995,6 +1995,80 @@
                 }
             }
         },
+        "/api/v1/plans/{id}/movement-history": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "For every movement used in the plan's athlete's other plans (past, future and copied ones), returns its last prescription: from the plan with the latest start_date (then the latest created), the last line using it in day, block and movement order. sets is the block's, shared by a superset; reps, duration_seconds and load_kg are the movement's own. The plan itself is left out. One row per movement, not paginated: it grows with the athlete's distinct movements, not with their plan count. An athlete with no other plans yields an empty array. A plan whose athlete belongs to another coach is reported as not found.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "plans"
+                ],
+                "summary": "List an athlete's last prescription of each movement",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Plan ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.SuccessEnvelope"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/internal_plan.movementHistoryResponse"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.ValidationErrorEnvelope"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.UnauthorizedEnvelope"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.NotFoundEnvelope"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.InternalErrorEnvelope"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/plans/{id}/share": {
             "post": {
                 "security": [
@@ -2837,6 +2911,42 @@
                 "order_index": {
                     "type": "integer",
                     "example": 0
+                }
+            }
+        },
+        "internal_plan.movementHistoryResponse": {
+            "type": "object",
+            "properties": {
+                "duration_seconds": {
+                    "type": "integer"
+                },
+                "load_kg": {
+                    "type": "number",
+                    "example": 40
+                },
+                "movement_id": {
+                    "type": "string",
+                    "example": "8e9f0a1b-2c3d-4e5f-8a6b-7c8d9e0f1a2b"
+                },
+                "plan_id": {
+                    "type": "string",
+                    "example": "4d1c2b3a-5e6f-4a7b-8c9d-0e1f2a3b4c5d"
+                },
+                "plan_title": {
+                    "type": "string",
+                    "example": "برنامه مهر"
+                },
+                "reps": {
+                    "type": "integer",
+                    "example": 10
+                },
+                "sets": {
+                    "type": "integer",
+                    "example": 3
+                },
+                "start_date": {
+                    "type": "string",
+                    "example": "2026-10-01"
                 }
             }
         },

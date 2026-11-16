@@ -252,6 +252,17 @@ func (s *Service) Get(ctx context.Context, coachID, planID uuid.UUID) (*Plan, er
 	return p, nil
 }
 
+// MovementHistory is what the athlete was last prescribed of each movement in their other plans. The plan
+// itself is left out: the builder reads it from its own draft, which also holds the lines not yet saved.
+func (s *Service) MovementHistory(ctx context.Context, coachID, planID uuid.UUID) ([]LastUse, error) {
+	p, err := s.ownedPlan(ctx, coachID, planID)
+	if err != nil {
+		return nil, err
+	}
+
+	return s.repo.LastUses(ctx, p.AthleteID, p.ID)
+}
+
 // shareLinkLifetime counts from the coach's latest share, which also replaces the token.
 const shareLinkLifetime = 30 * 24 * time.Hour
 

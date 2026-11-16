@@ -1685,3 +1685,148 @@ func TestBuilder_CreatePlanRejectsBadInputWithFieldErrors(t *testing.T) {
 		"title":      httpx.MsgFieldRequired,
 	}, fields)
 }
+
+type lastUse struct {
+	MovementID      string   `json:"movement_id"`
+	PlanID          string   `json:"plan_id"`
+	PlanTitle       string   `json:"plan_title"`
+	StartDate       string   `json:"start_date"`
+	Sets            int      `json:"sets"`
+	Reps            *int     `json:"reps"`
+	DurationSeconds *int     `json:"duration_seconds"`
+	LoadKg          *float64 `json:"load_kg"`
+}
+
+func historyPath(planID string) string { return planPath(planID) + "/movement-history" }
+
+func movementHistory(t *testing.T, router *gin.Engine, token string, planID uuid.UUID) map[string]lastUse {
+	t.Helper()
+
+	env := decodeEnvelope(t, do(t, router, http.MethodGet, historyPath(planID.String()), token, ""), http.StatusOK)
+	var rows []lastUse
+	require.NoError(t, json.Unmarshal(env.Data, &rows))
+	require.NotNil(t, rows, "an empty history is [], not null")
+
+	byMovement := make(map[string]lastUse, len(rows))
+	for _, r := range rows {
+		byMovement[r.MovementID] = r
+	}
+	require.Len(t, byMovement, len(rows), "one row per movement")
+	return byMovement
+}
+
+func TestMovementHistory_LatestPlanThenLastLineWinsAndThePlanItselfIsLeftOut(t *testing.T) {
+	router, db := newTestRouter(t)
+	token := createCoach(t, router, db, "09121110901")
+	athleteID := createAthlete(t, router, token, "09121230901")
+	squat := insertMovement(t, db, "Squat", "legs")
+	deadlift := insertMovement(t, db, "Deadlift", "legs")
+	lunge := insertMovement(t, db, "Lunge", "legs")
+	bench := insertMovement(t, db, "Bench", "chest")
+
+	old := insertPlan(t, db, athleteID, "Old", daysFromToday(-60))
+	oldDay, err := insertDay(db, old, "A", 0)
+	require.NoError(t, err)
+	oldBlock := insertBlock(t, db, oldDay, 0, 5, nil)
+	insertBlockMovement(t, db, oldBlock, squat, 5, 0)
+	insertBlockMovement(t, db, oldBlock, deadlift, 3, 1)
+
+	// Squat twice in the newer plan: day B's line is the last one, whatever order the days were added in.
+	newer := insertPlan(t, db, athleteID, "Newer", daysFromToday(-30))
+	dayB, err := insertDay(db, newer, "B", 1)
+	require.NoError(t, err)
+	dayA, err := insertDay(db, newer, "A", 0)
+	require.NoError(t, err)
+	insertBlockMovement(t, db, insertBlock(t, db, dayA, 0, 3, nil), squat, 10, 0)
+	insertBlockMovement(t, db, insertBlock(t, db, dayB, 0, 2, nil), squat, 8, 0)
+	load := 40.0
+	require.NoError(t, db.Omit(clause.Associations).Create(&plan.BlockMovement{
+		ID: uuid.New(), BlockID: insertBlock(t, db, dayB, 1, 4, nil), MovementID: squat, LoadKg: &load, OrderInBlock: 0,
+	}).Error)
+
+	future := insertPlan(t, db, athleteID, "Future", daysFromToday(30))
+	futureDay, err := insertDay(db, future, "A", 0)
+	require.NoError(t, err)
+	insertBlockMovement(t, db, insertBlock(t, db, futureDay, 0, 3, nil), lunge, 12, 0)
+
+	edited := insertPlan(t, db, athleteID, "Edited", daysFromToday(-1))
+	editedDay, err := insertDay(db, edited, "A", 0)
+	require.NoError(t, err)
+	editedBlock := insertBlock(t, db, editedDay, 0, 9, nil)
+	insertBlockMovement(t, db, editedBlock, squat, 99, 0)
+	insertBlockMovement(t, db, editedBlock, bench, 99, 1)
+
+	history := movementHistory(t, router, token, edited)
+
+	require.Len(t, history, 3)
+	assert.NotContains(t, history, bench.String(), "a movement only in the plan itself")
+
+	got := history[squat.String()]
+	assert.Equal(t, newer.String(), got.PlanID)
+	assert.Equal(t, "Newer", got.PlanTitle)
+	assert.Equal(t, daysFromToday(-30).Format(time.DateOnly), got.StartDate)
+	assert.Equal(t, 4, got.Sets)
+	assert.Nil(t, got.Reps)
+	require.NotNil(t, got.LoadKg)
+	assert.InDelta(t, 40.0, *got.LoadKg, 0.001)
+
+	assert.Equal(t, old.String(), history[deadlift.String()].PlanID)
+	assert.Equal(t, future.String(), history[lunge.String()].PlanID, "future plans count")
+}
+
+func TestMovementHistory_NoOtherPlansIsAnEmptyArray(t *testing.T) {
+	router, db := newTestRouter(t)
+	token := createCoach(t, router, db, "09121110902")
+	athleteID := createAthlete(t, router, token, "09121230902")
+	only := insertPlan(t, db, athleteID, "Only", daysFromToday(-1))
+	day, err := insertDay(db, only, "A", 0)
+	require.NoError(t, err)
+	insertBlockMovement(t, db, insertBlock(t, db, day, 0, 3, nil), insertMovement(t, db, "Squat", "legs"), 10, 0)
+
+	// Another athlete's plans are not this athlete's history.
+	other := insertPlan(t, db, createAthlete(t, router, token, "09121230903"), "Other", daysFromToday(-30))
+	otherDay, err := insertDay(db, other, "A", 0)
+	require.NoError(t, err)
+	insertBlockMovement(t, db, insertBlock(t, db, otherDay, 0, 3, nil), insertMovement(t, db, "Row", "back"), 10, 0)
+
+	assert.Empty(t, movementHistory(t, router, token, only))
+}
+
+func TestMovementHistory_AnotherCoachsPlanIsNotFound(t *testing.T) {
+	router, db := newTestRouter(t)
+	owner := createCoach(t, router, db, "09121110904")
+	intruder := createCoach(t, router, db, "09121110905")
+	planID := insertPlan(t, db, createAthlete(t, router, owner, "09121230904"), "Plan", daysFromToday(-1))
+
+	env := decodeEnvelope(t, do(t, router, http.MethodGet, historyPath(planID.String()), intruder, ""), http.StatusNotFound)
+	assert.Equal(t, httpx.CodeNotFound, env.Error.Code)
+	decodeEnvelope(t, do(t, router, http.MethodGet, historyPath(uuid.NewString()), owner, ""), http.StatusNotFound)
+}
+
+func TestMovementHistory_TakesTheSameQueriesForOneOrManyPlans(t *testing.T) {
+	router, db := newTestRouter(t)
+	token := createCoach(t, router, db, "09121110906")
+	squat := insertMovement(t, db, "Squat", "legs")
+
+	withPlans := func(athletePhone string, n int) uuid.UUID {
+		athleteID := createAthlete(t, router, token, athletePhone)
+		for i := 1; i <= n; i++ {
+			p := insertPlan(t, db, athleteID, fmt.Sprintf("Plan %d", i), daysFromToday(-30*i))
+			day, err := insertDay(db, p, "A", 0)
+			require.NoError(t, err)
+			insertBlockMovement(t, db, insertBlock(t, db, day, 0, 3, nil), insertMovement(t, db, fmt.Sprintf("M%d", i), "x"), 10, 0)
+			insertBlockMovement(t, db, insertBlock(t, db, day, 1, 3, nil), squat, 10, 0)
+		}
+		return insertPlan(t, db, athleteID, "Edited", daysFromToday(-1))
+	}
+	one := withPlans("09121230906", 1)
+	many := withPlans("09121230907", 6)
+
+	rec := recordSQL(db)
+	movementHistory(t, router, token, one)
+	forOne := len(rec.take())
+	assert.Len(t, movementHistory(t, router, token, many), 7)
+	forMany := len(rec.take())
+
+	assert.Equal(t, forOne, forMany)
+}

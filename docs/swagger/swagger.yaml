@@ -481,6 +481,32 @@ definitions:
         example: 0
         type: integer
     type: object
+  internal_plan.movementHistoryResponse:
+    properties:
+      duration_seconds:
+        type: integer
+      load_kg:
+        example: 40
+        type: number
+      movement_id:
+        example: 8e9f0a1b-2c3d-4e5f-8a6b-7c8d9e0f1a2b
+        type: string
+      plan_id:
+        example: 4d1c2b3a-5e6f-4a7b-8c9d-0e1f2a3b4c5d
+        type: string
+      plan_title:
+        example: برنامه مهر
+        type: string
+      reps:
+        example: 10
+        type: integer
+      sets:
+        example: 3
+        type: integer
+      start_date:
+        example: "2026-10-01"
+        type: string
+    type: object
   internal_plan.planDetailResponse:
     properties:
       athlete_id:
@@ -2001,6 +2027,59 @@ paths:
       security:
       - BearerAuth: []
       summary: Add a day to a plan
+      tags:
+      - plans
+  /api/v1/plans/{id}/movement-history:
+    get:
+      description: 'For every movement used in the plan''s athlete''s other plans
+        (past, future and copied ones), returns its last prescription: from the plan
+        with the latest start_date (then the latest created), the last line using
+        it in day, block and movement order. sets is the block''s, shared by a superset;
+        reps, duration_seconds and load_kg are the movement''s own. The plan itself
+        is left out. One row per movement, not paginated: it grows with the athlete''s
+        distinct movements, not with their plan count. An athlete with no other plans
+        yields an empty array. A plan whose athlete belongs to another coach is reported
+        as not found.'
+      parameters:
+      - description: Plan ID
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.SuccessEnvelope'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/internal_plan.movementHistoryResponse'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.ValidationErrorEnvelope'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.UnauthorizedEnvelope'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.NotFoundEnvelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.InternalErrorEnvelope'
+      security:
+      - BearerAuth: []
+      summary: List an athlete's last prescription of each movement
       tags:
       - plans
   /api/v1/plans/{id}/share:

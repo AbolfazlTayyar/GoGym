@@ -233,6 +233,40 @@ func (r *Repository) MovementIDsOfDay(ctx context.Context, dayID uuid.UUID) ([]u
 	return ids, nil
 }
 
+// LastUse is the most recent time a plan prescribed a movement: the latest plan, then its last line using it.
+type LastUse struct {
+	MovementID      uuid.UUID
+	PlanID          uuid.UUID
+	PlanTitle       string
+	StartDate       time.Time
+	Sets            int
+	Reps            *int
+	DurationSeconds *int
+	LoadKg          *float64
+}
+
+// LastUses returns one row per movement across the athlete's plans except excludePlanID, in one query:
+// the result grows with the athlete's distinct movements, not with how many plans they have had.
+func (r *Repository) LastUses(ctx context.Context, athleteID, excludePlanID uuid.UUID) ([]LastUse, error) {
+	uses := make([]LastUse, 0)
+	if err := r.db.WithContext(ctx).Raw(`
+		SELECT DISTINCT ON (bm.movement_id)
+			bm.movement_id, p.id AS plan_id, p.title AS plan_title, p.start_date,
+			b.sets, bm.reps, bm.duration_seconds, bm.load_kg
+		FROM block_movement bm
+		JOIN block b ON b.id = bm.block_id
+		JOIN day d ON d.id = b.day_id
+		JOIN plan p ON p.id = d.plan_id
+		WHERE p.athlete_id = ? AND p.id <> ?
+		ORDER BY bm.movement_id, p.start_date DESC, p.created_at DESC, p.id DESC,
+			d.order_index DESC, b.order_index DESC, bm.order_in_block DESC`,
+		athleteID, excludePlanID).
+		Scan(&uses).Error; err != nil {
+		return nil, fmt.Errorf("plan: failed to load movement history: %w", err)
+	}
+	return uses, nil
+}
+
 // ReplaceBlocks swaps the day's blocks for the given ones in one transaction, in a fixed number of
 // queries. It locks the day row first: without that, two concurrent saves could each delete only the
 // rows they saw and both insert, leaving the day with both. With it, the later save wins whole.

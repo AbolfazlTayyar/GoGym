@@ -108,6 +108,18 @@ type blockMovementResponse struct {
 	OrderInBlock    int      `json:"order_in_block" example:"0"`
 }
 
+// movementHistoryResponse is one movement's last prescription in the athlete's other plans.
+type movementHistoryResponse struct {
+	MovementID      string   `json:"movement_id" example:"8e9f0a1b-2c3d-4e5f-8a6b-7c8d9e0f1a2b"`
+	PlanID          string   `json:"plan_id" example:"4d1c2b3a-5e6f-4a7b-8c9d-0e1f2a3b4c5d"`
+	PlanTitle       string   `json:"plan_title" example:"برنامه مهر"`
+	StartDate       string   `json:"start_date" example:"2026-10-01"`
+	Sets            int      `json:"sets" example:"3"`
+	Reps            *int     `json:"reps" example:"10"`
+	DurationSeconds *int     `json:"duration_seconds"`
+	LoadKg          *float64 `json:"load_kg" example:"40"`
+}
+
 type shareResponse struct {
 	Token     string `json:"token" example:"q3J9xK2mT0aLwV7nB4cD8e"`
 	ExpiresAt string `json:"expires_at" example:"2026-12-14T10:00:00Z"`
@@ -781,6 +793,55 @@ func (h *Handler) Share(c *gin.Context) {
 	}
 
 	httpx.Created(c, shareResponse{Token: link.Token, ExpiresAt: link.ExpiresAt.UTC().Format(time.RFC3339)})
+}
+
+// MovementHistory tells the builder's search what the athlete was last given of each movement elsewhere.
+//
+//	@Summary		List an athlete's last prescription of each movement
+//	@Description	For every movement used in the plan's athlete's other plans (past, future and copied ones), returns its last prescription: from the plan with the latest start_date (then the latest created), the last line using it in day, block and movement order. sets is the block's, shared by a superset; reps, duration_seconds and load_kg are the movement's own. The plan itself is left out. One row per movement, not paginated: it grows with the athlete's distinct movements, not with their plan count. An athlete with no other plans yields an empty array. A plan whose athlete belongs to another coach is reported as not found.
+//	@Tags			plans
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			id	path		string	true	"Plan ID"	format(uuid)
+//	@Success		200	{object}	httpx.SuccessEnvelope{data=[]movementHistoryResponse}
+//	@Failure		400	{object}	httpx.ValidationErrorEnvelope
+//	@Failure		401	{object}	httpx.UnauthorizedEnvelope
+//	@Failure		404	{object}	httpx.NotFoundEnvelope
+//	@Failure		500	{object}	httpx.InternalErrorEnvelope
+//	@Router			/api/v1/plans/{id}/movement-history [get]
+func (h *Handler) MovementHistory(c *gin.Context) {
+	coachID, ok := tenant.CoachIDFromContext(c)
+	if !ok {
+		httpx.Error(c, http.StatusUnauthorized, httpx.CodeUnauthorized, httpx.MsgUnauthorized)
+		return
+	}
+
+	planID, ok := httpx.PathUUID(c, paramPlanID)
+	if !ok {
+		return
+	}
+
+	uses, err := h.svc.MovementHistory(c.Request.Context(), coachID, planID)
+	if err != nil {
+		writeServiceError(c, err)
+		return
+	}
+
+	items := make([]movementHistoryResponse, 0, len(uses))
+	for _, u := range uses {
+		items = append(items, movementHistoryResponse{
+			MovementID:      u.MovementID.String(),
+			PlanID:          u.PlanID.String(),
+			PlanTitle:       u.PlanTitle,
+			StartDate:       u.StartDate.Format(time.DateOnly),
+			Sets:            u.Sets,
+			Reps:            u.Reps,
+			DurationSeconds: u.DurationSeconds,
+			LoadKg:          u.LoadKg,
+		})
+	}
+
+	httpx.OK(c, items)
 }
 
 // Shared is the athlete's view of a plan through its share link, with no login.
