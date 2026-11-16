@@ -2,6 +2,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router";
 import { getAthlete } from "../api/athletes";
+import { getAttendance } from "../api/attendance";
 import { queryKeys } from "../api/keys";
 import { listMeasurements } from "../api/measurements";
 import { getPlan, listAthletePlans } from "../api/plans";
@@ -17,6 +18,7 @@ import { DeletePlanSheet, PlanSheet } from "../components/PlanSheet";
 import { Screen, ScreenContent } from "../components/Screen";
 import { SwipeRow } from "../components/SwipeRow";
 import { useSheet } from "../components/useSheet";
+import { msgSessionsDone, sessionsUsed, visitCountText } from "../lib/attendance";
 import { formatPhone, toPersianDigits } from "../lib/digits";
 import { formatJalali, todayISO } from "../lib/jalali";
 import { athleteTypeLabels, experienceLabels } from "../lib/labels";
@@ -179,6 +181,13 @@ function PlansTab({ plans }: { plans: PlanSummary[] | undefined }) {
     queryFn: () => getPlan(current!.id),
     enabled: current !== null,
   });
+  const currentAttendance = useQuery({
+    queryKey: queryKeys.attendance("plan", current?.id),
+    queryFn: () => getAttendance(current!.id),
+    enabled: current !== null,
+  });
+  const att = currentAttendance.data?.tracked ? currentAttendance.data : null;
+  const done = att !== null && sessionsUsed(att.dates.length, att.sessions);
   const queryClient = useQueryClient();
   // One row open at a time, as in iOS: swiping another closes this one.
   const [swipedId, setSwipedId] = useState<string | null>(null);
@@ -235,9 +244,11 @@ function PlansTab({ plans }: { plans: PlanSummary[] | undefined }) {
                 <div className={s.top}>
                   <b>{current.title}</b>
                   <span className={`${s.badge} ${s.now}`}>فعلی</span>
+                  {done && <span className={`${s.badge} ${s.done}`}>{msgSessionsDone}</span>}
                 </div>
                 <span className={s.sub}>
                   شروع {formatJalali(current.start_date)} · {planSizeText(current)}
+                  {att && !done && ` · ${visitCountText(att.dates.length, att.sessions)} جلسه`}
                 </span>
               </Link>
               {currentDetail.data && (
@@ -281,6 +292,7 @@ function PlansTab({ plans }: { plans: PlanSummary[] | undefined }) {
             plan={target}
             onSaved={() => {
               queryClient.invalidateQueries({ queryKey: queryKeys.plans() });
+              queryClient.invalidateQueries({ queryKey: queryKeys.attendance() });
               editSheet.close();
             }}
           />
@@ -292,6 +304,7 @@ function PlansTab({ plans }: { plans: PlanSummary[] | undefined }) {
             onDeleted={() => {
               queryClient.removeQueries({ queryKey: queryKeys.plans("detail", target.id) });
               queryClient.invalidateQueries({ queryKey: queryKeys.plans() });
+              queryClient.invalidateQueries({ queryKey: queryKeys.attendance() });
               deleteSheet.close();
             }}
           />

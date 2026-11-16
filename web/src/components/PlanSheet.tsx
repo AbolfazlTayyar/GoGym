@@ -1,12 +1,16 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
+import { getAttendance, trackPlan, untrackPlan } from "../api/attendance";
 import { fieldErrors } from "../api/client";
+import { queryKeys } from "../api/keys";
 import { deletePlan, updatePlan } from "../api/plans";
-import type { PlanSummary } from "../api/types";
+import type { Attendance, PlanSummary } from "../api/types";
+import { toPersianDigits } from "../lib/digits";
 import { BigButton } from "./BigButton";
 import { BottomSheet } from "./BottomSheet";
 import { ConfirmSheet } from "./ConfirmSheet";
 import { JalaliDateField } from "./JalaliDateField";
+import { SessionToggle } from "./SessionToggle";
 import { TextAreaField, TextField } from "./TextField";
 import { msgTitleEmpty } from "../lib/formMessages";
 import s from "./PlanSheet.module.css";
@@ -18,17 +22,32 @@ type PlanSheetProps = {
   onSaved: () => void;
 };
 
-// Behind a profile plan row's edit: the plan's title, start date and note.
+// Behind a profile plan row's edit: the plan's title, start date, note and session tracking.
 export function PlanSheet({ open, onClose, plan, onSaved }: PlanSheetProps) {
+  const attendance = useQuery({
+    queryKey: queryKeys.attendance("plan", plan.id),
+    queryFn: () => getAttendance(plan.id),
+    enabled: open,
+  });
   return (
     <BottomSheet open={open} onClose={onClose} title="برنامه">
-      {/* Mounted only while open, so it starts from the saved values each time. */}
-      {open && <PlanForm plan={plan} onSaved={onSaved} />}
+      {/* Mounted only while open and loaded, so it starts from the saved values each time. */}
+      {open && attendance.data && (
+        <PlanForm plan={plan} attendance={attendance.data} onSaved={onSaved} />
+      )}
+      {open && attendance.isError && (
+        <p className={s.error} role="alert">
+          {attendance.error.message}
+        </p>
+      )}
     </BottomSheet>
   );
 }
 
-function PlanForm({ plan, onSaved }: Omit<PlanSheetProps, "open" | "onClose">) {
+type PlanFormProps = Omit<PlanSheetProps, "open" | "onClose"> & { attendance: Attendance };
+
+function PlanForm({ plan, attendance, onSaved }: PlanFormProps) {
+  const [tracked, setTracked] = useState(attendance.tracked);
   const [title, setTitle] = useState(plan.title);
   const [startDate, setStartDate] = useState(plan.start_date);
   const [note, setNote] = useState(plan.note ?? "");
@@ -36,14 +55,24 @@ function PlanForm({ plan, onSaved }: Omit<PlanSheetProps, "open" | "onClose">) {
   const [titleError, setTitleError] = useState<string | null>(null);
 
   const save = useMutation({
-    mutationFn: () =>
-      updatePlan(plan.id, {
+    mutationFn: async () => {
+      await updatePlan(plan.id, {
         title: title.trim(),
         start_date: startDate,
         note: note.trim() || null,
-      }),
+      });
+      if (tracked !== attendance.tracked) {
+        await (tracked ? trackPlan(plan.id) : untrackPlan(plan.id));
+      }
+    },
     onSuccess: onSaved,
   });
+  // The warning stands in for a confirm: saving with it showing deletes the visits.
+  const visits = attendance.dates.length;
+  const untrackWarning =
+    attendance.tracked && !tracked && visits > 0
+      ? `با ذخیره، ${toPersianDigits(visits)} حضور ثبت‌شده پاک می‌شود.`
+      : null;
   const errors = fieldErrors(save.error);
 
   const submit = () => {
@@ -71,6 +100,7 @@ function PlanForm({ plan, onSaved }: Omit<PlanSheetProps, "open" | "onClose">) {
           onChange={setStartDate}
           error={errors.start_date}
         />
+        <SessionToggle on={tracked} onChange={setTracked} warning={untrackWarning} />
         <TextAreaField
           label="یادداشت"
           optional

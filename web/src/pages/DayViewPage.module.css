@@ -35,3 +35,44 @@
 .line {
   display: block;
 }
+
+/* No board has it: the plan's session count over the day, opening its visit list. */
+.att {
+  margin: 0 14px 10px;
+  height: 44px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-inline: 18px 12px;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: var(--soft);
+  font-size: 14px;
+  text-align: start;
+}
+
+.att > span {
+  flex: 1;
+  color: var(--dim);
+  font-weight: 700;
+}
+
+.att > b {
+  font-weight: 800;
+  color: var(--pinkText);
+}
+
+.att > .done {
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--pink);
+  color: #fff;
+  font-size: 12px;
+}
+
+.att svg {
+  width: 18px;
+  height: 18px;
+  color: var(--faint);
+}

@@ -83,3 +83,8 @@
   color: #fff;
   box-shadow: var(--glow);
 }
+
+.days button:disabled {
+  background: none;
+  color: var(--faint);
+}

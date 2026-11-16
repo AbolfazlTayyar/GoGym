@@ -4,6 +4,7 @@ export const queryKeys = {
   athletes: (...parts: unknown[]) => ["athletes", ...parts] as const,
   plans: (...parts: unknown[]) => ["plans", ...parts] as const,
   measurements: (...parts: unknown[]) => ["measurements", ...parts] as const,
+  attendance: (...parts: unknown[]) => ["attendance", ...parts] as const,
   movements: (...parts: unknown[]) => ["movements", ...parts] as const,
   sharedPlan: (token: string) => ["sharedPlan", token] as const,
 };

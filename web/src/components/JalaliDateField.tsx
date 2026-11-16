@@ -22,9 +22,11 @@ type JalaliDateFieldProps = {
   value: string;
   onChange: (iso: string) => void;
   error?: string;
+  // The last ISO date that can be picked; later days are disabled.
+  max?: string;
 };
 
-export function JalaliDateField({ label, value, onChange, error }: JalaliDateFieldProps) {
+export function JalaliDateField({ label, value, onChange, error, max }: JalaliDateFieldProps) {
   const sheet = useSheet(`date:${label}`);
 
   return (
@@ -38,6 +40,7 @@ export function JalaliDateField({ label, value, onChange, error }: JalaliDateFie
       <BottomSheet open={sheet.open} onClose={sheet.close} title={label}>
         <Picker
           initial={isoToJalali(value)}
+          max={max}
           onPick={(iso) => {
             onChange(iso);
             sheet.close();
@@ -49,7 +52,15 @@ export function JalaliDateField({ label, value, onChange, error }: JalaliDateFie
 }
 
 // Year and month change in place; tapping a day picks the date and closes the sheet.
-function Picker({ initial, onPick }: { initial: JalaliDate; onPick: (iso: string) => void }) {
+function Picker({
+  initial,
+  max,
+  onPick,
+}: {
+  initial: JalaliDate;
+  max?: string;
+  onPick: (iso: string) => void;
+}) {
   const [jy, setYear] = useState(initial.jy);
   const [jm, setMonth] = useState(initial.jm);
   const length = jalaliMonthLength(jy, jm);
@@ -95,17 +106,22 @@ function Picker({ initial, onPick }: { initial: JalaliDate; onPick: (iso: string
         ))}
       </div>
       <div className={s.days}>
-        {Array.from({ length }, (_, i) => i + 1).map((jd) => (
-          <button
-            key={jd}
-            type="button"
-            className={isPicked(jd) ? s.on : undefined}
-            style={jd === 1 ? { gridColumnStart: firstWeekday + 1 } : undefined}
-            onClick={() => onPick(jalaliToISO({ jy, jm, jd }))}
-          >
-            {toPersianDigits(jd)}
-          </button>
-        ))}
+        {Array.from({ length }, (_, i) => i + 1).map((jd) => {
+          const iso = jalaliToISO({ jy, jm, jd });
+          return (
+            <button
+              key={jd}
+              type="button"
+              className={isPicked(jd) ? s.on : undefined}
+              style={jd === 1 ? { gridColumnStart: firstWeekday + 1 } : undefined}
+              // ISO dates compare as strings.
+              disabled={max !== undefined && iso > max}
+              onClick={() => onPick(iso)}
+            >
+              {toPersianDigits(jd)}
+            </button>
+          );
+        })}
       </div>
     </>
   );

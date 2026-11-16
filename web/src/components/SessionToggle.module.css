@@ -1,0 +1,76 @@
+/* No board has a switch: a white pill like the form fields, with an iOS-style track at its end. */
+.row {
+  width: 100%;
+  min-height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 18px;
+  border-radius: 22px;
+  background: #fff;
+  box-shadow: var(--soft);
+  text-align: start;
+}
+
+.row:focus-visible {
+  outline: none;
+  box-shadow:
+    var(--soft),
+    0 0 0 1.5px var(--pink);
+}
+
+.text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.text > b {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.text > span {
+  font-size: 12px;
+  color: var(--dim);
+}
+
+.track {
+  position: relative;
+  flex: none;
+  width: 46px;
+  height: 28px;
+  border-radius: 999px;
+  background: var(--petal);
+  transition: background 0.15s;
+}
+
+.track::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  inset-inline-start: 3px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(43, 26, 32, 0.2);
+  transition: inset-inline-start 0.15s;
+}
+
+.track.on {
+  background: var(--pink);
+}
+
+.track.on::after {
+  inset-inline-start: 21px;
+}
+
+.warning {
+  margin-top: 6px;
+  padding-inline-start: 6px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--pinkText);
+}

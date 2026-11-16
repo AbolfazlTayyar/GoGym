@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRef, useState, type ReactNode } from "react";
 import { useNavigate, useParams } from "react-router";
 import { getAthlete } from "../api/athletes";
+import { getAttendance, trackPlan } from "../api/attendance";
 import { fieldErrors } from "../api/client";
 import { queryKeys } from "../api/keys";
 import { addDay, createPlan, getPlan, listAthletePlans } from "../api/plans";
@@ -14,6 +15,7 @@ import { ChevLIcon, XIcon } from "../components/icons";
 import { JalaliDateField } from "../components/JalaliDateField";
 import { PlanMini } from "../components/PlanMini";
 import { Screen, ScreenContent } from "../components/Screen";
+import { SessionToggle } from "../components/SessionToggle";
 import { TextAreaField, TextField } from "../components/TextField";
 import { useSheet } from "../components/useSheet";
 import { msgTitleEmpty } from "../lib/formMessages";
@@ -75,6 +77,18 @@ function NewPlanForm({ athlete, latest }: { athlete: Athlete; latest: PlanSummar
   const sourceId =
     choice === "latest" ? latest?.id : choice === "other" ? other?.plan.id : undefined;
 
+  // A copy starts tracked if its source is; the coach's own choice holds until the source changes.
+  const sourceAttendance = useQuery({
+    queryKey: queryKeys.attendance("plan", sourceId),
+    queryFn: () => getAttendance(sourceId!),
+    enabled: sourceId !== undefined,
+  });
+  const [chosen, setChosen] = useState<{ sourceId: string | undefined; on: boolean } | null>(null);
+  const tracked =
+    chosen && chosen.sourceId === sourceId
+      ? chosen.on
+      : sourceId !== undefined && (sourceAttendance.data?.tracked ?? false);
+
   const save = useMutation({
     mutationFn: async () => {
       created.current ??= await createPlan({
@@ -86,10 +100,15 @@ function NewPlanForm({ athlete, latest }: { athlete: Athlete; latest: PlanSummar
       });
       const plan = created.current;
       if (plan.days.length === 0) await addDay(plan.id, firstDayLabel, 0);
+      // A second request, so the plan module knows nothing of attendance (docs/adr/0038).
+      if (tracked) await trackPlan(plan.id);
       return plan;
     },
     onSuccess: async (plan) => {
-      await queryClient.invalidateQueries({ queryKey: queryKeys.plans() });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.plans() }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.attendance() }),
+      ]);
       // Replacing this screen, so back from the builder goes to where the coach came from.
       navigate(paths.builder(plan.id), { replace: true });
     },
@@ -178,6 +197,7 @@ function NewPlanForm({ athlete, latest }: { athlete: Athlete; latest: PlanSummar
             onChange={setStartDate}
             error={errors.start_date}
           />
+          <SessionToggle on={tracked} onChange={(on) => setChosen({ sourceId, on })} />
           <TextAreaField
             label="یادداشت"
             optional

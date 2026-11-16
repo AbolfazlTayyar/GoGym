@@ -19,12 +19,41 @@
   line-height: 1.5;
   text-align: center;
   box-shadow: var(--glow);
-  animation: rise 0.2s ease-out;
+  animation: rise 0.3s ease-out;
+}
+
+/* Rises from below the screen's edge and sinks back there; the distance clears the bottom offset. */
+.leaving {
+  animation: sink 0.25s ease-in forwards;
 }
 
 @keyframes rise {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(calc(100% + 24px));
   }
+}
+
+@keyframes sink {
+  to {
+    opacity: 0;
+    transform: translateY(calc(100% + 24px));
+  }
+}
+
+/* The region lets taps through to the screen; only the button takes them. */
+.action {
+  position: relative;
+  pointer-events: auto;
+  margin-inline-start: 14px;
+  color: #fff;
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.action::after {
+  content: "";
+  position: absolute;
+  inset: -12px -10px;
 }

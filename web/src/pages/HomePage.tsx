@@ -1,10 +1,12 @@
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import { listAthletes } from "../api/athletes";
+import { addVisit, deleteVisit, getCurrentAttendance } from "../api/attendance";
+import { ApiError } from "../api/client";
 import { queryKeys } from "../api/keys";
 import { getCurrentPlans } from "../api/plans";
-import type { Athlete, AthleteType, PlanSummary } from "../api/types";
+import type { Athlete, AthleteType, AttendanceCount, PlanSummary } from "../api/types";
 import { AthleteRow } from "../components/AthleteRow";
 import { BigButton } from "../components/BigButton";
 import { DeleteAthleteSheet } from "../components/DeleteAthleteSheet";
@@ -15,9 +17,12 @@ import { PillTabs } from "../components/PillTabs";
 import { SearchBox } from "../components/SearchBox";
 import { SignOutSheet } from "../components/SignOutSheet";
 import { SwipeRow } from "../components/SwipeRow";
+import { useToast } from "../components/Toast";
 import { useSheet } from "../components/useSheet";
+import { sessionsUsed } from "../lib/attendance";
 import { dayColumns } from "../lib/days";
 import { toPersianDigits } from "../lib/digits";
+import { todayISO } from "../lib/jalali";
 import { paths } from "../lib/paths";
 import { useDebouncedValue } from "../lib/useDebouncedValue";
 import { useScrollMemory } from "../lib/useScrollMemory";
@@ -61,6 +66,11 @@ export function HomePage() {
     queryFn: () => listAthletes({ type: "all" }),
   });
   const current = useQuery({ queryKey: queryKeys.plans("current"), queryFn: getCurrentPlans });
+  const attendance = useQuery({
+    queryKey: queryKeys.attendance("current"),
+    queryFn: getCurrentAttendance,
+  });
+  const visit = useVisitTap();
   // The API does the matching, across private and public together.
   const search = useQuery({
     queryKey: queryKeys.athletes("search", q),
@@ -74,6 +84,10 @@ export function HomePage() {
   useScrollMemory(rosterRef, ready);
 
   const plans = new Map<string, PlanSummary>((current.data ?? []).map((p) => [p.athlete_id, p]));
+  // Rows show no counter until it loads, rather than holding the whole list for it.
+  const counts = new Map<string, AttendanceCount>(
+    (attendance.data ?? []).map((c) => [c.athlete_id, c]),
+  );
   const columns = dayColumns((current.data ?? []).map((p) => p.day_labels));
   const all = athletes.data?.data ?? [];
   const ofType = (list: Athlete[], t: AthleteType) => list.filter((a) => a.athlete_type === t);
@@ -97,6 +111,15 @@ export function HomePage() {
           plan={plans.get(a.id) ?? null}
           columns={columns}
           highlight={highlight}
+          sessions={
+            counts.has(a.id)
+              ? {
+                  count: counts.get(a.id)!,
+                  onVisit: () => visit.tap(counts.get(a.id)!.plan_id),
+                  pending: visit.pending,
+                }
+              : undefined
+          }
         />
       </SwipeRow>
     ));
@@ -207,6 +230,7 @@ export function HomePage() {
         />
       )}
       {body}
+      {visit.toast}
       <SignOutSheet open={account.open} onClose={account.close} />
       {deleting && (
         <DeleteAthleteSheet
@@ -219,4 +243,38 @@ export function HomePage() {
       )}
     </>
   );
+}
+
+const msgVisitAdded = "حضور امروز ثبت شد.";
+
+// One tap records today's visit, with an undo in the toast; the 12th says the sessions are used.
+function useVisitTap() {
+  const queryClient = useQueryClient();
+  const { toast, show } = useToast();
+  const refresh = () => queryClient.invalidateQueries({ queryKey: queryKeys.attendance() });
+  const showError = (err: Error) =>
+    show((err instanceof ApiError && err.fields.date) || err.message);
+
+  const undo = useMutation({
+    mutationFn: ({ planId, date }: { planId: string; date: string }) => deleteVisit(planId, date),
+    onSettled: refresh,
+    onError: showError,
+  });
+  const add = useMutation({
+    mutationFn: ({ planId, date }: { planId: string; date: string }) => addVisit(planId, date),
+    onSuccess: (a, vars) => {
+      const text = sessionsUsed(a.dates.length, a.sessions)
+        ? `${toPersianDigits(a.sessions)} جلسه تمام شد.`
+        : msgVisitAdded;
+      show(text, { label: "برگرداندن", onClick: () => undo.mutate(vars) });
+    },
+    onSettled: refresh,
+    onError: showError,
+  });
+
+  return {
+    toast,
+    pending: add.isPending || undo.isPending,
+    tap: (planId: string) => add.mutate({ planId, date: todayISO() }),
+  };
 }

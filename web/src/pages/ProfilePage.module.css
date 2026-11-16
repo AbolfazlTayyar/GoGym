@@ -197,3 +197,9 @@
   height: 14px;
   flex: none;
 }
+
+/* The current plan's 12 sessions are used: the athlete owes the next payment. */
+.done {
+  background: var(--blush2);
+  color: var(--pinkText);
+}

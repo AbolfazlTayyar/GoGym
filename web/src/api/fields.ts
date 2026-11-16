@@ -22,6 +22,8 @@ const rules: [RegExp, (m: RegExpMatchArray) => string][] = [
   [/^must be an integer$/, () => "باید عدد صحیح باشد."],
   [/^not found$/, () => msgNotFound],
   [/^is already used/, () => "تکراری است."],
+  [/^is already recorded$/, () => "این روز قبلاً ثبت شده است."],
+  [/^all (\d+) sessions are recorded$/, (m) => `هر ${toPersianDigits(m[1])} جلسه ثبت شده است.`],
 ];
 
 export function translateFieldMessage(message: string): string {

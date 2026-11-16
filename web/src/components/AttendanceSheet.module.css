@@ -1,0 +1,55 @@
+/* No board has it: the visit dates as numbered rows, in the history list's style. */
+.list {
+  margin-bottom: 16px;
+  padding: 0 16px;
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: var(--soft);
+  /* A swiped row slides under the list's edge instead of past it. */
+  overflow: clip;
+}
+
+/* The line sits on the swipe row, not the content that slides, so it stays put under a swipe. */
+.vrow + .vrow {
+  border-top: 1px solid var(--line);
+}
+
+/* White, so the delete button behind it doesn't show through. */
+.visit {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 52px;
+  background: #fff;
+}
+
+.n {
+  width: 22px;
+  font: 800 13px var(--vazir);
+  color: var(--pinkText);
+}
+
+.date {
+  flex: 1;
+  font-size: 14.5px;
+  font-weight: 600;
+}
+
+.add {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.note,
+.done {
+  margin-bottom: 16px;
+  text-align: center;
+  font-size: 13.5px;
+  color: var(--dim);
+}
+
+.done {
+  font-weight: 700;
+  color: var(--pinkText);
+}

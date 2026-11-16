@@ -8,14 +8,15 @@ const dragThreshold = 8;
 type SwipeRowProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onEdit: () => void;
+  // Left out for a row that can only be deleted.
+  onEdit?: () => void;
   onDelete: () => void;
   className?: string;
   children: ReactNode;
 };
 
-// A row that slides left under the finger, as in iOS Messages, to show edit and delete behind its right
-// edge. The app is RTL, so that edge is inline-start.
+// A row that slides left under the finger, as in iOS Messages, to show delete (and edit, when given) behind
+// its right edge. The app is RTL, so that edge is inline-start.
 export function SwipeRow({
   open,
   onOpenChange,
@@ -101,10 +102,12 @@ export function SwipeRow({
           <TrashIcon />
           حذف
         </button>
-        <button type="button" className={`${s.act} ${s.edit}`} onClick={onEdit}>
-          <EditIcon />
-          ویرایش
-        </button>
+        {onEdit && (
+          <button type="button" className={`${s.act} ${s.edit}`} onClick={onEdit}>
+            <EditIcon />
+            ویرایش
+          </button>
+        )}
       </div>
       <div
         className={drag === null ? s.content : `${s.content} ${s.dragging}`}

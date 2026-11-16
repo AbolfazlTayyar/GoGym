@@ -144,3 +144,19 @@ export type SharedPlan = {
   athlete: { first_name: string; last_name: string } | null;
   plan: { title: string; note: string | null; start_date: string; days: Day[] } | null;
 };
+
+// A plan's session tracking (internal/membership): visits oldest first, sessions is what the payment covers.
+export type Attendance = {
+  tracked: boolean;
+  sessions: number;
+  dates: string[];
+};
+
+// A tracked current plan's progress, matched to the home rows by athlete_id.
+export type AttendanceCount = {
+  plan_id: string;
+  athlete_id: string;
+  visits: number;
+  sessions: number;
+  last_date: string | null;
+};

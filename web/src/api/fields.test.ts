@@ -14,6 +14,8 @@ describe("translateFieldMessage", () => {
     ],
     ["at least one movement is required", "دست‌کم یک حرکت لازم است."],
     ["must have at most 10 items", "حداکثر ۱۰ مورد."],
+    ["is already recorded", "این روز قبلاً ثبت شده است."],
+    ["all 12 sessions are recorded", "هر ۱۲ جلسه ثبت شده است."],
     ["something new", "مقدار درست نیست."],
   ])("%s", (english, persian) => {
     expect(translateFieldMessage(english)).toBe(persian);

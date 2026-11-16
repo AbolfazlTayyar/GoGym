@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
-import { afterEach, describe, expect, it } from "vitest";
-import type { Athlete, PlanSummary } from "../api/types";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import type { Athlete, AttendanceCount, PlanSummary } from "../api/types";
+import { todayISO } from "../lib/jalali";
 import { AthleteRow } from "./AthleteRow";
 
 const athlete: Athlete = {
@@ -65,5 +66,52 @@ describe("AthleteRow", () => {
     const cells = container.querySelector('[data-testid="empty-day"]')!.parentElement!.children;
     expect(cells[4].getAttribute("data-testid")).toBe("empty-day");
     expect(screen.queryByText("بدون برنامه")).toBeNull();
+  });
+
+  describe("sessions", () => {
+    const count = (visits: number, lastDate: string | null): AttendanceCount => ({
+      plan_id: "p1",
+      athlete_id: "a1",
+      visits,
+      sessions: 12,
+      last_date: lastDate,
+    });
+
+    function renderSessions(c: AttendanceCount, onVisit = () => {}) {
+      return render(
+        <MemoryRouter>
+          <AthleteRow
+            athlete={athlete}
+            plan={plan(["A", "B"])}
+            columns={5}
+            sessions={{ count: c, onVisit, pending: false }}
+          />
+        </MemoryRouter>,
+      );
+    }
+
+    it("records today's visit with one tap", () => {
+      const onVisit = vi.fn();
+      renderSessions(count(7, "2026-01-01"), onVisit);
+
+      fireEvent.click(screen.getByRole("button", { name: /ثبت حضور امروز/ }));
+
+      expect(onVisit).toHaveBeenCalledOnce();
+      expect(screen.getByText("+ ۷ از ۱۲")).toBeTruthy();
+    });
+
+    it("offers no tap once today is recorded", () => {
+      renderSessions(count(7, todayISO()));
+
+      expect(screen.queryByRole("button")).toBeNull();
+      expect(screen.getByText("✓ ۷ از ۱۲")).toBeTruthy();
+    });
+
+    it("says the sessions are used after the 12th", () => {
+      renderSessions(count(12, todayISO()));
+
+      expect(screen.queryByRole("button")).toBeNull();
+      expect(screen.getByText("تمام شد")).toBeTruthy();
+    });
   });
 });

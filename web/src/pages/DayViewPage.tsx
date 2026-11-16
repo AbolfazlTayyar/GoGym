@@ -2,17 +2,21 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router";
 import { getAthlete } from "../api/athletes";
+import { getAttendance } from "../api/attendance";
 import { ApiError } from "../api/client";
 import { queryKeys } from "../api/keys";
 import { getPlan, sharePlan } from "../api/plans";
+import { AttendanceSheet } from "../components/AttendanceSheet";
 import { BigButton } from "../components/BigButton";
 import { BlockLine, DayHeading } from "../components/BlockLine";
 import { DayPills } from "../components/DayPills";
 import { EmptyState } from "../components/EmptyState";
 import { Header, HeaderTitle, RoundButton } from "../components/Header";
-import { BackIcon, EditIcon, LinkIcon, UserIcon } from "../components/icons";
+import { BackIcon, ChevLIcon, EditIcon, LinkIcon, UserIcon } from "../components/icons";
 import { Screen } from "../components/Screen";
 import { useToast } from "../components/Toast";
+import { useSheet } from "../components/useSheet";
+import { msgSessionsDone, sessionsUsed, visitCountText } from "../lib/attendance";
 import { copyPendingText } from "../lib/clipboard";
 import { formatJalali } from "../lib/jalali";
 import { paths } from "../lib/paths";
@@ -33,6 +37,11 @@ export function DayViewPage() {
     queryKey: queryKeys.plans("detail", planId),
     queryFn: () => getPlan(planId),
   });
+  const attendance = useQuery({
+    queryKey: queryKeys.attendance("plan", planId),
+    queryFn: () => getAttendance(planId),
+  });
+  const attendanceSheet = useSheet("attendance");
   const athleteId = plan.data?.athlete_id ?? "";
   const athlete = useQuery({
     queryKey: queryKeys.athletes("detail", athleteId),
@@ -117,6 +126,17 @@ export function DayViewPage() {
         // Replace, not push: back leaves the plan in one step, whichever days were looked at.
         onSelect={(label) => setParams({ [dayParam]: label }, { replace: true })}
       />
+      {attendance.data?.tracked && (
+        <button type="button" className={s.att} onClick={attendanceSheet.show}>
+          <span>حضور</span>
+          {sessionsUsed(attendance.data.dates.length, attendance.data.sessions) ? (
+            <b className={s.done}>{msgSessionsDone}</b>
+          ) : (
+            <b>{visitCountText(attendance.data.dates.length, attendance.data.sessions)} جلسه</b>
+          )}
+          <ChevLIcon />
+        </button>
+      )}
       <div className={s.sheet}>
         {plan.isPending ? (
           <p className={s.note}>در حال بارگذاری…</p>
@@ -145,6 +165,14 @@ export function DayViewPage() {
         )}
       </div>
       {toast}
+      {attendance.data?.tracked && (
+        <AttendanceSheet
+          open={attendanceSheet.open}
+          onClose={attendanceSheet.close}
+          planId={planId}
+          attendance={attendance.data}
+        />
+      )}
     </Screen>
   );
 }
