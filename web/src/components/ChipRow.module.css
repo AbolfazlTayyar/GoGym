@@ -42,9 +42,14 @@
   margin: -12px -18px -28px;
 }
 
+/* Rose on the page, which is petal itself, like the builder's "+" day; the board's petal on a white sheet. */
 .chiprow .new {
   background: none;
   box-shadow: none;
-  border: 1.5px dashed var(--petal);
+  border: 1.5px dashed color-mix(in srgb, var(--rose) 60%, transparent);
   color: var(--pinkText);
+}
+
+.inline .new {
+  border-color: var(--petal);
 }

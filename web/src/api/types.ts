@@ -57,6 +57,10 @@ export type Movement = {
   updated_at: string;
 };
 
+export type MovementCategory = {
+  name: string;
+};
+
 export type PlanSummary = {
   id: string;
   athlete_id: string;

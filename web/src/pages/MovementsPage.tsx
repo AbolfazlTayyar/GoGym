@@ -4,6 +4,7 @@ import { queryKeys } from "../api/keys";
 import { listMovements } from "../api/movements";
 import type { Movement } from "../api/types";
 import { BigButton } from "../components/BigButton";
+import { CategoriesSheet } from "../components/CategoriesSheet";
 import { ChipRow } from "../components/ChipRow";
 import { EmptyState } from "../components/EmptyState";
 import { Header, HeaderTitle, RoundButton } from "../components/Header";
@@ -26,6 +27,7 @@ export function MovementsPage() {
   const q = useDebouncedValue(text.trim(), searchDebounceMs);
   const [category, setCategory] = useState(allCategories);
   const sheet = useSheet("movement");
+  const categoriesSheet = useSheet("categories");
   const [selected, setSelected] = useState<Movement | null>(null);
   // Not MovementSheet's own "delete-movement", or its delete button would open this sheet as well.
   const deleteSheet = useSheet("delete-swiped-movement");
@@ -51,8 +53,10 @@ export function MovementsPage() {
   const categories = [...new Set(all.flatMap((m) => (m.category ? [m.category] : [])))].sort(
     (a, b) => a.localeCompare(b, "fa"),
   );
+  // A chosen category that was just renamed or deleted falls back to همه rather than an empty list.
+  const chosen = categories.includes(category) ? category : allCategories;
   const shown = (movements.data ?? []).filter(
-    (m) => category === allCategories || m.category === category,
+    (m) => chosen === allCategories || m.category === chosen,
   );
 
   const open = (m: Movement | null) => {
@@ -143,8 +147,13 @@ export function MovementsPage() {
             { value: allCategories, label: `همه ${toPersianDigits(all.length)}` },
             ...categories.map((c) => ({ value: c, label: c })),
           ]}
-          value={category}
+          value={chosen}
           onChange={setCategory}
+          trailing={
+            categories.length > 0
+              ? { label: "ویرایش دسته‌ها", onClick: categoriesSheet.show }
+              : undefined
+          }
         />
       </div>
       {library.isSuccess && all.length === 0 ? (
@@ -159,6 +168,11 @@ export function MovementsPage() {
         onClose={sheet.close}
         movement={selected}
         categories={categories}
+      />
+      <CategoriesSheet
+        open={categoriesSheet.open}
+        onClose={categoriesSheet.close}
+        movements={all}
       />
       {deleting && (
         <DeleteMovementSheet

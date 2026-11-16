@@ -6,6 +6,7 @@ import { ErrorCode } from "../api/codes";
 import { queryKeys } from "../api/keys";
 import { createMovement, deleteMovement, updateMovement } from "../api/movements";
 import type { Movement } from "../api/types";
+import { normalizeCategory } from "../lib/category";
 import { focusNextOnEnter } from "../lib/focusNext";
 import { BigButton } from "./BigButton";
 import { BottomSheet } from "./BottomSheet";
@@ -58,7 +59,7 @@ function MovementForm({
     mutationFn: () => {
       const input = {
         name: name.trim(),
-        category: (newCategory ?? category)?.trim() || null,
+        category: normalizeCategory(newCategory ?? category ?? "") || null,
         description: description.trim() || null,
       };
       return movement ? updateMovement(movement.id, input) : createMovement(input);
