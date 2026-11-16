@@ -8,6 +8,7 @@ import (
 	"github.com/AbolfazlTayyar/gogym/internal/athlete"
 	"github.com/AbolfazlTayyar/gogym/internal/coach"
 	"github.com/AbolfazlTayyar/gogym/internal/measurement"
+	"github.com/AbolfazlTayyar/gogym/internal/membership"
 	"github.com/AbolfazlTayyar/gogym/internal/movement"
 	"github.com/AbolfazlTayyar/gogym/internal/plan"
 	"github.com/AbolfazlTayyar/gogym/internal/platform/config"
@@ -72,6 +73,9 @@ func New(cfg config.Config, gormDB *gorm.DB, log zerolog.Logger) (*gin.Engine, e
 	planRepo := plan.NewRepository(gormDB)
 	planSvc := plan.NewService(planRepo, athleteSvc, movementSvc, coachSvc)
 	plan.RegisterRoutes(v1, protected, plan.NewHandler(planSvc))
+
+	membershipSvc := membership.NewService(membership.NewRepository(gormDB), planSvc)
+	membership.RegisterRoutes(protected, membership.NewHandler(membershipSvc))
 
 	return router, nil
 }

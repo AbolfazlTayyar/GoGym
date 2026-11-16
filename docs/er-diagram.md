@@ -18,6 +18,8 @@ erDiagram
     DAY ||--o{ BLOCK : contains
     BLOCK ||--o{ BLOCK_MOVEMENT : contains
     MOVEMENT ||--o{ BLOCK_MOVEMENT : "used in"
+    PLAN ||--o| SESSION_PLAN : "tracked as"
+    SESSION_PLAN ||--o{ ATTENDANCE : records
 
     COACH {
         uuid id PK
@@ -101,6 +103,17 @@ erDiagram
         timestamptz created_at
     }
 
+    SESSION_PLAN {
+        uuid plan_id PK "FK to plan"
+        timestamptz created_at
+    }
+
+    ATTENDANCE {
+        uuid plan_id PK "FK to session_plan"
+        date date PK
+        timestamptz created_at
+    }
+
     MOVEMENT {
         uuid id PK
         uuid coach_id FK "nullable — NULL = system-seeded"
@@ -130,3 +143,4 @@ erDiagram
 - **`Plan.source_plan_id` (migration `000006`) records which plan a copy was made from:** `POST /plans` with a `source_plan_id` copies that plan's days, blocks and block movements, and the builder's header names the source. It can point at another athlete's plan of the same coach. `ON DELETE SET NULL`, so deleting the source leaves the copy standing with no source. `Plan` itself is hard-deleted (`DELETE /plans/:id`), its days, blocks and block movements going with it through the cascades.
 - **`Plan.share_token` and `share_expires_at` (migration `000008`) are the plan's one share link:** `POST /plans/:id/share` sets a new random token and an expiry 30 days out, so the previous link stops working; `GET /public/plans/:token` reads the plan without login. They live on `plan`, not in a table of their own, because a plan has at most one live link. A `CHECK` keeps them both set or both null — see [ADR 0035](adr/0035-plan-share-links.md).
 - **A plan has at most 7 days (migration `000004`):** `day` has `UNIQUE (plan_id, order_index)` and `CHECK (order_index BETWEEN 0 AND 6)`, so a plan has seven slots and at most one day in each. The cap lives in the schema so concurrent inserts can't get around it — see [ADR 0017](adr/0017-plan-day-cap-in-schema.md).
+- **`session_plan` and `attendance` (migration `000009`) count the visits of athletes who pay per 12 sessions:** a `session_plan` row marks a plan as tracked, and each visit is an `attendance` row keyed `(plan_id, date)`, so one per day. `attendance` references `session_plan`, so turning tracking off deletes the visits, and both go with their plan. They live in their own module and tables, not on `plan`, so coaches who never track sessions see no change — see [ADR 0038](adr/0038-session-attendance-opt-in-table.md).

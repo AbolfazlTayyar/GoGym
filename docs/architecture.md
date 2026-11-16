@@ -8,7 +8,7 @@ this doc.
 
 ```
 internal/
-  athlete/ coach/ measurement/ movement/ plan/   feature modules
+  athlete/ coach/ measurement/ membership/ movement/ plan/   feature modules
   server/                                         wires the features together
   platform/                                       shared infrastructure
     config/ db/ httpx/ search/ tenant/ testutil/ validate/

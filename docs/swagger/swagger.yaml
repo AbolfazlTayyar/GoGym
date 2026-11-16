@@ -306,6 +306,48 @@ definitions:
         example: 72.5
         type: number
     type: object
+  internal_membership.attendanceResponse:
+    properties:
+      dates:
+        example:
+        - "2026-11-01"
+        - "2026-11-03"
+        items:
+          type: string
+        type: array
+      sessions:
+        description: Sessions is how many visits the plan's payment covers, so the
+          client never hard-codes it.
+        example: 12
+        type: integer
+      tracked:
+        example: true
+        type: boolean
+    type: object
+  internal_membership.currentResponse:
+    properties:
+      athlete_id:
+        example: 3f0b1c6e-2a1d-4f7b-9c3e-6d5a4b3c2d1e
+        type: string
+      last_date:
+        example: "2026-11-14"
+        type: string
+      plan_id:
+        example: 7c9e6679-7425-40de-944b-e07fc1f90ae7
+        type: string
+      sessions:
+        example: 12
+        type: integer
+      visits:
+        example: 7
+        type: integer
+    type: object
+  internal_membership.visitRequest:
+    properties:
+      date:
+        example: "2026-11-16"
+        type: string
+    type: object
   internal_movement.categoryRequest:
     properties:
       name:
@@ -1095,6 +1137,38 @@ paths:
       summary: List an athlete's plans
       tags:
       - plans
+  /api/v1/attendance/current:
+    get:
+      description: One row per athlete whose current plan is tracked session by session;
+        athletes without one are left out. The home rows match them by athlete_id.
+        last_date is null before the first visit.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.SuccessEnvelope'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/internal_membership.currentResponse'
+                  type: array
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.UnauthorizedEnvelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.InternalErrorEnvelope'
+      security:
+      - BearerAuth: []
+      summary: List current attendance
+      tags:
+      - attendance
   /api/v1/auth/login:
     post:
       consumes:
@@ -1974,6 +2048,226 @@ paths:
       summary: Update a plan
       tags:
       - plans
+  /api/v1/plans/{id}/attendance:
+    delete:
+      description: Turns tracking off and permanently deletes the plan's recorded
+        visits. Stopping an untracked plan does nothing.
+      parameters:
+      - description: Plan ID
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.SuccessEnvelope'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_membership.attendanceResponse'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.UnauthorizedEnvelope'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.NotFoundEnvelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.InternalErrorEnvelope'
+      security:
+      - BearerAuth: []
+      summary: Stop tracking a plan's sessions
+      tags:
+      - attendance
+    get:
+      description: Says whether the plan is tracked session by session and lists its
+        visit dates, oldest first. An untracked plan answers tracked false with no
+        dates. A plan whose athlete belongs to another coach is reported as not found.
+      parameters:
+      - description: Plan ID
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.SuccessEnvelope'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_membership.attendanceResponse'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.UnauthorizedEnvelope'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.NotFoundEnvelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.InternalErrorEnvelope'
+      security:
+      - BearerAuth: []
+      summary: Get a plan's attendance
+      tags:
+      - attendance
+    put:
+      description: Marks the plan as paid per session, so its visits can be recorded.
+        Tracking a plan that is already tracked keeps its visits.
+      parameters:
+      - description: Plan ID
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.SuccessEnvelope'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_membership.attendanceResponse'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.UnauthorizedEnvelope'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.NotFoundEnvelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.InternalErrorEnvelope'
+      security:
+      - BearerAuth: []
+      summary: Track a plan's sessions
+      tags:
+      - attendance
+  /api/v1/plans/{id}/attendance/visits:
+    post:
+      consumes:
+      - application/json
+      description: Adds a visit to a tracked plan. date is required (YYYY-MM-DD),
+        no earlier than the plan's start date and no later than tomorrow in UTC, since
+        the phone's today can run ahead of the server's. A date already recorded,
+        or a visit past the plan's sessions, is a validation error on date. An untracked
+        plan is reported as not found.
+      parameters:
+      - description: Plan ID
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Visit date
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_membership.visitRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.SuccessEnvelope'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_membership.attendanceResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.ValidationErrorEnvelope'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.UnauthorizedEnvelope'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.NotFoundEnvelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.InternalErrorEnvelope'
+      security:
+      - BearerAuth: []
+      summary: Record a visit
+      tags:
+      - attendance
+  /api/v1/plans/{id}/attendance/visits/{date}:
+    delete:
+      description: Removes the plan's visit on a date (YYYY-MM-DD) and returns what
+        is left. A date with no visit is reported as not found.
+      parameters:
+      - description: Plan ID
+        format: uuid
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Visit date
+        format: date
+        in: path
+        name: date
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.SuccessEnvelope'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_membership.attendanceResponse'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.UnauthorizedEnvelope'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.NotFoundEnvelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.InternalErrorEnvelope'
+      security:
+      - BearerAuth: []
+      summary: Delete a visit
+      tags:
+      - attendance
   /api/v1/plans/{id}/days:
     post:
       consumes:
