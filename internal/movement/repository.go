@@ -97,3 +97,37 @@ func (r *Repository) Delete(ctx context.Context, coachID, id uuid.UUID) error {
 	}
 	return nil
 }
+
+// CategoryIsUniversal reports whether a universal movement is filed under category.
+func (r *Repository) CategoryIsUniversal(ctx context.Context, coachID uuid.UUID, category string) (bool, error) {
+	var movements []Movement
+	if err := tenant.ScopeWithUniversal(r.db.WithContext(ctx), coachID).
+		Select("coach_id").
+		Where("category = ?", category).
+		Find(&movements).Error; err != nil {
+		return false, fmt.Errorf("movement: failed to find by category: %w", err)
+	}
+
+	for i := range movements {
+		if movements[i].IsUniversal() {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+// SetCategory refiles every one of the coach's movements under category from as to, or clears it when
+// to is nil. Soft-deleted movements follow too, since plans that use them still show their category.
+func (r *Repository) SetCategory(ctx context.Context, coachID uuid.UUID, from string, to *string) error {
+	result := tenant.Scope(r.db.WithContext(ctx).Unscoped(), coachID).
+		Model(&Movement{}).
+		Where("category = ?", from).
+		Update("category", to)
+	if result.Error != nil {
+		return fmt.Errorf("movement: failed to set category: %w", result.Error)
+	}
+	if result.RowsAffected == 0 {
+		return ErrNotFound
+	}
+	return nil
+}

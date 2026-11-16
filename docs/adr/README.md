@@ -41,3 +41,4 @@ One file per decision, [MADR](https://adr.github.io/madr/)-style. Process rules 
 | [0034](0034-load-in-kg.md) | Prescribed load is a weight in kg | 2026-11-10 | accepted |
 | [0035](0035-plan-share-links.md) | A plan is shared through one stored, expiring token | 2026-11-14 | accepted |
 | [0036](0036-plan-pdf-rendered-in-browser.md) | The plan PDF is an image of the page, made in the browser | 2026-11-14 | accepted |
+| [0037](0037-movement-category-stays-text.md) | A movement category stays a normalised name, not a table | 2026-11-16 | accepted |

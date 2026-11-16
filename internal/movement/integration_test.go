@@ -425,3 +425,112 @@ func insertPlanUsing(t *testing.T, db *gorm.DB, coachID, movementID uuid.UUID) u
 
 	return p.ID
 }
+
+const categoriesPath = "/api/v1/movement-categories/"
+
+const seededStrength = "قدرتی"
+
+func categoryPath(name string) string {
+	return categoriesPath + url.PathEscape(name)
+}
+
+func TestRenameCategory(t *testing.T) {
+	router, db := newTestRouter(t)
+	c := createCoach(t, router, db, "09121000031")
+	other := createCoach(t, router, db, "09121000032")
+
+	squat := createMovement(t, router, c.token, `{"name":"Goblet squat","category":"پایین تنه"}`)
+	lunge := createMovement(t, router, c.token, `{"name":"Lunge","category":"پایین تنه"}`)
+	retired := createMovement(t, router, c.token, `{"name":"Step-up","category":"پایین تنه"}`)
+	decodeEnvelope(t, do(t, router, http.MethodDelete, movementsPath+"/"+retired.ID, c.token, ""), http.StatusOK)
+	untouched := createMovement(t, router, c.token, `{"name":"Plank","category":"مرکزی"}`)
+	othersSquat := createMovement(t, router, other.token, `{"name":"Air squat","category":"پایین تنه"}`)
+
+	t.Run("refiles every one of the coach's movements, deleted ones included", func(t *testing.T) {
+		env := decodeEnvelope(t, do(t, router, http.MethodPut, categoryPath("پایین تنه"), c.token, `{"name":" پایین‌تنه "}`),
+			http.StatusOK)
+
+		var out struct {
+			Name string `json:"name"`
+		}
+		require.NoError(t, json.Unmarshal(env.Data, &out))
+		assert.Equal(t, "پایین‌تنه", out.Name, "the stored name, normalised")
+
+		for _, m := range []movementResponse{squat, lunge, retired} {
+			assert.Equal(t, "پایین‌تنه", *findMovement(t, db, m.ID).Category, m.Name)
+		}
+		assert.Equal(t, "مرکزی", *findMovement(t, db, untouched.ID).Category)
+		assert.Equal(t, "پایین تنه", *findMovement(t, db, othersSquat.ID).Category, "another coach's movements stay")
+	})
+
+	t.Run("onto a name in use merges, matching an Arabic spelling", func(t *testing.T) {
+		decodeEnvelope(t, do(t, router, http.MethodPut, categoryPath("مرکزی"), c.token, `{"name":"پایین‌تنه"}`), http.StatusOK)
+		assert.Equal(t, "پایین‌تنه", *findMovement(t, db, untouched.ID).Category)
+
+		// The path is normalised too, so the Arabic spelling finds the Persian one.
+		decodeEnvelope(t, do(t, router, http.MethodPut, categoryPath("پايين‌تنه"), c.token, `{"name":"پا"}`), http.StatusOK)
+		assert.Equal(t, "پا", *findMovement(t, db, squat.ID).Category)
+	})
+
+	t.Run("onto a universal category is allowed", func(t *testing.T) {
+		decodeEnvelope(t, do(t, router, http.MethodPut, categoryPath("پا"), c.token, `{"name":"قدرتى"}`), http.StatusOK)
+		assert.Equal(t, seededStrength, *findMovement(t, db, squat.ID).Category)
+	})
+
+	t.Run("a name with a slash", func(t *testing.T) {
+		createMovement(t, router, c.token, `{"name":"Burpee","category":"هوازی/قدرتی"}`)
+		decodeEnvelope(t, do(t, router, http.MethodPut, categoryPath("هوازی/قدرتی"), c.token, `{"name":"ترکیبی"}`), http.StatusOK)
+	})
+
+	t.Run("validates the new name", func(t *testing.T) {
+		env := decodeEnvelope(t, do(t, router, http.MethodPut, categoryPath("ترکیبی"), c.token, `{"name":" ‌ "}`), http.StatusBadRequest)
+		require.NotNil(t, env.Error)
+		assert.Equal(t, httpx.MsgFieldRequired, env.Error.Fields["name"])
+
+		long := strings.Repeat("س", 51)
+		env = decodeEnvelope(t, do(t, router, http.MethodPut, categoryPath("ترکیبی"), c.token, fmt.Sprintf(`{"name":%q}`, long)), http.StatusBadRequest)
+		require.NotNil(t, env.Error)
+		assert.Contains(t, env.Error.Fields, "name")
+	})
+
+	t.Run("a universal category is read-only", func(t *testing.T) {
+		requireErrorCode(t, do(t, router, http.MethodPut, categoryPath(seededStrength), c.token, `{"name":"قدرت"}`),
+			http.StatusForbidden, httpx.CodeForbidden)
+		assert.Equal(t, seededStrength, *findMovement(t, db, squat.ID).Category)
+	})
+
+	t.Run("a category none of the coach's movements uses is not found", func(t *testing.T) {
+		requireErrorCode(t, do(t, router, http.MethodPut, categoryPath("ناموجود"), c.token, `{"name":"x"}`),
+			http.StatusNotFound, httpx.CodeNotFound)
+		requireErrorCode(t, do(t, router, http.MethodPut, categoryPath("پایین تنه"), c.token, `{"name":"x"}`),
+			http.StatusNotFound, httpx.CodeNotFound) // only another coach uses it
+	})
+}
+
+func TestDeleteCategory(t *testing.T) {
+	router, db := newTestRouter(t)
+	c := createCoach(t, router, db, "09121000033")
+
+	squat := createMovement(t, router, c.token, `{"name":"Goblet squat","category":"پا"}`)
+	plank := createMovement(t, router, c.token, `{"name":"Plank","category":"مرکزی"}`)
+	ownStrength := createMovement(t, router, c.token, `{"name":"Hip thrust","category":"قدرتی"}`)
+
+	t.Run("leaves its movements without a category", func(t *testing.T) {
+		env := decodeEnvelope(t, do(t, router, http.MethodDelete, categoryPath("پا"), c.token, ""), http.StatusOK)
+		assert.Equal(t, "null", string(env.Data))
+
+		stored := findMovement(t, db, squat.ID)
+		assert.Nil(t, stored.Category)
+		assert.False(t, stored.DeletedAt.Valid, "the movement stays")
+		assert.Equal(t, "مرکزی", *findMovement(t, db, plank.ID).Category)
+	})
+
+	t.Run("a deleted category is gone", func(t *testing.T) {
+		requireErrorCode(t, do(t, router, http.MethodDelete, categoryPath("پا"), c.token, ""), http.StatusNotFound, httpx.CodeNotFound)
+	})
+
+	t.Run("a universal category is read-only", func(t *testing.T) {
+		requireErrorCode(t, do(t, router, http.MethodDelete, categoryPath(seededStrength), c.token, ""), http.StatusForbidden, httpx.CodeForbidden)
+		assert.Equal(t, seededStrength, *findMovement(t, db, ownStrength.ID).Category)
+	})
+}

@@ -3,6 +3,7 @@ package movement
 import (
 	"errors"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/AbolfazlTayyar/gogym/internal/platform/httpx"
@@ -11,11 +12,15 @@ import (
 )
 
 const (
-	paramID    = "id"
-	paramQuery = "q"
+	paramID       = "id"
+	paramQuery    = "q"
+	paramCategory = "name"
 )
 
-const msgUniversalReadOnly = "universal movements can't be edited or deleted"
+const (
+	msgUniversalReadOnly         = "universal movements can't be edited or deleted"
+	msgUniversalCategoryReadOnly = "categories of universal movements can't be renamed or deleted"
+)
 
 // movementResponse's coach_id is null for a universal movement, which is how a client knows it's read-only.
 type movementResponse struct {
@@ -224,10 +229,97 @@ func writeServiceError(c *gin.Context, err error) {
 		return
 	}
 
+	if errors.Is(err, ErrUniversalCategory) {
+		httpx.Error(c, http.StatusForbidden, httpx.CodeForbidden, msgUniversalCategoryReadOnly)
+		return
+	}
+
 	if errors.Is(err, ErrNotFound) {
 		httpx.Error(c, http.StatusNotFound, httpx.CodeNotFound, httpx.MsgNotFound)
 		return
 	}
 
 	httpx.InternalError(c, err)
+}
+
+type categoryRequest struct {
+	Name string `json:"name" example:"قدرتی"`
+}
+
+// categoryResponse's name is the category as stored, after normalisation.
+type categoryResponse struct {
+	Name string `json:"name" example:"قدرتی"`
+}
+
+// RenameCategory refiles every one of the coach's movements under a new category name.
+//
+//	@Summary		Rename a movement category
+//	@Description	Renames a category on every one of the authenticated coach's movements, deleted ones included, so plans that still show them follow. Renaming onto a name already in use merges the two. Both names are normalised first: Arabic ي, ى and ك become Persian ی and ک, runs of spaces collapse, and spaces and ZWNJs at the ends are removed. name is required (at most 50 characters). A category a universal movement uses is a 403; one none of the coach's movements uses is a 404.
+//	@Tags			movements
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			name	path		string			true	"Current category name, URL-encoded"
+//	@Param			request	body		categoryRequest	true	"New name"
+//	@Success		200		{object}	httpx.SuccessEnvelope{data=categoryResponse}
+//	@Failure		400		{object}	httpx.ValidationErrorEnvelope
+//	@Failure		401		{object}	httpx.UnauthorizedEnvelope
+//	@Failure		403		{object}	httpx.ForbiddenEnvelope
+//	@Failure		404		{object}	httpx.NotFoundEnvelope
+//	@Failure		500		{object}	httpx.InternalErrorEnvelope
+//	@Router			/api/v1/movement-categories/{name} [put]
+func (h *Handler) RenameCategory(c *gin.Context) {
+	coachID, ok := tenant.CoachIDFromContext(c)
+	if !ok {
+		httpx.Error(c, http.StatusUnauthorized, httpx.CodeUnauthorized, httpx.MsgUnauthorized)
+		return
+	}
+
+	var req categoryRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		httpx.ErrorFields(c, http.StatusBadRequest, httpx.CodeValidationFailed, httpx.MsgInvalidRequest, httpx.ValidationFields(err))
+		return
+	}
+
+	name, err := h.svc.RenameCategory(c.Request.Context(), coachID, categoryParam(c), req.Name)
+	if err != nil {
+		writeServiceError(c, err)
+		return
+	}
+
+	httpx.OK(c, categoryResponse{Name: name})
+}
+
+// DeleteCategory leaves every one of the coach's movements in a category without one.
+//
+//	@Summary		Delete a movement category
+//	@Description	Clears a category from every one of the authenticated coach's movements, deleted ones included; the movements stay. data is null on success. The name is normalised as in rename. A category a universal movement uses is a 403; one none of the coach's movements uses is a 404.
+//	@Tags			movements
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			name	path		string	true	"Category name, URL-encoded"
+//	@Success		200		{object}	httpx.NoContentEnvelope
+//	@Failure		401		{object}	httpx.UnauthorizedEnvelope
+//	@Failure		403		{object}	httpx.ForbiddenEnvelope
+//	@Failure		404		{object}	httpx.NotFoundEnvelope
+//	@Failure		500		{object}	httpx.InternalErrorEnvelope
+//	@Router			/api/v1/movement-categories/{name} [delete]
+func (h *Handler) DeleteCategory(c *gin.Context) {
+	coachID, ok := tenant.CoachIDFromContext(c)
+	if !ok {
+		httpx.Error(c, http.StatusUnauthorized, httpx.CodeUnauthorized, httpx.MsgUnauthorized)
+		return
+	}
+
+	if err := h.svc.DeleteCategory(c.Request.Context(), coachID, categoryParam(c)); err != nil {
+		writeServiceError(c, err)
+		return
+	}
+
+	httpx.NoContent(c)
+}
+
+// categoryParam drops the leading "/" a catch-all param keeps.
+func categoryParam(c *gin.Context) string {
+	return strings.TrimPrefix(c.Param(paramCategory), "/")
 }

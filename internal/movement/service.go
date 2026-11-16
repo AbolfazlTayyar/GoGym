@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"unicode"
 	"unicode/utf8"
 
 	"github.com/AbolfazlTayyar/gogym/internal/platform/httpx"
@@ -20,6 +21,16 @@ const (
 
 // ErrUniversal is for a movement the coach can see but not change; one they can't see is ErrNotFound.
 var ErrUniversal = errors.New("movement: universal movements are read-only")
+
+// ErrUniversalCategory is for a category a universal movement is filed under: renaming or clearing it
+// would change only the coach's own movements and split the category in two.
+var ErrUniversalCategory = errors.New("movement: universal categories are read-only")
+
+// Arabic keyboards type ي, ى and ك where Persian has ی and ک, so the same word typed on each would
+// otherwise be two categories that look alike.
+var arabicLetters = strings.NewReplacer("ي", "ی", "ى", "ی", "ك", "ک")
+
+const zwnj = '‌'
 
 // ValidationError's Fields are keyed by the json names the client sent.
 type ValidationError struct {
@@ -101,6 +112,52 @@ func (s *Service) Delete(ctx context.Context, coachID, id uuid.UUID) error {
 	return s.repo.Delete(ctx, coachID, id)
 }
 
+// RenameCategory refiles every one of the coach's movements under from as newName and returns the name
+// as stored. Renaming onto a category already in use merges the two, which is how a duplicate goes.
+func (s *Service) RenameCategory(ctx context.Context, coachID uuid.UUID, from, newName string) (string, error) {
+	from = normalizeCategory(from)
+	if err := s.ownedCategory(ctx, coachID, from); err != nil {
+		return "", err
+	}
+
+	fields := make(map[string]string)
+	to := requiredText(fields, "name", normalizeCategory(newName), maxCategoryLength)
+	if len(fields) > 0 {
+		return "", &ValidationError{Fields: fields}
+	}
+
+	if err := s.repo.SetCategory(ctx, coachID, from, &to); err != nil {
+		return "", err
+	}
+
+	return to, nil
+}
+
+// DeleteCategory leaves every one of the coach's movements filed under name without a category.
+func (s *Service) DeleteCategory(ctx context.Context, coachID uuid.UUID, name string) error {
+	name = normalizeCategory(name)
+	if err := s.ownedCategory(ctx, coachID, name); err != nil {
+		return err
+	}
+
+	return s.repo.SetCategory(ctx, coachID, name, nil)
+}
+
+// ownedCategory only rules out a universal category; SetCategory reports ErrNotFound when none of the
+// coach's movements uses the name.
+func (s *Service) ownedCategory(ctx context.Context, coachID uuid.UUID, name string) error {
+	universal, err := s.repo.CategoryIsUniversal(ctx, coachID, name)
+	if err != nil {
+		return err
+	}
+
+	if universal {
+		return ErrUniversalCategory
+	}
+
+	return nil
+}
+
 // owned answers a universal movement with ErrUniversal: the coach already sees it in their list, so
 // saying it exists leaks nothing, unlike for another coach's movement.
 func (s *Service) owned(ctx context.Context, coachID, id uuid.UUID) (*Movement, error) {
@@ -122,7 +179,7 @@ func applyInput(m *Movement, input Input) error {
 	fields := make(map[string]string)
 
 	name := requiredText(fields, "name", input.Name, maxNameLength)
-	category := boundedText(fields, "category", optionalText(input.Category), maxCategoryLength)
+	category := boundedText(fields, "category", optionalCategory(input.Category), maxCategoryLength)
 	description := boundedText(fields, "description", optionalText(input.Description), maxDescriptionLength)
 
 	if len(fields) > 0 {
@@ -159,6 +216,22 @@ func optionalText(value *string) *string {
 	}
 
 	return &trimmed
+}
+
+// normalizeCategory makes spellings that look alike one category: Arabic letters become Persian, runs
+// of spaces collapse to one, and spaces and ZWNJs at either end go.
+func normalizeCategory(value string) string {
+	collapsed := strings.Join(strings.Fields(arabicLetters.Replace(value)), " ")
+	return strings.TrimFunc(collapsed, func(r rune) bool { return unicode.IsSpace(r) || r == zwnj })
+}
+
+func optionalCategory(value *string) *string {
+	if value == nil {
+		return nil
+	}
+
+	normalized := normalizeCategory(*value)
+	return optionalText(&normalized)
 }
 
 func boundedText(fields map[string]string, name string, value *string, maxLength int) *string {

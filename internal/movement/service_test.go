@@ -89,3 +89,30 @@ func TestApplyInput_NeverSetsOwner(t *testing.T) {
 
 	assert.Equal(t, &coachID, m.CoachID)
 }
+
+func TestNormalizeCategory(t *testing.T) {
+	tests := map[string]struct {
+		in, want string
+	}{
+		"Arabic yeh and kaf become Persian": {in: "کششي كشى", want: "کششی کشی"},
+		"runs of spaces collapse":           {in: "  گرم   کردن ", want: "گرم کردن"},
+		"ZWNJs at the ends go":              {in: "‌قدرتی ‌", want: "قدرتی"},
+		"a ZWNJ inside a word stays":        {in: "بالا‌تنه", want: "بالا‌تنه"},
+		"blank stays blank":                 {in: " ‌ ", want: ""},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			assert.Equal(t, tt.want, normalizeCategory(tt.in))
+		})
+	}
+}
+
+func TestApplyInput_NormalizesCategory(t *testing.T) {
+	var m Movement
+	require.NoError(t, applyInput(&m, Input{Name: "Back squat", Category: strptr(" قدرتى ")}))
+	assert.Equal(t, strptr("قدرتی"), m.Category)
+
+	require.NoError(t, applyInput(&m, Input{Name: "Back squat", Category: strptr("‌")}))
+	assert.Nil(t, m.Category, "a category that normalises to nothing is no category")
+}

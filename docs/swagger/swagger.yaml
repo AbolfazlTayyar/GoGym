@@ -306,6 +306,18 @@ definitions:
         example: 72.5
         type: number
     type: object
+  internal_movement.categoryRequest:
+    properties:
+      name:
+        example: قدرتی
+        type: string
+    type: object
+  internal_movement.categoryResponse:
+    properties:
+      name:
+        example: قدرتی
+        type: string
+    type: object
   internal_movement.movementRequest:
     properties:
       category:
@@ -1467,6 +1479,105 @@ paths:
       summary: Update a measurement
       tags:
       - measurements
+  /api/v1/movement-categories/{name}:
+    delete:
+      description: Clears a category from every one of the authenticated coach's movements,
+        deleted ones included; the movements stay. data is null on success. The name
+        is normalised as in rename. A category a universal movement uses is a 403;
+        one none of the coach's movements uses is a 404.
+      parameters:
+      - description: Category name, URL-encoded
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.NoContentEnvelope'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.UnauthorizedEnvelope'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.ForbiddenEnvelope'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.NotFoundEnvelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.InternalErrorEnvelope'
+      security:
+      - BearerAuth: []
+      summary: Delete a movement category
+      tags:
+      - movements
+    put:
+      consumes:
+      - application/json
+      description: 'Renames a category on every one of the authenticated coach''s
+        movements, deleted ones included, so plans that still show them follow. Renaming
+        onto a name already in use merges the two. Both names are normalised first:
+        Arabic ي, ى and ك become Persian ی and ک, runs of spaces collapse, and spaces
+        and ZWNJs at the ends are removed. name is required (at most 50 characters).
+        A category a universal movement uses is a 403; one none of the coach''s movements
+        uses is a 404.'
+      parameters:
+      - description: Current category name, URL-encoded
+        in: path
+        name: name
+        required: true
+        type: string
+      - description: New name
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/internal_movement.categoryRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.SuccessEnvelope'
+            - properties:
+                data:
+                  $ref: '#/definitions/internal_movement.categoryResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.ValidationErrorEnvelope'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.UnauthorizedEnvelope'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.ForbiddenEnvelope'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.NotFoundEnvelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/github_com_AbolfazlTayyar_gogym_internal_platform_httpx.InternalErrorEnvelope'
+      security:
+      - BearerAuth: []
+      summary: Rename a movement category
+      tags:
+      - movements
   /api/v1/movements:
     get:
       description: Lists the authenticated coach's own movements together with the
