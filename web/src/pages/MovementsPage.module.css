@@ -11,8 +11,6 @@
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  /* A swiped row slides under the sheet's edge, not into a sideways scroll. */
-  overflow-x: hidden;
   overscroll-behavior: contain;
   box-shadow: var(--soft);
 }
@@ -20,6 +18,9 @@
 /* The line sits on the row, not the button a swipe slides, so it stays put under a swipe. */
 .row {
   border-bottom: 1px solid var(--line);
+  /* The row clips its own slide: the roster scrolls, so its overflow-x can't be clip, and iOS lets a
+     finger pan a hidden one, moving every row together. */
+  overflow-x: clip;
 }
 
 .row:last-child {
