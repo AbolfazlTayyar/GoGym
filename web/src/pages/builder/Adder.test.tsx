@@ -31,12 +31,17 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-function renderAdder(onPick = vi.fn()) {
+function renderAdder(onPick = vi.fn(), hints = new Map<string, string>()) {
   render(
     <QueryClientProvider
       client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
     >
-      <Adder inputRef={createRef<HTMLInputElement>()} joining={false} onPick={onPick} />
+      <Adder
+        inputRef={createRef<HTMLInputElement>()}
+        joining={false}
+        onPick={onPick}
+        hints={hints}
+      />
     </QueryClientProvider>,
   );
   return screen.getByRole<HTMLInputElement>("searchbox");
@@ -59,6 +64,20 @@ describe("builder adder", () => {
     input.focus();
 
     expect(fireEvent.touchEnd(input)).toBe(true);
+  });
+
+  it("shows a chip's hint under its name, and none on a chip without one", async () => {
+    vi.mocked(fetch).mockImplementationOnce(
+      async () =>
+        new Response(JSON.stringify({ success: true, data: [squat, press], error: null })),
+    );
+    const input = renderAdder(vi.fn(), new Map([[squat.id, "در این برنامه · ۱۰ تکرار × ۳ ست"]]));
+
+    fireEvent.change(input, { target: { value: "ا" } });
+
+    const chip = await screen.findByRole("button", { name: /اسکوات/ });
+    expect(chip.textContent).toBe("اسکواتدر این برنامه · ۱۰ تکرار × ۳ ست");
+    expect(screen.getByRole("button", { name: press.name }).textContent).toBe(press.name);
   });
 
   it("closes the keyboard and clears the search after a pick", async () => {

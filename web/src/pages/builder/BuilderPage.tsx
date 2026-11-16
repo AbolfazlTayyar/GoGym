@@ -4,7 +4,7 @@ import { useBlocker, useParams, useSearchParams } from "react-router";
 import { getAthlete } from "../../api/athletes";
 import { ApiError } from "../../api/client";
 import { queryKeys } from "../../api/keys";
-import { addDay, deleteDay, getPlan, saveDay } from "../../api/plans";
+import { addDay, deleteDay, getMovementHistory, getPlan, saveDay } from "../../api/plans";
 import type { Athlete, Day, PlanDetail } from "../../api/types";
 import { BigButton } from "../../components/BigButton";
 import { BlockLine, DayHeading } from "../../components/BlockLine";
@@ -20,6 +20,7 @@ import { lineParam, paths } from "../../lib/paths";
 import { useGoBack } from "../../lib/useGoBack";
 import { useVisualViewportStyle } from "../../lib/useVisualViewport";
 import { Adder } from "./Adder";
+import { movementHints } from "./hints";
 import s from "./Builder.module.css";
 import { draftReducer, fromDay, newKey, toBody } from "./draft";
 import { OpenLine } from "./OpenLine";
@@ -115,6 +116,17 @@ function BuilderScreen({ plan, athlete, day }: BuilderScreenProps) {
   const dirty =
     baseline !== undefined &&
     JSON.stringify(toBody(draft)) !== JSON.stringify(toBody(fromDay(baseline)));
+
+  // One request for the whole builder, not one per chip; a failure only leaves the chips without hints.
+  const history = useQuery({
+    queryKey: queryKeys.plans("movement-history", plan.id),
+    queryFn: () => getMovementHistory(plan.id),
+  });
+  const hints = movementHints(
+    history.data ?? [],
+    plan.days.filter((d) => d.id !== day?.id),
+    draft,
+  );
 
   const detailKey = queryKeys.plans("detail", plan.id);
   const setDays = (days: (prev: Day[]) => Day[]) =>
@@ -347,7 +359,9 @@ function BuilderScreen({ plan, athlete, day }: BuilderScreenProps) {
           </>
         )}
       </div>
-      {day && <Adder inputRef={searchRef} joining={joinKey !== null} onPick={onPick} />}
+      {day && (
+        <Adder inputRef={searchRef} joining={joinKey !== null} onPick={onPick} hints={hints} />
+      )}
 
       {day && (
         <ConfirmSheet

@@ -117,6 +117,19 @@ export type PlanDetail = {
   days: Day[];
 };
 
+// GET /plans/:id/movement-history: one row per movement, its last prescription in the athlete's other plans.
+export type MovementHistory = {
+  movement_id: string;
+  plan_id: string;
+  plan_title: string;
+  start_date: string;
+  // The block's sets, shared by a superset's movements.
+  sets: number;
+  reps: number | null;
+  duration_seconds: number | null;
+  load_kg: number | null;
+};
+
 // POST /plans/:id/share. Each call makes a new token and ends the plan's previous link.
 export type ShareLink = {
   token: string;

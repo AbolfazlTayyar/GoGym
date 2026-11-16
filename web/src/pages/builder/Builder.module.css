@@ -288,6 +288,20 @@
   box-shadow: var(--glow);
 }
 
+/* The chip's second line: this plan has the movement, or what the athlete was last given of it. */
+.sug .hint {
+  display: block;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--dim);
+  margin-top: 1px;
+}
+
+.sug button:first-child .hint {
+  color: inherit;
+  opacity: 0.85;
+}
+
 .sug .create {
   color: var(--pinkText);
   border: 1.5px dashed var(--petal);

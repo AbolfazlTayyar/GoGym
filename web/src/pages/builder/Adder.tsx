@@ -16,11 +16,13 @@ type AdderProps = {
   // Set while "+ سوپرست" waits for the movement that joins a line.
   joining: boolean;
   onPick: (movement: { id: string; name: string }) => void;
+  // A chip's second line by movement id, from movementHints.
+  hints: Map<string, string>;
 };
 
 // The search pinned under the day. A pick adds a line; a name that isn't
 // in the library yet is added to it first.
-export function Adder({ inputRef, joining, onPick }: AdderProps) {
+export function Adder({ inputRef, joining, onPick, hints }: AdderProps) {
   const queryClient = useQueryClient();
   const [text, setText] = useState("");
   const typed = text.trim();
@@ -73,6 +75,7 @@ export function Adder({ inputRef, joining, onPick }: AdderProps) {
           {results.slice(0, maxSuggestions).map((m) => (
             <button key={m.id} type="button" onPointerDown={keepFocus} onClick={() => pick(m)}>
               {m.name}
+              {hints.has(m.id) && <span className={s.hint}>{hints.get(m.id)}</span>}
             </button>
           ))}
           {(shown || found.isError) && !exact && (

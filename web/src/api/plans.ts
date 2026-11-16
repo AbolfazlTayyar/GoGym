@@ -1,10 +1,14 @@
 import { api } from "./client";
-import type { Day, PlanDetail, PlanSummary, ShareLink } from "./types";
+import type { Day, MovementHistory, PlanDetail, PlanSummary, ShareLink } from "./types";
 
 // Every athlete's current plan in one request; the home rows match them by athlete_id.
 export const getCurrentPlans = () => api.get<PlanSummary[]>("/plans/current");
 
 export const getPlan = (id: string) => api.get<PlanDetail>(`/plans/${id}`);
+
+// The plan itself is left out: the builder reads it from its draft.
+export const getMovementHistory = (planId: string) =>
+  api.get<MovementHistory[]>(`/plans/${planId}/movement-history`);
 
 export const listAthletePlans = (athleteId: string) =>
   api.get<PlanSummary[]>(`/athletes/${athleteId}/plans`);
