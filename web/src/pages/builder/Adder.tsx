@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState, type RefObject } from "react";
+import { useState, type ReactNode, type RefObject } from "react";
 import { queryKeys } from "../../api/keys";
 import { createMovement, listMovements } from "../../api/movements";
 import type { Movement } from "../../api/types";
@@ -18,11 +18,13 @@ type AdderProps = {
   onPick: (movement: { id: string; name: string }) => void;
   // A chip's second line by movement id, from movementHints.
   hints: Map<string, string>;
+  // Sits beside the search, so the coach's thumb finds it where it already is.
+  action: ReactNode;
 };
 
 // The search pinned under the day. A pick adds a line; a name that isn't
 // in the library yet is added to it first.
-export function Adder({ inputRef, joining, onPick, hints }: AdderProps) {
+export function Adder({ inputRef, joining, onPick, hints, action }: AdderProps) {
   const queryClient = useQueryClient();
   const [text, setText] = useState("");
   const typed = text.trim();
@@ -92,18 +94,21 @@ export function Adder({ inputRef, joining, onPick, hints }: AdderProps) {
           )}
         </div>
       )}
-      <label className={s.field} onTouchEnd={focusWithoutPan}>
-        <SearchIcon />
-        <input
-          ref={inputRef}
-          type="search"
-          enterKeyHint="done"
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          placeholder={joining ? "حرکت بعدی سوپرست را جستجو کنید…" : "جستجو یا افزودن حرکت…"}
-          aria-label="جستجوی حرکت"
-        />
-      </label>
+      <div className={s.row}>
+        <label className={s.field} onTouchEnd={focusWithoutPan}>
+          <SearchIcon />
+          <input
+            ref={inputRef}
+            type="search"
+            enterKeyHint="done"
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            placeholder={joining ? "حرکت بعدی سوپرست را جستجو کنید…" : "جستجو یا افزودن حرکت…"}
+            aria-label="جستجوی حرکت"
+          />
+        </label>
+        {action}
+      </div>
       {create.isError && (
         <p className={s.lineError} role="alert">
           {create.error.message}

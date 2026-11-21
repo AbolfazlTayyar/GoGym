@@ -41,6 +41,7 @@ function renderAdder(onPick = vi.fn(), hints = new Map<string, string>()) {
         joining={false}
         onPick={onPick}
         hints={hints}
+        action={null}
       />
     </QueryClientProvider>,
   );

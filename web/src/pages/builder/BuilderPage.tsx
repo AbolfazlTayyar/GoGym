@@ -278,9 +278,6 @@ function BuilderScreen({ plan, athlete, day }: BuilderScreenProps) {
           <BackIcon />
         </RoundButton>
         <HeaderTitle title={plan.title} subtitle={subtitle} />
-        <PillButton onClick={() => save.mutate()} disabled={!day || save.isPending}>
-          {savedNotice ? "ذخیره شد ✓" : "ذخیره"}
-        </PillButton>
       </Header>
       <DayPills
         labels={plan.days.map((d) => d.label)}
@@ -360,7 +357,17 @@ function BuilderScreen({ plan, athlete, day }: BuilderScreenProps) {
         )}
       </div>
       {day && (
-        <Adder inputRef={searchRef} joining={joinKey !== null} onPick={onPick} hints={hints} />
+        <Adder
+          inputRef={searchRef}
+          joining={joinKey !== null}
+          onPick={onPick}
+          hints={hints}
+          action={
+            <PillButton onClick={() => save.mutate()} disabled={save.isPending}>
+              {savedNotice ? "ذخیره شد ✓" : "ذخیره"}
+            </PillButton>
+          }
+        />
       )}
 
       {day && (
