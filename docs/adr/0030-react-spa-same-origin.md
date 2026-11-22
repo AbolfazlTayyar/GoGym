@@ -1,6 +1,6 @@
 # 0030 — React single-page app, served by Caddy on the API's origin
 
-- Status: accepted
+- Status: superseded by [0039](0039-vercel-and-neon-hosting.md) for where the app is served; the React SPA on the API's origin stands
 - Date: 2026-10-19
 - Deciders: Abolfazl Tayyar
 

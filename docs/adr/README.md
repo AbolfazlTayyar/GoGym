@@ -34,7 +34,7 @@ One file per decision, [MADR](https://adr.github.io/madr/)-style. Process rules 
 | [0027](0027-platform-package-for-infrastructure.md) | Shared infrastructure lives under internal/platform | 2026-10-12 | accepted |
 | [0028](0028-drop-movement-filters.md) | Movement has no muscle group or equipment until the library outgrows search | 2026-10-13 | accepted |
 | [0029](0029-blush-theme-day-buttons-home.md) | Light blush theme, with day buttons on the home screen | 2026-10-19 | accepted |
-| [0030](0030-react-spa-same-origin.md) | React single-page app, served by Caddy on the API's origin | 2026-10-19 | accepted |
+| [0030](0030-react-spa-same-origin.md) | React single-page app, served by Caddy on the API's origin | 2026-10-19 | superseded by [0039](0039-vercel-and-neon-hosting.md) (hosting only) |
 | [0031](0031-auth-token-in-httponly-cookie.md) | The browser's auth token lives in an httpOnly cookie, with no CORS | 2026-10-19 | accepted |
 | [0032](0032-current-plans-endpoint.md) | Each athlete's current plan comes from its own endpoint, not the athlete list | 2026-10-19 | accepted |
 | [0033](0033-save-day-replaces-blocks.md) | The builder saves a whole day by replacing its blocks | 2026-10-19 | accepted |
@@ -43,3 +43,4 @@ One file per decision, [MADR](https://adr.github.io/madr/)-style. Process rules 
 | [0036](0036-plan-pdf-rendered-in-browser.md) | The plan PDF is an image of the page, made in the browser | 2026-11-14 | accepted |
 | [0037](0037-movement-category-stays-text.md) | A movement category stays a normalised name, not a table | 2026-11-16 | accepted |
 | [0038](0038-session-attendance-opt-in-table.md) | Session attendance lives in its own opt-in tables, not on `plan` | 2026-11-16 | accepted |
+| [0039](0039-vercel-and-neon-hosting.md) | The app and API are hosted on Vercel, with Postgres on Neon | 2026-11-22 | accepted |

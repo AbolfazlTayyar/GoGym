@@ -2,6 +2,8 @@
 
 Getting the API onto a real server and keeping it running. Needs the backend API from [backend.md](backend.md). Task format is explained in [README.md](README.md).
 
+> The app is hosted on Vercel with Postgres on Neon ([ADR 0039](../adr/0039-vercel-and-neon-hosting.md)). The VPS task below is the plan for leaving Vercel; follow 0039's *Leaving Vercel* steps first.
+
 ---
 
 ### VPS deployment & production migrations
