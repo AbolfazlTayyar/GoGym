@@ -2,6 +2,9 @@ FROM golang:1.25-alpine AS build
 
 WORKDIR /src
 
+# Lets a server where proxy.golang.org is blocked pick another module proxy; empty keeps Go's default.
+ARG GOPROXY
+
 COPY go.mod go.sum ./
 RUN go mod download
 
